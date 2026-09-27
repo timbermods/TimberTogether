@@ -10,16 +10,15 @@ science and working hours. The colonies meet only at **Trading Posts**, where th
 [Install](#install) · [Host](#host-a-game) · [Join](#join-a-game) · [Your colony](#your-colony) · [Trading Posts](#trading-posts) · [Controls](#controls) · [Troubleshooting](#troubleshooting) · [Website](https://timbermods.github.io/TimberTogether/)
 
 > [!WARNING]
-> **Beta: the release candidate for 1.4.0.** Automated checks cover everything here, but real games have been short.
+> **Beta: the release candidate for 1.4.0.** Automated checks cover everything here, and most of it has been played.
 > Play on a copy of your save and keep backups.
 > - **Played:** hosting, joining over Steam and founding a second colony; two colonies building side by side, in step;
->   Trading Posts exchanging goods and beavers; opening the Co-op Game room and joining it; and the Stability Fork's
->   Steam invites, connection panel, cursors and desync fixes, over hours of two-player play.
-> - **Not played yet:** starting a game from the Co-op Game room; the **Separate colonies** checkbox and splitting a
->   shared game; hosting a save or the game you're in, joining from inside a game, and rejoining a rehost; Folktails and
->   Iron Teeth together; looking after an away player's colony, and hand-overs; most of the road rule; Trading Posts at
->   scale; and the late game (automation, the HTTP API, water automation, power, dynamite and tunnels, both Wonders,
->   bots).
+>   the Co-op Game room, from joining to Start; the **Separate colonies** checkbox and splitting a shared game; hosting
+>   a save or the game you're in, joining from inside a game, and rejoining a rehost; the road rule; Trading Posts
+>   exchanging goods and beavers, at scale; trade messages and chimes; the late game (automation, the HTTP API, water
+>   automation, power, dynamite and tunnels, both Wonders, bots); and the Stability Fork's Steam invites, connection
+>   panel, cursors and desync fixes, over hours of two-player play.
+> - **Not played yet:** Folktails and Iron Teeth together; looking after an away player's colony, and hand-overs.
 
 Built on [BeaverBuddies](https://github.com/thomaswp/BeaverBuddies) by Thomas Price (thomaswp) and contributors,
 through the [BeaverBuddies Stability Fork](https://github.com/timbermods/BeaverBuddies-Stability-Fork)
