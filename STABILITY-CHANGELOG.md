@@ -5,7 +5,11 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc19
+
+**Each colony has its own wellbeing high score** (PR #48). Built against Timberborn 1.1.2.4: both configurations with 0
+warnings; StabilityTests 516 and RuntimeChecks 460 pass. **Not played.** Marked Latest on GitHub (a full release), at
+Kyler's request.
 
 - **Each colony has its own wellbeing high score.** The game keeps one for the whole map and announced a new one on
   every computer, so a player heard of the other colony's record. In a separate-colonies co-op game each colony's
@@ -13,8 +17,9 @@ entry above the current one.
   through the game's own message. `ColonyWellbeingRecords` keeps every colony's record on every computer and saves
   them; `ColonyWellbeingHighscorePatcher` drops the game's `NewWellbeingHighscoreEvent` from `EventBus.Post` in co-op.
   Alone, the game's own high score. Display only. StabilityTests: the rule and its save; RuntimeChecks: the event,
-  its constructor, the patch target and its listeners (printed for review). **Not played; not built against the game
-  here.**
+  its constructor, the patch target and its listeners (printed for review). The one listener is the game's
+  `WellbeingHighscoreAlertFragment` (the alert row and its sound), so a computer that skips the event changes nothing
+  simulated.
 
 ## 1.4.0-rc18
 
