@@ -16,7 +16,7 @@ page is the full set of rules.
   as in the game.)
 - **You change only your own colony** (or one you look after), whether or not its neighbors are playing.
 - **Your beavers work only for your colony.**
-- **Shared by everyone:** game speed and pause, pings, chat, saving, and the map: water, droughts, badwater and
+- **Shared by everyone:** game speed and pause (menus and dialogs don't pause), pings, chat, saving, and the map: water, droughts, badwater and
   weather.
 
 ## Starting a game

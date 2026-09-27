@@ -1,7 +1,8 @@
 # Connection panel and chat
 
 A small panel in a corner of your screen during a multiplayer game. It shows who is connected and their colony, each
-connection's ping, whether you're in sync, and how fast the game runs. Below that are a speed boost and a chat box.
+connection's ping, whether you're in sync, how fast the game runs, and who paused it. Below that are a speed boost and a
+chat box.
 
 ## What it shows
 
@@ -42,6 +43,12 @@ player runs (a steward shows the colony they're running). In a shared game the r
 | **Easing off** | Host: the share of the chosen speed the game runs at while a guest catches up, such as *75% of speed*. It returns to full speed by itself. |
 | **Ease off below** | Host: click to choose a guest frame rate floor (Off, 20, 30, 45 or 60 fps). The game slows a little while a guest stays below it. |
 | **Connection** | Direct (IP, Hamachi) or Steam. |
+
+## Pausing
+
+Pressing pause (the speed buttons' pause, or its key) pauses the game for everyone. While it is paused, the title line
+shows *Paused by* and the player's name, open or collapsed; a new game waiting to start shows *Paused*. Anyone can pick
+a speed to carry on. Menus, dialogs and panels don't pause a co-op game.
 
 ## Showing and hiding
 

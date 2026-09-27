@@ -62,7 +62,7 @@ internal static class ColonyRuntimeChecks
             // colonies (1.4.0-rc4) is refused from anyone but the host, and does nothing in a game already separate.
             var expected = new[] { "ActAsColonyEvent", "ActionRefusedEvent", "AutosaveEvent", "BuildingUnlockedEvent", "ClientDesyncedEvent",
                 "ColonyConversionEvent", "ColonyFactionSwitchEvent", "ColonyHandoverEvent", "ColonyPresenceEvent", "GroupedEvent", "HeartbeatEvent", "InitializeClientEvent", "PingEvent",
-                "PlantingAreaMarkedEvent", "PlayerHelloEvent", "ScienceAddedEvent", "ShowOptionsMenuEvent", "SpeedBoostEvent",
+                "PlantingAreaMarkedEvent", "PlayerHelloEvent", "ScienceAddedEvent", "SpeedBoostEvent",
                 "SpeedSetEvent", "StewardGrantedEvent", "StewardRevokedEvent", "TraceLoggedForTickEvent", "TreeCuttingAreaEvent",
                 "WishlistChangedEvent", "WorkerTypeUnlockedEvent", "WorkingHoursChangedEvent" };
             if (!shared.SequenceEqual(expected))
@@ -215,11 +215,10 @@ internal static class ColonyRuntimeChecks
             var neutral = eventTypes
                 .Where(t => !(bool)changes.Invoke(RuntimeHelpers.GetUninitializedObject(t), null)!)
                 .Select(t => t.Name).OrderBy(n => n, StringComparer.Ordinal).ToList();
-            // ShowOptionsMenuEvent is a SpeedSetEvent (pausing to open the menu); SpeedBoostEvent is a speed change too (the
-            // session's boost, 1.4.0-beta5). ActAsColonyEvent is session state (which colony a steward acts as), not saved,
-            // and refused before the first tick anyway.
+            // SpeedBoostEvent is a speed change too (the session's boost, 1.4.0-beta5). ActAsColonyEvent is session
+            // state (which colony a steward acts as), not saved, and refused before the first tick anyway.
             var expected = new[] { "ActAsColonyEvent", "ActionRefusedEvent", "ClientDesyncedEvent", "HeartbeatEvent", "InitializeClientEvent", "PingEvent",
-                "PlayerHelloEvent", "ShowOptionsMenuEvent", "SpeedBoostEvent", "SpeedSetEvent", "TraceLoggedForTickEvent" };
+                "PlayerHelloEvent", "SpeedBoostEvent", "SpeedSetEvent", "TraceLoggedForTickEvent" };
             if (!neutral.SequenceEqual(expected))
                 throw new Exception("The list of events that leave joining open changed; review it and update this check: " + string.Join(", ", neutral));
         });

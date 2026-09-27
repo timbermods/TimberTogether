@@ -147,6 +147,15 @@ namespace BeaverBuddies
         /// <summary>The speed the players picked at the top right (1, 3 or 7 for the game's speed 1, 2 and 3; 0 paused).</summary>
         public float ChosenSpeed { get; private set; } = 0;
 
+        /// <summary>
+        /// Who paused the game (0 the host, else a guest's connection number), for the connection panel; -1 while it
+        /// runs, or when nobody did (a new game waits at its start).
+        /// </summary>
+        public int PausedBy { get; private set; } = -1;
+
+        /// <summary>A pause was played (a SpeedSetEvent of 0) by <paramref name="player"/>; -1 for any other speed.</summary>
+        public void SetPausedBy(int player) => PausedBy = player;
+
         /// <summary>The session's speed boost (SpeedBoost): added to the chosen speed, the same for everyone.</summary>
         public float Boost { get; private set; } = 0;
 

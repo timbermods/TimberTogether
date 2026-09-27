@@ -61,15 +61,6 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"允许玩家通过 Steam �
 此外，P2P 连接可能比直接连接慢。",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"允许好友通过 Steam 直接加入",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"启用后，你的好友可以通过 Steam 直接加入游戏，无需邀请。",""
-BeaverBuddies.Settings.PauseReduction,"减少强制暂停的次数",""
-BeaverBuddies.Settings.PauseReduction.Tooltip,"为获得最佳体验，建议所有玩家使用相同设置。
-
-关闭 - 默认行为
-仅菜单 - 仅在打开菜单时自动暂停（拆除建筑时不暂停）
-从不自动暂停 - 游戏永远不会自动暂停，包括打开菜单时。如果在保存前不暂停游戏，可能导致存档损坏。",""
-BeaverBuddies.Settings.PauseReduction.Off,"关闭",""
-BeaverBuddies.Settings.PauseReduction.LowRisk,"仅菜单",""
-BeaverBuddies.Settings.PauseReduction.HighRisk,"从不自动暂停",""
 BeaverBuddies.Host.ConnectedClients,"等待客户端连接…
 当前已连接客户端：",""
 BeaverBuddies.Host.DirectConnectClient,"直接连接客户端",""

@@ -5,13 +5,6 @@ using Timberborn.SettingsSystem;
 
 namespace BeaverBuddies
 {
-    public enum PauseReductionLevel
-    {
-        Off = 0,
-        MenuOnly = 1,
-        NeverAutoPause = 2,
-    }
-
     public enum PanelDisplayMode
     {
         Expanded = 0,
@@ -71,17 +64,6 @@ namespace BeaverBuddies
             ModSettingDescriptor.CreateLocalized(
                 "BeaverBuddies.Settings.FriendsCanJoinSteamGame"
             ).SetLocalizedTooltip("BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip")
-        );
-
-        // ---- Quality of Life Settings ----
-
-        public LimitedStringModSetting PauseReduction { get; } =
-            new(0, new[] {
-                new LimitedStringModSettingValue("0", "BeaverBuddies.Settings.PauseReduction.Off"),
-                new LimitedStringModSettingValue("1", "BeaverBuddies.Settings.PauseReduction.LowRisk"),
-                new LimitedStringModSettingValue("2", "BeaverBuddies.Settings.PauseReduction.HighRisk")
-            }, ModSettingDescriptor.CreateLocalized("BeaverBuddies.Settings.PauseReduction")
-                .SetLocalizedTooltip("BeaverBuddies.Settings.PauseReduction.Tooltip")
         );
 
         // ---- Player Activity ----
@@ -249,20 +231,6 @@ namespace BeaverBuddies
         // Settings store the choice as its number; anything unrecognised falls back to the default.
         private static T ParseChoice<T>(string value, T fallback) where T : struct, System.Enum =>
             int.TryParse(value, out int number) && System.Enum.IsDefined(typeof(T), number) ? (T)(object)number : fallback;
-
-        public static PauseReductionLevel PauseReductionSetting
-        {
-            get
-            {
-                if (instance?.PauseReduction?.Value == null)
-                    return PauseReductionLevel.Off;
-
-                if (int.TryParse(instance.PauseReduction.Value, out int level))
-                    return (PauseReductionLevel)level;
-
-                return PauseReductionLevel.Off;
-            }
-        }
 
         public static string PingDisplayName => instance?.PingPlayerName.Value ?? DefaultPingPlayerName;
 

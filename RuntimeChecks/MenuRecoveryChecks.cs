@@ -2,6 +2,7 @@ using System.Reflection;
 
 // Controls that stop answering after a message is closed. Runs the real compiled mod's decisions: whether the
 // options menu can still be opened once multiplayer has stopped, and which installed session a late reset may end.
+// The menu is not patched at all (a co-op game's menu opens on one computer and pauses nobody), so it always opens.
 internal static class MenuRecoveryChecks
 {
     public static void Run(Assembly mod, Action<string, Action> test)
@@ -9,7 +10,6 @@ internal static class MenuRecoveryChecks
         const BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
         var replayService = mod.GetType("BeaverBuddies.ReplayService", true);
         var replayEvent = mod.GetType("BeaverBuddies.Events.ReplayEvent", true);
-        var optionsPatcher = mod.GetType("BeaverBuddies.Events.GameOptionsBoxShowPatcher", true);
         var eventIo = mod.GetType("BeaverBuddies.IO.EventIO", true);
         var failure = replayService.GetField("<HasReplayFailure>k__BackingField", all);
 
@@ -29,17 +29,16 @@ internal static class MenuRecoveryChecks
             }
         }
         void Require(bool value, string message) { if (!value) throw new Exception(message); }
-        bool MenuMayOpen() => (bool)optionsPatcher.GetMethod("Prefix", all).Invoke(null, null);
         bool ActionMayRun() => (bool)replayEvent.GetMethod("DoPrefix", all).Invoke(null, new object[] { null });
 
         // Regression: after "Multiplayer has stopped" the message told the player to return to the main menu, but
         // the hard stop also blocked the menu, so Escape and the options button did nothing and the game could only
         // be killed.
-        test("After a failed multiplayer action the options menu still opens", () => Quiet(() =>
+        test("After a failed multiplayer action the options menu still opens", () =>
         {
-            failure.SetValue(null, true);
-            Require(MenuMayOpen(), "the options menu was blocked by the hard stop");
-        }));
+            Require(mod.GetType("BeaverBuddies.Events.GameOptionsBoxShowPatcher") == null,
+                "the options menu is patched again: check it still opens after the hard stop");
+        });
         test("After a failed multiplayer action gameplay actions stay blocked", () => Quiet(() =>
         {
             failure.SetValue(null, true);

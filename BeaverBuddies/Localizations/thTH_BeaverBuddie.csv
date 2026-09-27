@@ -61,15 +61,6 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"อนุญาตให�
 นอกจากนี้ การเชื่อมต่อ P2P อาจช้ากว่าแบบตรง",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"ให้เพื่อนเข้าร่วมเกมผ่าน Steam ได้ตรงๆ",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"หากเปิดใช้งาน เพื่อนของคุณสามารถเข้าร่วมเกมผ่าน Steam โดยไม่ต้องเชิญ",""
-BeaverBuddies.Settings.PauseReduction,"ลดจำนวนการหยุดชั่วคราวที่ถูกบังคับ",""
-BeaverBuddies.Settings.PauseReduction.Tooltip,"เพื่อประสบการณ์ที่ดีที่สุด ผู้เล่นทุกคนควรใช้การตั้งค่าเดียวกัน
-
-ปิด - พฤติกรรมเริ่มต้น
-เมนูเท่านั้น - หยุดอัตโนมัติเฉพาะเมื่อเปิดเมนู (ไม่หยุดระหว่างการรื้อถอน)
-ไม่หยุดอัตโนมัติ - เกมจะไม่หยุดชั่วคราวโดยอัตโนมัติ รวมถึงเมื่อเปิดเมนูด้วย อาจทำให้ไฟล์บันทึกเสียหายหากคุณไม่หยุดเกมก่อนบันทึก",""
-BeaverBuddies.Settings.PauseReduction.Off,"ปิด",""
-BeaverBuddies.Settings.PauseReduction.LowRisk,"เมนูเท่านั้น",""
-BeaverBuddies.Settings.PauseReduction.HighRisk,"ไม่หยุดอัตโนมัติ",""
 BeaverBuddies.Host.ConnectedClients,"กำลังรอลูกค้าเชื่อมต่อ…
 ลูกค้าที่เชื่อมต่อขณะนี้:",""
 BeaverBuddies.Host.DirectConnectClient,"ไคลเอนต์เชื่อมต่อโดยตรง",""

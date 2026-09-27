@@ -27,7 +27,7 @@ namespace BeaverBuddies.Panel
 
         readonly ILoc loc;
         readonly VisualElement topSection, header, headerDot, body, statusDot, rows, facts, chatArea;
-        readonly Label title, role, chevron, statusText, unreadBadge;
+        readonly Label title, role, chevron, statusText, unreadBadge, pausedTag;
         readonly CornerLift lift = new CornerLift();
         int shownUnread;
         float appliedWidth = -1;
@@ -75,7 +75,11 @@ namespace BeaverBuddies.Panel
             // Shown only while the panel is collapsed, so new messages are not missed.
             unreadBadge = Text("", 11, Fair, bold: true); unreadBadge.style.marginLeft = 8;
             unreadBadge.style.display = DisplayStyle.None;
-            header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(role); header.Add(chevron);
+            // Between the title and the role: the game is paused, and who paused it. Shown open or collapsed, in yellow,
+            // so nobody wonders why the game has stopped.
+            pausedTag = Text("", 11, Fair, bold: true); pausedTag.style.marginLeft = 8; pausedTag.style.flexShrink = 1;
+            pausedTag.style.display = DisplayStyle.None;
+            header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(pausedTag); header.Add(role); header.Add(chevron);
             header.RegisterCallback<ClickEvent>(_ => HeaderClicked?.Invoke());
             // Everything that was the panel before chat is the top section.
             topSection = new VisualElement { name = "BeaverBuddiesConnectionPanelTop" };
@@ -210,6 +214,8 @@ namespace BeaverBuddies.Panel
             role.text = expanded ? model.Role : "";
             role.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             chevron.text = expanded ? "-" : "+";
+            pausedTag.text = model.PausedText ?? "";
+            pausedTag.style.display = model.PausedText != null ? DisplayStyle.Flex : DisplayStyle.None;
             body.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             if (!expanded) { Chat?.ReleaseFocus(); lift.Restore(); }
             chatArea.style.display = expanded && !chatDisabled ? DisplayStyle.Flex : DisplayStyle.None;

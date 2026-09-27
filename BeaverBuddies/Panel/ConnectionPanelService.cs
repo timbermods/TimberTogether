@@ -385,6 +385,8 @@ namespace BeaverBuddies.Panel
                 GuestFpsFloor = Settings.GuestFpsFloorValue,
                 FrameRatePacingPercent = replay?.FrameRatePacingPercent ?? 100,
                 JoiningOpen = io is ServerEventIO server && server.IsAcceptingClients,
+                // The players' pause (a pause played, or a new game at its start), not a moment's wait for a tick.
+                Paused = replay != null && ReplayService.IsLoaded && replay.TargetSpeed == 0,
             };
 
             // Names come from player activity (the same names other players chose for pings and cursors).
@@ -392,6 +394,8 @@ namespace BeaverBuddies.Panel
             var activity = SingletonManager.GetSingleton<PlayerActivityService>();
             if (activity != null) foreach (var player in activity.RemotePlayers) names[player.PlayerId] = player.Name;
             string me = Settings.PingDisplayName;
+            if (result.Paused && replay.PausedBy >= 0)
+                result.PausedByName = replay.PausedBy == myPlayerId ? me : NameOf(replay.PausedBy, names);
 
             if (status.IsHost)
             {

@@ -5,6 +5,24 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**Only a player's pause pauses, and the panel says who.** The game menu, dialogs and overlay panels no longer pause a
+co-op game, on the host or a guest; pressing pause (the speed buttons' pause, the space key, the period key while the
+game runs) still pauses it for everyone. The connection panel's title line shows *Paused by <name>* between
+**Multiplayer** and the role, open or collapsed (*Paused* for a new game waiting at its start). Everyone needs this
+build (the join checks the version).
+
+- **Refused in a session:** `ChangeAndLockSpeed` takes no lock on any computer (the host's froze everyone); unlock still
+  lets go of a lock taken before the session. `OverlayPanelSpeedLocker` does nothing.
+- **Game menu:** opens on this computer only. `ShowOptionsMenuEvent` and `GameOptionsBoxShowPatcher` are gone; saving
+  from the menu while the game runs already waits for the end of the tick.
+- **Who paused:** `SpeedSetEvent` records its player in `ReplayService.PausedBy` when it pauses; the panel names them
+  (`Panel.PausedBy`).
+- **Removed:** the *Fewer forced pauses* setting (`PauseReduction`), which the rule above replaces, and its strings in
+  every language.
+- **Docs:** README, CONNECTION-PANEL.md, TWO-COLONIES.md, and the site's install, troubleshooting and home pages.
+
 ## 1.4.0-rc17
 
 **Chat chimes only while the connection panel is closed, and rc16 played.** Kyler played rc16 at length: everything

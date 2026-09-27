@@ -81,6 +81,10 @@ namespace BeaverBuddies.Panel
         public int FrameRatePacingPercent = 100;
         /// <summary>Host only: players can still join (the game waits at its start and nothing has changed it).</summary>
         public bool JoiningOpen;
+        /// <summary>The players paused the game (or it waits at its start); not a moment's wait for the host or a guest.</summary>
+        public bool Paused;
+        /// <summary>Who pressed pause, or null when nobody did (a new game waits at its start).</summary>
+        public string PausedByName;
         public List<PanelPlayer> Players = new List<PanelPlayer>();
     }
 
@@ -116,6 +120,8 @@ namespace BeaverBuddies.Panel
         public string FpsFloorText;
         /// <summary>Only for the host, and only while players can still join: what closes joining. Null otherwise.</summary>
         public string JoiningText;
+        /// <summary>The header's paused indicator ("Paused by Sarah"), open or collapsed. Null while the game runs.</summary>
+        public string PausedText;
     }
 
     public static class PanelModelBuilder
@@ -190,6 +196,11 @@ namespace BeaverBuddies.Panel
             model.SpeedText = input.Speed <= 0
                 ? t("BeaverBuddies.Panel.Paused", Array.Empty<object>())
                 : t("BeaverBuddies.Panel.SpeedValue", new object[] { input.Speed.ToString("0.#", CultureInfo.InvariantCulture) });
+            // Everyone sees that the game is paused, and who paused it. A session that has stopped says so instead.
+            if (input.Paused && !input.Stopped && !input.Desynced)
+                model.PausedText = string.IsNullOrEmpty(input.PausedByName)
+                    ? t("BeaverBuddies.Panel.Paused", Array.Empty<object>())
+                    : t("BeaverBuddies.Panel.PausedBy", new object[] { input.PausedByName });
             if (!input.IsHost)
                 model.BehindText = t(input.TicksBehind == 1 ? "BeaverBuddies.Panel.TicksOne" : "BeaverBuddies.Panel.TicksMany",
                     new object[] { input.TicksBehind });

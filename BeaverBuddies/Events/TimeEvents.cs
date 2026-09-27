@@ -3,8 +3,6 @@ using BeaverBuddies.IO;
 using HarmonyLib;
 using System;
 using System.Collections.Generic;
-using Timberborn.Options;
-using Timberborn.OptionsGame;
 using Timberborn.TimeSpeedButtonSystem;
 using Timberborn.TimeSystem;
 using Timberborn.TimeSystemUI;
@@ -38,6 +36,8 @@ namespace BeaverBuddies.Events
                 Plugin.Log($"Event: Changing target speed from {replayService.TargetSpeed} to {target}");
                 replayService.SetChosenSpeed(speed);
             }
+            // The connection panel names who paused (0 the host, else a guest's number), for every player.
+            replayService.SetPausedBy(speed == 0 ? player : -1);
         }
     }
 
@@ -155,9 +155,9 @@ namespace BeaverBuddies.Events
     {
         static bool Prefix(SpeedManager __instance, float value)
         {
-            // Clients should never freeze for dialogs. Main menu will be
-            // handled separately.
-            if (EventIO.Get()?.UserEventBehavior == UserEventBehavior.Send)
+            // In a co-op game nobody freezes for menus, dialogs or panels: only a player pressing pause (the speed
+            // buttons' pause, or its key) pauses, for everyone. The host freezing here stopped the game for everyone.
+            if (!EventIO.IsNull)
             {
                 return false;
             }
@@ -188,12 +188,8 @@ namespace BeaverBuddies.Events
     {
         static bool Prefix(SpeedManager __instance)
         {
-            // Clients should never unfreeze for dialogs. See above.
-            if (EventIO.Get()?.UserEventBehavior == UserEventBehavior.Send)
-            {
-                return false;
-            }
-
+            // A co-op game takes no lock (see above), but one taken before the session began (the host's room opened
+            // over a single-player game) is still let go: a lock left behind would hold the game at speed 0.
             if (__instance._isLocked)
             {
                 __instance._isLocked = false;
@@ -204,63 +200,15 @@ namespace BeaverBuddies.Events
         }
     }
 
-    [Serializable]
-    class ShowOptionsMenuEvent : SpeedSetEvent
-    {
-        public ShowOptionsMenuEvent()
-        {
-            speed = 0;
-        }
-
-        public override void Replay(IReplayContext context)
-        {
-            base.Replay(context);
-            context.GetSingleton<IOptionsBox>().Show();
-        }
-    }
-
-    // By default, we make showing the options menu a synced game event, rather than
-    // a non-synced UI action, for two reasons:
-    // 1) This ensures that the Options menu is always shown when a full
-    //    tick has been completed.
-    // 2) This will give other players a visual clue about why the game has
-    //    paused.
-    // However, only the host will be able to unpause, and only by manually
-    // setting the game speed, since they won't process any events by clients
-    // while they have a panel (including this one) up (I think...).
-    [HarmonyPatch(typeof(GameOptionsBox), nameof(GameOptionsBox.Show))]
-    public class GameOptionsBoxShowPatcher
-    {
-        [HarmonyPriority(Priority.First)]
-        static bool Prefix()
-        {
-            // After a failed multiplayer action everything else is blocked on purpose (see ReplayEvent.DoPrefix),
-            // but never the menu: it is the only way out. The message the player just closed tells them to return
-            // to the main menu, and with the menu blocked too the game could only be killed.
-            if (ReplayService.HasReplayFailure) return true;
-
-            // This would make options menu unsynced and non-pausing,
-            // but I think it's dangerous to open the menu outside of a synced pause.
-            // So we will only do this if the user explicitly opts into it
-            if (Settings.PauseReductionSetting == PauseReductionLevel.NeverAutoPause) return true;
-
-            return ReplayEvent.DoPrefix(() => new ShowOptionsMenuEvent());
-        }
-    }
-
-    // OverlayPanelSpeedLocker is triggering ChangeAndLockSpeed via OnPanelShown
-    // This is now configurable via Settings.PauseReduction. If we don't freeze, it could in theory
-    // cause invalid operations (e.g. deleting a building that's not there anymore).
-    // Event creation could crash if it expects state that has changed, or it could
-    // send an invalid event to the server. The server is robust to invalid actions
-    // (they're always a possibility)e. For clients, stale-state
-    // issues are inherent regardless of freezing, since actions always happen at a delay.
+    // OverlayPanelSpeedLocker pauses the game under some panels, through ChangeAndLockSpeed. In a co-op game it
+    // pauses nobody (only a player pressing pause does). Acting on a panel's stale view is safe: the host
+    // refuses what no longer applies, and a guest's actions always arrive a moment later anyway.
     [HarmonyPatch(typeof(OverlayPanelSpeedLocker), nameof(OverlayPanelSpeedLocker.OnPanelShown))]
     public class OverlayPanelSpeedLockerShowPatcher
     {
         public static bool Prefix()
         {
-            return Settings.PauseReductionSetting == PauseReductionLevel.Off;
+            return EventIO.IsNull;
         }
     }
 

@@ -523,7 +523,7 @@ internal static class RcLateGameRuntimeChecks
             ["Timberborn.CharactersUI.CharactersModelToggler -> Timberborn.CharacterModelSystem.CharacterModel.Hide"] = "dev mode: a dev panel module (DevModeCoopWarning)",
             ["Timberborn.CharactersUI.CharactersModelToggler -> Timberborn.CharacterModelSystem.CharacterModel.Show"] = "dev mode: a dev panel module (DevModeCoopWarning)",
             ["Timberborn.CursorToolSystem.CursorCoordinatesPicker -> Timberborn.TerrainQueryingSystem.TerrainPicker.PickTerrainCoordinates"] = "covered: a query (the planting and cutting marks are levelled by the actor, ToolEvents)",
-            ["Timberborn.CursorToolSystem.CursorTool -> Timberborn.Options.IOptionsBox.Show"] = "covered: GameOptionsBox.Show is recorded",
+            ["Timberborn.CursorToolSystem.CursorTool -> Timberborn.Options.IOptionsBox.Show"] = "this computer's own: the game menu opens on this computer only and pauses nobody",
             ["Timberborn.DecalSystemUI.DecalButton -> Timberborn.DecalSystem.DecalSupplier.SetActiveDecal"] = "display: a building's decal: saved, display only (custom decals are local files)",
             ["Timberborn.DecalSystemUI.DecalSupplierFragment -> Timberborn.DecalSystem.IDecalService.ReloadCustomDecals"] = "this computer's own: this computer's custom files",
             ["Timberborn.DecalSystemUI.FlippableDecalFragment -> Timberborn.DecalSystem.FlippableDecal.SetFlip"] = "display: a building's decal: saved, display only (custom decals are local files)",

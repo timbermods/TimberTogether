@@ -27,6 +27,7 @@ static class PanelModelChecks
         ["BeaverBuddies.Panel.RowTooltip"] = "Click to take your camera to {0}.", ["BeaverBuddies.Panel.RowYouTooltip"] = "Click to go back to your colony (also the Home key).",
         ["BeaverBuddies.Panel.PlayerNotOnMap"] = "{0}'s cursor is not on the map right now.",
         ["BeaverBuddies.Panel.Loading"] = "{0} (loading)",
+        ["BeaverBuddies.Panel.PausedBy"] = "Paused by {0}",
     };
     static string T(string key, object[] args) => string.Format(CultureInfo.InvariantCulture, English[key], args);
 
@@ -220,6 +221,26 @@ static class PanelModelChecks
             Equal("1x", PanelModelBuilder.Build(HostView(P(1, "S", rtt: 5)), T).SpeedText);
             Equal("1 player", PanelModelBuilder.Build(HostView(), T).Summary);
             Equal("1 tick", PanelModelBuilder.Build(GuestView(1, P(1, "Me", you: true, rtt: 5)), T).BehindText);
+        });
+        yield return ("The header says the game is paused, and who paused it", () =>
+        {
+            // Running, or only waiting a moment for a tick: nothing in the header.
+            Equal(null, PanelModelBuilder.Build(HostView(P(1, "Sarah", rtt: 5)), T).PausedText);
+            var waiting = GuestView(0, P(1, "Me", you: true, rtt: 5)); waiting.Speed = 0;
+            Equal(null, PanelModelBuilder.Build(waiting, T).PausedText);
+
+            // A pause someone pressed names them, on every computer.
+            var paused = GuestView(0, P(1, "Me", you: true, rtt: 5)); paused.Paused = true; paused.PausedByName = "Kyler";
+            Equal("Paused by Kyler", PanelModelBuilder.Build(paused, T).PausedText);
+            // A new game waiting at its start: paused, by nobody.
+            paused.PausedByName = null;
+            Equal("Paused", PanelModelBuilder.Build(paused, T).PausedText);
+
+            // A session that has stopped or gone out of step says that instead.
+            paused.Stopped = true;
+            Equal(null, PanelModelBuilder.Build(paused, T).PausedText);
+            paused.Stopped = false; paused.Desynced = true;
+            Equal(null, PanelModelBuilder.Build(paused, T).PausedText);
         });
     }
 }
