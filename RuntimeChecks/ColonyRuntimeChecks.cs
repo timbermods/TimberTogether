@@ -813,6 +813,41 @@ internal static class ColonyRuntimeChecks
             if (!isOwn.Contains("ColonyJournal.RecordedOwnerOf") || !isOwn.Contains("JournalFilter.IsOwn"))
                 throw new Exception("IsOwn no longer falls back to the recorded colony: " + string.Join(", ", isOwn));
         });
+
+        // The wellbeing high score is each colony's own (ColonyWellbeingRecords): the game's map-wide announcement is
+        // dropped from EventBus.Post in co-op, and each computer posts the game's event, built with its own colony's
+        // figure, as each day starts. Its listeners are printed for review: skipping the event on one computer is safe
+        // only while they show the message or unlock things for this player, never simulate.
+        test("Colony: the wellbeing high score is announced per colony, through the game's own event", () =>
+        {
+            var singletons = Assembly.Load("Timberborn.SingletonSystem");
+            var eventBus = singletons.GetType("Timberborn.SingletonSystem.EventBus", true)!;
+            var post = eventBus.GetMethod("Post", all, null, new[] { typeof(object) }, null) ?? throw new Exception("EventBus.Post(object) is gone");
+            if (post.IsGenericMethodDefinition) throw new Exception("EventBus.Post is now generic");
+            var wellbeing = Assembly.Load("Timberborn.Wellbeing");
+            var highscore = LoadableTypes(wellbeing).SingleOrDefault(t => t.Name == "NewWellbeingHighscoreEvent")
+                ?? throw new Exception("NewWellbeingHighscoreEvent is no longer in Timberborn.Wellbeing");
+            if (highscore.GetConstructor(new[] { typeof(int) }) == null)
+                throw new Exception("NewWellbeingHighscoreEvent is no longer built from the score: " + string.Join("; ",
+                    highscore.GetConstructors().Select(c => string.Join(", ", c.GetParameters().Select(p => p.ParameterType.Name)))));
+            Assembly.Load("Timberborn.TimeSystem").GetType("Timberborn.TimeSystem.DaytimeStartEvent", true);
+            string managed = Path.GetDirectoryName(wellbeing.Location)!;
+            byte[] name = System.Text.Encoding.ASCII.GetBytes("NewWellbeingHighscoreEvent");
+            var handlers = Directory.GetFiles(managed, "Timberborn.*.dll")
+                .Where(file => File.ReadAllBytes(file).AsSpan().IndexOf(name) >= 0)
+                .SelectMany(file => LoadableTypes(Assembly.Load(Path.GetFileNameWithoutExtension(file))))
+                .SelectMany(t => t.GetMethods(all | BindingFlags.DeclaredOnly))
+                .Where(m => m.GetParameters().Any(p => p.ParameterType == highscore))
+                .Select(m => m.DeclaringType!.FullName + "." + m.Name).OrderBy(n => n).ToList();
+            if (handlers.Count == 0) throw new Exception("nothing in the game listens to NewWellbeingHighscoreEvent any more");
+            Console.WriteLine("      NewWellbeingHighscoreEvent is heard by: " + string.Join(", ", handlers));
+            var patcher = mod.GetType("BeaverBuddies.Colonies.ColonyWellbeingHighscorePatcher", true)!;
+            if (patcher.GetMethod("TargetMethod", all)!.Invoke(null, null) is not MethodInfo target || target != post)
+                throw new Exception("the high-score patch no longer targets EventBus.Post(object)");
+            var records = mod.GetType("BeaverBuddies.Colonies.ColonyWellbeingRecords", true)!;
+            if (!MethodsCalled(records.GetMethod("OnDaytimeStart", all)!).Any(m => m.DeclaringType!.Name == "WellbeingRecords" && m.Name == "Raise"))
+                throw new Exception("the day's start no longer raises the colonies' records");
+        });
     }
 
     static IEnumerable<Type> LoadableTypes(Assembly assembly)

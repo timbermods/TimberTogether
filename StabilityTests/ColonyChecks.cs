@@ -1014,6 +1014,35 @@ static class ColonyChecks
             Check(JournalFilter.ShouldShow(true, 1, false, false, null, 1), "a gone subject of slot 1 is missing for slot 1");
         });
 
+        yield return ("Colony: each colony's wellbeing high score rises on its own, and only the colony that beat it is told", () =>
+        {
+            int[] records = new int[ColonySlotTable.MaxSlots];
+            // Day one: colony 0 at 5, colony 1 at 3, the other slots empty.
+            var raised = WellbeingRecords.Raise(records, new int?[] { 5, 3, null, null });
+            Check(raised.SequenceEqual(new[] { 0, 1 }), "the first day's records: " + string.Join(",", raised));
+            // Colony 1 beats its own 3 with a figure below colony 0's record: only colony 1 is told.
+            raised = WellbeingRecords.Raise(records, new int?[] { 4, 4, null, null });
+            Check(raised.SequenceEqual(new[] { 1 }), "a colony below the other's record was not told of its own: " + string.Join(",", raised));
+            Check(records[0] == 5 && records[1] == 4, "a record fell or did not rise: " + string.Join(",", records));
+            // Equal is no new record; a colony with no beavers keeps its record.
+            raised = WellbeingRecords.Raise(records, new int?[] { 5, null, null, null });
+            Check(raised.Count == 0 && records[1] == 4, "an equal figure or an empty colony changed a record");
+            // Nothing negative is a record.
+            Check(WellbeingRecords.Raise(records, new int?[] { null, null, -2, null }).Count == 0, "a negative figure became a record");
+        });
+
+        yield return ("Colony: the wellbeing high scores survive the save, and a bad entry is skipped", () =>
+        {
+            int[] records = { 12, 0, 7, 0 };
+            string text = WellbeingRecords.Encode(records);
+            Check(text == "0:12,2:7", "encoded as " + text);
+            int[] loaded = new int[ColonySlotTable.MaxSlots];
+            WellbeingRecords.Decode(text + ",9:3,x:1,1:y,,3", loaded);
+            Check(loaded.SequenceEqual(records), "read back as " + string.Join(",", loaded));
+            WellbeingRecords.Decode(null, loaded);
+            Check(WellbeingRecords.Encode(new int[ColonySlotTable.MaxSlots]) == "", "no records encode to something");
+        });
+
         yield return ("Colony: the journal shows a living subject by its colony now, and everyone's entries to everyone", () =>
         {
             Check(JournalFilter.ShouldShow(true, 0, false, true, 0, null));
