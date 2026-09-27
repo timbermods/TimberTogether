@@ -5,10 +5,18 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc17
 
-- **Chat chimes only while the connection panel is closed** (collapsed or hidden). With it open, the chat is on screen,
-  so a message is silent and never chimes later. The rc15 panel-chime check now pins this.
+**Chat chimes only while the connection panel is closed, and rc16 played.** Kyler played rc16 at length: everything
+worked. The played list now covers the waiting room, the **Separate colonies** checkbox and splitting, hosting a save or
+the game you're in, joining from inside a game, rejoining a rehost, the road rule, Trading Posts at scale, rc15's trade
+messages and chimes, and the late game. Mixed factions and hand-overs are still unplayed. First release marked Latest
+since rc12. No change to the wire or saves; everyone needs this build (the join checks the version). Built against
+Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 513 and RuntimeChecks 459 pass.
+
+- **Chat chimes only while the connection panel is closed** (collapsed or hidden, PR #44). With it open, the chat is on
+  screen, so a message is silent and never chimes later. The rc15 panel-chime check now pins this.
+- **Status:** README warning, the site's status lists and notes, PRODUCT.md follow the new played list.
 
 ## 1.4.0-rc16
 
