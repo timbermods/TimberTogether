@@ -54,6 +54,7 @@
     <Compile Include="$(SourceRoot)/BeaverBuddies/Factions/FactionRules.cs" Link="FactionRules.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Factions/SaveColonyReader.cs" Link="SaveColonyReader.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/JournalFilter.cs" Link="JournalFilter.cs" />
+    <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/WellbeingRecords.cs" Link="WellbeingRecords.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/RandomSourceRules.cs" Link="RandomSourceRules.cs" />
   </ItemGroup>
 </Project>

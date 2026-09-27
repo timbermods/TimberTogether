@@ -5,6 +5,17 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+- **Each colony has its own wellbeing high score.** The game keeps one for the whole map and announced a new one on
+  every computer, so a player heard of the other colony's record. In a separate-colonies co-op game each colony's
+  record now rises from its own wellbeing (as its top bar shows it) as each day starts, and only its player is told,
+  through the game's own message. `ColonyWellbeingRecords` keeps every colony's record on every computer and saves
+  them; `ColonyWellbeingHighscorePatcher` drops the game's `NewWellbeingHighscoreEvent` from `EventBus.Post` in co-op.
+  Alone, the game's own high score. Display only. StabilityTests: the rule and its save; RuntimeChecks: the event,
+  its constructor, the patch target and its listeners (printed for review). **Not played; not built against the game
+  here.**
+
 ## 1.4.0-rc18
 
 **Only a player's pause pauses, and the panel says who** (PR #46). The game menu, dialogs and overlay panels no

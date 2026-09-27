@@ -73,6 +73,7 @@ namespace BeaverBuddies.Colonies
             containerDefinition.Bind<SaveConversion>().AsSingleton();
             containerDefinition.Bind<ColonyViewService>().AsSingleton();
             containerDefinition.Bind<ColonyJournal>().AsSingleton();
+            containerDefinition.Bind<ColonyWellbeingRecords>().AsSingleton();
             containerDefinition.Bind<ColonyScienceService>().AsSingleton();
             containerDefinition.Bind<ColonyRoadNetworks>().AsSingleton();
             containerDefinition.Bind<ColonyTradeLedger>().AsSingleton();
