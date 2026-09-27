@@ -1,3 +1,9 @@
+v1.4.0-rc18 (Timber Together)
+* Menus and dialogs no longer pause a co-op game. Only pressing pause does, and it pauses the game for everyone.
+* The connection panel shows who paused the game.
+* The Fewer forced pauses setting is gone.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc17 (Timber Together)
 * Chat chimes only while the connection panel is collapsed or hidden. With it open, messages are silent.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
