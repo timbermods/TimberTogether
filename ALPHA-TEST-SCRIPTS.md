@@ -885,8 +885,8 @@ apart. Game sound on, interface volume up.
 6. **Ending early.** At post 1, the host clicks **Cancel exchange**: the guest gets *Kyler asks to end your exchange at a
    Trading Post. Click here to answer.* the same way. **Agree to cancel**: both get *The exchange between … was
    cancelled. Any goods already brought to the Trading Post go back to the colony that brought them.*
-7. **Chat.** The host writes in the chat: the guest hears a chime (not the offer's), with the panel open, collapsed and hidden.
-   The host hears nothing for their own message. Three messages in a row chime at most once a second. Rehost and let the
+7. **Chat.** The host writes in the chat: the guest hears a chime (not the offer's) with the panel collapsed and hidden,
+   and nothing with it open. The host hears nothing for their own message. Three messages in a row chime at most once a second. Rehost and let the
    guest join again: the history comes back silently.
 8. **Volume.** Turn the game's interface volume down: both chimes go quieter with it.
 9. Send both `Player.log` files: no `Could not show` or `notice sound` warnings.

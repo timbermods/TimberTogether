@@ -5,6 +5,11 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+- **Chat chimes only while the connection panel is closed** (collapsed or hidden). With it open, the chat is on screen,
+  so a message is silent and never chimes later. The rc15 panel-chime check now pins this.
+
 ## 1.4.0-rc16
 
 **Plain, short text.** A writing pass over every string a player sees (PR #42): plain words, short sentences, active

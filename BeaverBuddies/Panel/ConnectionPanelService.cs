@@ -164,7 +164,7 @@ namespace BeaverBuddies.Panel
             var mode = Settings.ConnectionPanelDisplayMode;
             var net = CurrentNetwork();
             if (!ReferenceEquals(net, chatNet)) StartChatSession(net);
-            if (net != null && !chimeFailed) ListenForChat(net);
+            if (net != null && !chimeFailed) ListenForChat(net, mode == PanelDisplayMode.Expanded);
             if (mode == PanelDisplayMode.Hidden || net == null)
             {
                 view.SetVisible(false);
@@ -245,9 +245,10 @@ namespace BeaverBuddies.Panel
             catch (Exception error) { DisableChat(error); }
         }
 
-        // A message from another player chimes as it arrives, whether the panel is open, collapsed or hidden. Your own
+        // A message from another player chimes as it arrives while the panel is collapsed or hidden. While it is open
+        // the chat is on screen, so nothing chimes, and what arrives then is heard and never chimes later. Your own
         // do not, nor does the history a guest is sent as it joins, nor anything before a guest knows its own number.
-        void ListenForChat(TimberNetBase net)
+        void ListenForChat(TimberNetBase net, bool open)
         {
             try
             {
@@ -257,7 +258,7 @@ namespace BeaverBuddies.Panel
                 int me = status.IsHost ? 0 : status.YourPlayerId;
                 bool chime = me >= 0 && ChatFormat.Chimes(log.Since(heardSequence), me, log.HistoryThrough);
                 heardSequence = log.LastSequence;
-                if (chime) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);
+                if (chime && !open) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);
             }
             catch (Exception error)
             {
