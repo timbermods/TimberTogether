@@ -5,13 +5,14 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc18
 
-**Only a player's pause pauses, and the panel says who.** The game menu, dialogs and overlay panels no longer pause a
-co-op game, on the host or a guest; pressing pause (the speed buttons' pause, the space key, the period key while the
+**Only a player's pause pauses, and the panel says who** (PR #46). The game menu, dialogs and overlay panels no
+longer pause a co-op game, on the host or a guest; pressing pause (the speed buttons' pause, the space key, the period key while the
 game runs) still pauses it for everyone. The connection panel's title line shows *Paused by <name>* between
 **Multiplayer** and the role, open or collapsed (*Paused* for a new game waiting at its start). Everyone needs this
-build (the join checks the version).
+build (the join checks the version). Built against Timberborn 1.1.2.4: both configurations with 0 warnings;
+StabilityTests 514 and RuntimeChecks 459 pass. **Not played.**
 
 - **Refused in a session:** `ChangeAndLockSpeed` takes no lock on any computer (the host's froze everyone); unlock still
   lets go of a lock taken before the session. `OverlayPanelSpeedLocker` does nothing.
