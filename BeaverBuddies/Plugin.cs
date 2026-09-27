@@ -88,6 +88,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<DevModeCoopWarning>().AsSingleton();
             containerDefinition.Bind<CoopFixGuard>().AsSingleton();
             containerDefinition.Bind<TickOnceCoopNotice>().AsSingleton();
+            containerDefinition.Bind<BeaverBuddies.Events.CoopPauseNotice>().AsSingleton();
             containerDefinition.Bind<GateTickRunner>().AsSingleton();
             containerDefinition.Bind<RealGateConflict>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Latency.PendingActions>().AsSingleton();

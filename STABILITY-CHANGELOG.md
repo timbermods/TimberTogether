@@ -5,6 +5,30 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**Only the connection panel pauses.** A player pressing pause (the game's button, the space key, the period key) no
+longer pauses a co-op game, and nor do the game menu, dialogs or overlay panels, on the host or a guest. The panel's
+header has a **Pause** button between the title and the role, shown once the game has started, open or collapsed; it
+pauses the game for everyone and then reads **Resume**. Adds a wire event; everyone needs this build.
+
+- **`SessionPauseEvent`** (Global, changes nothing in the game, played at a tick start like a speed change) sets
+  `ReplayService.IsPausedByPlayer` and `PausedBy`. `TargetSpeed` is 0 while paused; the chosen speed is kept, and a
+  speed picked while paused is the speed it resumes at. Ignored at tick 0, where the game has not started and players
+  can still join.
+- **Refused in a session:** `SpeedChangePatcher` refuses any non-silent speed 0; `SpeedControlPanel.SetSpeed(0)` (the
+  pause toggle) is skipped, so a stale speed-before-pause is never asked for; `ChangeAndLockSpeed` takes no lock on any
+  computer (unlock still lets go of a lock taken before the session); `OverlayPanelSpeedLocker` does nothing. The pause
+  key still starts the game at tick 0. Refusals show a notice pointing at the panel (at most every 2 s).
+- **Game menu:** opens on this computer only. `ShowOptionsMenuEvent` and `GameOptionsBoxShowPatcher` are gone; saving
+  from the menu while the game runs already waits for the end of the tick.
+- **Tick once** while the game runs now shows the pause notice instead of recording a pause.
+- **Removed:** the *Fewer forced pauses* setting (`PauseReduction`), which the rule above replaces, and its strings in
+  every language.
+- **Panel:** *Speed* reads *Paused by <name>*. New strings `Panel.Pause`, `Panel.Resume`, their tooltips,
+  `Panel.PausedBy`, `Pause.UsePanel`, `Pause.ResumeFromPanel`.
+- **Docs:** README, CONNECTION-PANEL.md, TWO-COLONIES.md, and the site's install, troubleshooting and home pages.
+
 ## 1.4.0-rc17
 
 **Chat chimes only while the connection panel is closed, and rc16 played.** Kyler played rc16 at length: everything

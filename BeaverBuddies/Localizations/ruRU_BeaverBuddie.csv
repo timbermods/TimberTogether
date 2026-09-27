@@ -61,15 +61,6 @@ BeaverBuddies.Settings.EnableSteamConnection.Tooltip,"Позволяет игр�
 Кроме того, P2P‑соединения могут быть медленнее прямых.",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame,"Разрешить друзьям присоединяться через Steam",""
 BeaverBuddies.Settings.FriendsCanJoinSteamGame.Tooltip,"Если включено, ваши друзья смогут напрямую подключаться к вашей игре через Steam без приглашения.",""
-BeaverBuddies.Settings.PauseReduction,"Уменьшить число принудительных пауз",""
-BeaverBuddies.Settings.PauseReduction.Tooltip,"Для лучшего опыта всем игрокам стоит использовать одинаковую настройку.
-
-Выключено - Поведение по умолчанию
-Только меню - Автоматическая пауза только при открытии меню (не при разборке построек)
-Никогда не ставить на паузу - Игра никогда не будет автоматически ставиться на паузу, даже при открытии меню. Это может привести к повреждению сохранений, если вы не поставите игру на паузу перед сохранением.",""
-BeaverBuddies.Settings.PauseReduction.Off,"Выключено",""
-BeaverBuddies.Settings.PauseReduction.LowRisk,"Только меню",""
-BeaverBuddies.Settings.PauseReduction.HighRisk,"Никогда не ставить на паузу",""
 BeaverBuddies.Host.ConnectedClients,"Ожидание клиентов…
 В настоящее время подключено:",""
 BeaverBuddies.Host.DirectConnectClient,"Клиент прямого подключения",""

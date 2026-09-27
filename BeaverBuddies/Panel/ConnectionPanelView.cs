@@ -27,7 +27,7 @@ namespace BeaverBuddies.Panel
 
         readonly ILoc loc;
         readonly VisualElement topSection, header, headerDot, body, statusDot, rows, facts, chatArea;
-        readonly Label title, role, chevron, statusText, unreadBadge;
+        readonly Label title, role, chevron, statusText, unreadBadge, pauseButton;
         readonly CornerLift lift = new CornerLift();
         int shownUnread;
         float appliedWidth = -1;
@@ -41,6 +41,9 @@ namespace BeaverBuddies.Panel
 
         /// <summary>Raised when the header is clicked: the player wants to collapse or expand the panel.</summary>
         public event Action HeaderClicked;
+
+        /// <summary>Raised when the Pause (or Resume) button is clicked: pause or resume the game for everyone.</summary>
+        public event Action PauseClicked;
 
         /// <summary>Raised when the host clicks the guest frame rate floor: pick the next one.</summary>
         public event Action FpsFloorClicked;
@@ -75,7 +78,18 @@ namespace BeaverBuddies.Panel
             // Shown only while the panel is collapsed, so new messages are not missed.
             unreadBadge = Text("", 11, Fair, bold: true); unreadBadge.style.marginLeft = 8;
             unreadBadge.style.display = DisplayStyle.None;
-            header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(role); header.Add(chevron);
+            // Pause, between the title and the role: the only way a co-op game pauses, for everyone. The same button
+            // resumes it. Boxed like the collapse button, and drawn in yellow while the game is paused.
+            pauseButton = Text("", 11, ButtonInk, bold: true);
+            pauseButton.style.flexShrink = 0; pauseButton.style.marginLeft = 8;
+            pauseButton.style.marginTop = 0; pauseButton.style.marginBottom = 0; pauseButton.style.marginRight = 0;
+            pauseButton.style.paddingTop = 1; pauseButton.style.paddingBottom = 1; pauseButton.style.paddingLeft = 6; pauseButton.style.paddingRight = 6;
+            pauseButton.style.unityTextAlign = TextAnchor.MiddleCenter;
+            Border(pauseButton, 1, ButtonRule, 3);
+            pauseButton.style.display = DisplayStyle.None;
+            // Its own click only: the header's click collapses the panel.
+            pauseButton.RegisterCallback<ClickEvent>(e => { PauseClicked?.Invoke(); e.StopPropagation(); });
+            header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(pauseButton); header.Add(role); header.Add(chevron);
             header.RegisterCallback<ClickEvent>(_ => HeaderClicked?.Invoke());
             // Everything that was the panel before chat is the top section.
             topSection = new VisualElement { name = "BeaverBuddiesConnectionPanelTop" };
@@ -210,6 +224,7 @@ namespace BeaverBuddies.Panel
             role.text = expanded ? model.Role : "";
             role.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             chevron.text = expanded ? "-" : "+";
+            ShowPauseButton(model);
             body.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             if (!expanded) { Chat?.ReleaseFocus(); lift.Restore(); }
             chatArea.style.display = expanded && !chatDisabled ? DisplayStyle.Flex : DisplayStyle.None;
@@ -232,6 +247,18 @@ namespace BeaverBuddies.Panel
             if (model.GuestFpsText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelGuestFps", model.GuestFpsText));
             if (model.FpsFloorText != null) facts.Add(Choice("BeaverBuddies.Panel.LabelFpsFloor", model.FpsFloorText, () => FpsFloorClicked?.Invoke()));
             if (model.LinkText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelLink", model.LinkText));
+        }
+
+        // Shown whether the panel is open or collapsed, so the game can always be paused from here.
+        void ShowPauseButton(PanelModel model)
+        {
+            if (model.PauseButtonText == null) { pauseButton.style.display = DisplayStyle.None; return; }
+            pauseButton.text = model.PauseButtonText;
+            pauseButton.tooltip = model.PauseButtonTooltip;
+            Color ink = model.PausedByPlayer ? Fair : ButtonInk;
+            pauseButton.style.color = ink;
+            Border(pauseButton, 1, model.PausedByPlayer ? Fair : ButtonRule, 3);
+            pauseButton.style.display = DisplayStyle.Flex;
         }
 
         VisualElement PlayerRow(PanelRow row)

@@ -153,6 +153,8 @@ Change them under Options → Bindings → **Timber Together**. **Ping location*
   that port while you host can join, unverified: open it only for people you trust.
 - **The connection panel** (top left) shows each player and their colony, ping, sync and tick rate, with chat and a
   speed boost for everyone. A message from another player chimes while the panel is closed.
+- **Pause** in the connection panel pauses the game for everyone, and **Resume** carries on. It is the only way to
+  pause: the game's pause key, menus and dialogs don't pause a co-op game.
 - **Other mods** must match on every computer, at the same versions. You get a warning when they differ; a mod that
   changes the simulation will make the games drift apart.
 - **Dev mode** desyncs the game, except its instant unlock, *Finish now* and *Add 1000 Science*.

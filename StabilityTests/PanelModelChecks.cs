@@ -27,6 +27,9 @@ static class PanelModelChecks
         ["BeaverBuddies.Panel.RowTooltip"] = "Click to take your camera to {0}.", ["BeaverBuddies.Panel.RowYouTooltip"] = "Click to go back to your colony (also the Home key).",
         ["BeaverBuddies.Panel.PlayerNotOnMap"] = "{0}'s cursor is not on the map right now.",
         ["BeaverBuddies.Panel.Loading"] = "{0} (loading)",
+        ["BeaverBuddies.Panel.PausedBy"] = "Paused by {0}", ["BeaverBuddies.Panel.Pause"] = "Pause", ["BeaverBuddies.Panel.Resume"] = "Resume",
+        ["BeaverBuddies.Panel.PauseTooltip"] = "Pause the game for everyone. Only this button pauses a co-op game.",
+        ["BeaverBuddies.Panel.ResumeTooltip"] = "Resume the game for everyone, at the speed picked at the top right.",
     };
     static string T(string key, object[] args) => string.Format(CultureInfo.InvariantCulture, English[key], args);
 
@@ -220,6 +223,32 @@ static class PanelModelChecks
             Equal("1x", PanelModelBuilder.Build(HostView(P(1, "S", rtt: 5)), T).SpeedText);
             Equal("1 player", PanelModelBuilder.Build(HostView(), T).Summary);
             Equal("1 tick", PanelModelBuilder.Build(GuestView(1, P(1, "Me", you: true, rtt: 5)), T).BehindText);
+        });
+        yield return ("Only the Pause button pauses: shown once the game has started, it reads Resume while paused", () =>
+        {
+            // Before the game has started (or with no live session) there is no button.
+            var waiting = HostView(P(1, "Sarah", rtt: 5)); waiting.Speed = 0;
+            Equal(null, PanelModelBuilder.Build(waiting, T).PauseButtonText);
+
+            var running = GuestView(0, P(1, "Me", you: true, rtt: 5)); running.CanPause = true;
+            var model = PanelModelBuilder.Build(running, T);
+            Equal("Pause", model.PauseButtonText); Equal(false, model.PausedByPlayer); Equal("1x", model.SpeedText);
+            Check(model.PauseButtonTooltip.Contains("everyone"), "the tooltip says it pauses for everyone");
+
+            // Paused by another player: the button resumes, and the speed line says who paused.
+            var paused = GuestView(0, P(1, "Me", you: true, rtt: 5));
+            paused.CanPause = true; paused.PausedByPlayer = true; paused.PausedByName = "Kyler"; paused.Speed = 0;
+            model = PanelModelBuilder.Build(paused, T);
+            Equal("Resume", model.PauseButtonText); Equal(true, model.PausedByPlayer); Equal("Paused by Kyler", model.SpeedText);
+            // A guest still catching up to the tick the host paused on runs for a moment: the line still says paused.
+            paused.Speed = 3; paused.PausedByName = null;
+            Equal("Paused", PanelModelBuilder.Build(paused, T).SpeedText);
+
+            // A session that has stopped or gone out of step offers no button.
+            paused.Stopped = true;
+            Equal(null, PanelModelBuilder.Build(paused, T).PauseButtonText);
+            paused.Stopped = false; paused.Desynced = true;
+            Equal(null, PanelModelBuilder.Build(paused, T).PauseButtonText);
         });
     }
 }

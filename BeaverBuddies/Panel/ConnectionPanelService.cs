@@ -69,6 +69,7 @@ namespace BeaverBuddies.Panel
                 view = new ConnectionPanelView(loc, initializer);
                 view.HeaderClicked += OnHeaderClicked;
                 view.FpsFloorClicked += OnFpsFloorClicked;
+                view.PauseClicked += OnPauseClicked;
                 view.RowClicked += OnRowClicked;
                 if (view.Chat != null)
                 {
@@ -131,6 +132,18 @@ namespace BeaverBuddies.Panel
         void OnFpsFloorClicked()
         {
             Settings.SetGuestFpsFloor(FrameRatePacing.NextFloor(Settings.GuestFpsFloorValue));
+            nextRefresh = 0;
+        }
+
+        // Pausing is the session's: everyone plays the request, at the start of a tick, like a speed change
+        // (SessionPauseEvent). It is the only way a co-op game pauses; the same button resumes it.
+        void OnPauseClicked()
+        {
+            var net = CurrentNetwork();
+            if (net == null || net.IsStopped) return;
+            var replay = SingletonManager.GetSingleton<ReplayService>();
+            if (replay == null) return;
+            BeaverBuddies.Events.SessionPauseRequest.Send(!replay.IsPausedByPlayer);
             nextRefresh = 0;
         }
 
@@ -385,6 +398,8 @@ namespace BeaverBuddies.Panel
                 GuestFpsFloor = Settings.GuestFpsFloorValue,
                 FrameRatePacingPercent = replay?.FrameRatePacingPercent ?? 100,
                 JoiningOpen = io is ServerEventIO server && server.IsAcceptingClients,
+                CanPause = replay != null && !replay.IsDesynced && BeaverBuddies.Events.SessionPauseRequest.CanAsk(replay),
+                PausedByPlayer = replay?.IsPausedByPlayer == true,
             };
 
             // Names come from player activity (the same names other players chose for pings and cursors).
@@ -392,6 +407,8 @@ namespace BeaverBuddies.Panel
             var activity = SingletonManager.GetSingleton<PlayerActivityService>();
             if (activity != null) foreach (var player in activity.RemotePlayers) names[player.PlayerId] = player.Name;
             string me = Settings.PingDisplayName;
+            if (result.PausedByPlayer && replay.PausedBy >= 0)
+                result.PausedByName = replay.PausedBy == myPlayerId ? me : NameOf(replay.PausedBy, names);
 
             if (status.IsHost)
             {

@@ -81,6 +81,11 @@ namespace BeaverBuddies.Panel
         public int FrameRatePacingPercent = 100;
         /// <summary>Host only: players can still join (the game waits at its start and nothing has changed it).</summary>
         public bool JoiningOpen;
+        /// <summary>The Pause button is offered: the game has started and the session is live.</summary>
+        public bool CanPause;
+        /// <summary>A player paused the game with the Pause button; <see cref="PausedByName"/> says who.</summary>
+        public bool PausedByPlayer;
+        public string PausedByName;
         public List<PanelPlayer> Players = new List<PanelPlayer>();
     }
 
@@ -116,6 +121,10 @@ namespace BeaverBuddies.Panel
         public string FpsFloorText;
         /// <summary>Only for the host, and only while players can still join: what closes joining. Null otherwise.</summary>
         public string JoiningText;
+        /// <summary>The header's Pause or Resume button, and its tooltip. Null before the game has started, or with no session.</summary>
+        public string PauseButtonText, PauseButtonTooltip;
+        /// <summary>A player paused the game: the button reads Resume and stands out.</summary>
+        public bool PausedByPlayer;
     }
 
     public static class PanelModelBuilder
@@ -187,9 +196,19 @@ namespace BeaverBuddies.Panel
             model.TickRateText = input.TickRate == null
                 ? Measuring(t)
                 : t("BeaverBuddies.Panel.TickRateValue", new object[] { input.TickRate.Value.ToString("0.0", CultureInfo.InvariantCulture) });
-            model.SpeedText = input.Speed <= 0
+            model.SpeedText = input.PausedByPlayer && !string.IsNullOrEmpty(input.PausedByName)
+                ? t("BeaverBuddies.Panel.PausedBy", new object[] { input.PausedByName })
+                : input.Speed <= 0 || input.PausedByPlayer
                 ? t("BeaverBuddies.Panel.Paused", Array.Empty<object>())
                 : t("BeaverBuddies.Panel.SpeedValue", new object[] { input.Speed.ToString("0.#", CultureInfo.InvariantCulture) });
+
+            // Only the Pause button pauses a co-op game, for everyone; the same button resumes it.
+            if (input.CanPause && !input.Stopped && !input.Desynced)
+            {
+                model.PausedByPlayer = input.PausedByPlayer;
+                model.PauseButtonText = t(input.PausedByPlayer ? "BeaverBuddies.Panel.Resume" : "BeaverBuddies.Panel.Pause", Array.Empty<object>());
+                model.PauseButtonTooltip = t(input.PausedByPlayer ? "BeaverBuddies.Panel.ResumeTooltip" : "BeaverBuddies.Panel.PauseTooltip", Array.Empty<object>());
+            }
             if (!input.IsHost)
                 model.BehindText = t(input.TicksBehind == 1 ? "BeaverBuddies.Panel.TicksOne" : "BeaverBuddies.Panel.TicksMany",
                     new object[] { input.TicksBehind });
