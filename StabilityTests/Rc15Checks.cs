@@ -69,15 +69,15 @@ static class Rc15Checks
             Check(client.Contains("if (isHistory) Chat.AddHistory(numbered);"), "a guest no longer marks the history it is sent as history");
         });
 
-        yield return ("rc15: a chat message from another player chimes, whether the connection panel is open, collapsed or hidden", () =>
+        yield return ("a chat message from another player chimes only while the connection panel is collapsed or hidden", () =>
         {
             string panel = Source("BeaverBuddies", "Panel", "ConnectionPanelService.cs");
             string tick = Body(panel, "void Tick()");
-            int listen = tick.IndexOf("if (net != null && !chimeFailed) ListenForChat(net);", StringComparison.Ordinal);
+            int listen = tick.IndexOf("if (net != null && !chimeFailed) ListenForChat(net, mode == PanelDisplayMode.Expanded);", StringComparison.Ordinal);
             Check(listen >= 0 && listen < tick.IndexOf("if (mode == PanelDisplayMode.Hidden", StringComparison.Ordinal), "the chat's chime is gone, or is silent while the panel is hidden");
-            string chat = Body(panel, "void ListenForChat(TimberNetBase net)");
+            string chat = Body(panel, "void ListenForChat(TimberNetBase net, bool open)");
             Check(chat.Contains("bool chime = me >= 0 && ChatFormat.Chimes(log.Since(heardSequence), me, log.HistoryThrough);")
-                && chat.Contains("if (chime) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);"), "the chat no longer plays its chime");
+                && chat.Contains("if (chime && !open) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);"), "the chat no longer plays its chime, or chimes while the panel is open");
             string sounds = Source("BeaverBuddies", "Util", "NoticeSounds.cs");
             Check(sounds.Contains("\"Environment.Buildings.Speaker.Chime_01\"") && sounds.Contains("\"Environment.Buildings.Speaker.Chime_02\""),
                 "the chimes are no longer the Speaker's");

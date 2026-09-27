@@ -153,7 +153,7 @@ Change them under Options → Bindings → **Timber Together**. **Ping location*
 - **Direct IP** needs port **25565** forwarded to the host, or a virtual LAN such as Hamachi. Anyone who can reach
   that port while you host can join, unverified: open it only for people you trust.
 - **The connection panel** (top left) shows each player and their colony, ping, sync and tick rate, with chat and a
-  speed boost for everyone. A message from another player plays a chime.
+  speed boost for everyone. A message from another player chimes while the panel is closed.
 - **Other mods** must match on every computer, at the same versions. You get a warning when they differ; a mod that
   changes the simulation will make the games drift apart.
 - **Dev mode** desyncs the game, except its instant unlock, *Finish now* and *Add 1000 Science*.
