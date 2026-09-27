@@ -7,26 +7,20 @@ entry above the current one.
 
 ## Unreleased
 
-**Only the connection panel pauses.** A player pressing pause (the game's button, the space key, the period key) no
-longer pauses a co-op game, and nor do the game menu, dialogs or overlay panels, on the host or a guest. The panel's
-header has a **Pause** button between the title and the role, shown once the game has started, open or collapsed; it
-pauses the game for everyone and then reads **Resume**. Adds a wire event; everyone needs this build.
+**Only a player's pause pauses, and the panel says who.** The game menu, dialogs and overlay panels no longer pause a
+co-op game, on the host or a guest; pressing pause (the speed buttons' pause, the space key, the period key while the
+game runs) still pauses it for everyone. The connection panel's title line shows *Paused by <name>* between
+**Multiplayer** and the role, open or collapsed (*Paused* for a new game waiting at its start). Everyone needs this
+build (the join checks the version).
 
-- **`SessionPauseEvent`** (Global, changes nothing in the game, played at a tick start like a speed change) sets
-  `ReplayService.IsPausedByPlayer` and `PausedBy`. `TargetSpeed` is 0 while paused; the chosen speed is kept, and a
-  speed picked while paused is the speed it resumes at. Ignored at tick 0, where the game has not started and players
-  can still join.
-- **Refused in a session:** `SpeedChangePatcher` refuses any non-silent speed 0; `SpeedControlPanel.SetSpeed(0)` (the
-  pause toggle) is skipped, so a stale speed-before-pause is never asked for; `ChangeAndLockSpeed` takes no lock on any
-  computer (unlock still lets go of a lock taken before the session); `OverlayPanelSpeedLocker` does nothing. The pause
-  key still starts the game at tick 0. Refusals show a notice pointing at the panel (at most every 2 s).
+- **Refused in a session:** `ChangeAndLockSpeed` takes no lock on any computer (the host's froze everyone); unlock still
+  lets go of a lock taken before the session. `OverlayPanelSpeedLocker` does nothing.
 - **Game menu:** opens on this computer only. `ShowOptionsMenuEvent` and `GameOptionsBoxShowPatcher` are gone; saving
   from the menu while the game runs already waits for the end of the tick.
-- **Tick once** while the game runs now shows the pause notice instead of recording a pause.
+- **Who paused:** `SpeedSetEvent` records its player in `ReplayService.PausedBy` when it pauses; the panel names them
+  (`Panel.PausedBy`).
 - **Removed:** the *Fewer forced pauses* setting (`PauseReduction`), which the rule above replaces, and its strings in
   every language.
-- **Panel:** *Speed* reads *Paused by <name>*. New strings `Panel.Pause`, `Panel.Resume`, their tooltips,
-  `Panel.PausedBy`, `Pause.UsePanel`, `Pause.ResumeFromPanel`.
 - **Docs:** README, CONNECTION-PANEL.md, TWO-COLONIES.md, and the site's install, troubleshooting and home pages.
 
 ## 1.4.0-rc17

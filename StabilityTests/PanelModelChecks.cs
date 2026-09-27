@@ -27,9 +27,7 @@ static class PanelModelChecks
         ["BeaverBuddies.Panel.RowTooltip"] = "Click to take your camera to {0}.", ["BeaverBuddies.Panel.RowYouTooltip"] = "Click to go back to your colony (also the Home key).",
         ["BeaverBuddies.Panel.PlayerNotOnMap"] = "{0}'s cursor is not on the map right now.",
         ["BeaverBuddies.Panel.Loading"] = "{0} (loading)",
-        ["BeaverBuddies.Panel.PausedBy"] = "Paused by {0}", ["BeaverBuddies.Panel.Pause"] = "Pause", ["BeaverBuddies.Panel.Resume"] = "Resume",
-        ["BeaverBuddies.Panel.PauseTooltip"] = "Pause the game for everyone. Only this button pauses a co-op game.",
-        ["BeaverBuddies.Panel.ResumeTooltip"] = "Resume the game for everyone, at the speed picked at the top right.",
+        ["BeaverBuddies.Panel.PausedBy"] = "Paused by {0}",
     };
     static string T(string key, object[] args) => string.Format(CultureInfo.InvariantCulture, English[key], args);
 
@@ -224,31 +222,25 @@ static class PanelModelChecks
             Equal("1 player", PanelModelBuilder.Build(HostView(), T).Summary);
             Equal("1 tick", PanelModelBuilder.Build(GuestView(1, P(1, "Me", you: true, rtt: 5)), T).BehindText);
         });
-        yield return ("Only the Pause button pauses: shown once the game has started, it reads Resume while paused", () =>
+        yield return ("The header says the game is paused, and who paused it", () =>
         {
-            // Before the game has started (or with no live session) there is no button.
-            var waiting = HostView(P(1, "Sarah", rtt: 5)); waiting.Speed = 0;
-            Equal(null, PanelModelBuilder.Build(waiting, T).PauseButtonText);
+            // Running, or only waiting a moment for a tick: nothing in the header.
+            Equal(null, PanelModelBuilder.Build(HostView(P(1, "Sarah", rtt: 5)), T).PausedText);
+            var waiting = GuestView(0, P(1, "Me", you: true, rtt: 5)); waiting.Speed = 0;
+            Equal(null, PanelModelBuilder.Build(waiting, T).PausedText);
 
-            var running = GuestView(0, P(1, "Me", you: true, rtt: 5)); running.CanPause = true;
-            var model = PanelModelBuilder.Build(running, T);
-            Equal("Pause", model.PauseButtonText); Equal(false, model.PausedByPlayer); Equal("1x", model.SpeedText);
-            Check(model.PauseButtonTooltip.Contains("everyone"), "the tooltip says it pauses for everyone");
+            // A pause someone pressed names them, on every computer.
+            var paused = GuestView(0, P(1, "Me", you: true, rtt: 5)); paused.Paused = true; paused.PausedByName = "Kyler";
+            Equal("Paused by Kyler", PanelModelBuilder.Build(paused, T).PausedText);
+            // A new game waiting at its start: paused, by nobody.
+            paused.PausedByName = null;
+            Equal("Paused", PanelModelBuilder.Build(paused, T).PausedText);
 
-            // Paused by another player: the button resumes, and the speed line says who paused.
-            var paused = GuestView(0, P(1, "Me", you: true, rtt: 5));
-            paused.CanPause = true; paused.PausedByPlayer = true; paused.PausedByName = "Kyler"; paused.Speed = 0;
-            model = PanelModelBuilder.Build(paused, T);
-            Equal("Resume", model.PauseButtonText); Equal(true, model.PausedByPlayer); Equal("Paused by Kyler", model.SpeedText);
-            // A guest still catching up to the tick the host paused on runs for a moment: the line still says paused.
-            paused.Speed = 3; paused.PausedByName = null;
-            Equal("Paused", PanelModelBuilder.Build(paused, T).SpeedText);
-
-            // A session that has stopped or gone out of step offers no button.
+            // A session that has stopped or gone out of step says that instead.
             paused.Stopped = true;
-            Equal(null, PanelModelBuilder.Build(paused, T).PauseButtonText);
+            Equal(null, PanelModelBuilder.Build(paused, T).PausedText);
             paused.Stopped = false; paused.Desynced = true;
-            Equal(null, PanelModelBuilder.Build(paused, T).PauseButtonText);
+            Equal(null, PanelModelBuilder.Build(paused, T).PausedText);
         });
     }
 }

@@ -1,21 +1,21 @@
 # Connection panel and chat
 
 A small panel in a corner of your screen during a multiplayer game. It shows who is connected and their colony, each
-connection's ping, whether you're in sync, and how fast the game runs. Its **Pause** button is the only way to pause a
-co-op game. Below that are a speed boost and a chat box.
+connection's ping, whether you're in sync, how fast the game runs, and who paused it. Below that are a speed boost and a
+chat box.
 
 ## What it shows
 
 **Collapsed**, one line: the sync dot, the number of players and one ping.
 
 ```
-o  3 players  42 ms                       [Pause]   [+]
+o  3 players  42 ms                                 [+]
 ```
 
 **Expanded:**
 
 ```
-Multiplayer                       [Pause]   Host   [-]
+Multiplayer                                 Host   [-]
 o  In sync
 -------------------------------------------------------
 Player 1 (colony 1)                                -
@@ -34,10 +34,10 @@ player runs (a steward shows the colony they're running). In a shared game the r
 | Line | Meaning |
 | --- | --- |
 | **Status** | *In sync* is normal. *Catching up* (guests): a few ticks behind the host. *Waiting for host* (guests): waiting for the host's next tick. *Connection unstable*: someone hasn't responded for five seconds. *Out of sync*: a desync; see the [troubleshooting page](https://timbermods.github.io/TimberTogether/troubleshooting.html#desync). *Disconnected*: the session has ended. The dot is green in sync, yellow while catching up or waiting, red otherwise. |
-| **Players** | Everyone in the game, host first. On the host, a guest still loading shows *(loading)*: pick a speed once nobody does. **Click a row** to go to that player (their cursor, or what they've selected); your own row takes you back to your colony. |
+| **Players** | Everyone in the game, host first. On the host, a guest still loading shows *(loading)*: unpause once nobody does. **Click a row** to go to that player (their cursor, or what they've selected); your own row takes you back to your colony. |
 | **Ping** | Round trip to that player, in milliseconds. Normal text up to 80 ms, yellow up to 160 ms, red above or **No response**. A guest sees the other guests' pings to the host. |
 | **Tick rate** | Simulation ticks per second: about 1.7 at normal speed, about 11.7 at the fastest button, 0 when paused. |
-| **Speed** | The speed the game runs at, including any speed boost. *Paused by* names who pressed **Pause**. |
+| **Speed** | The speed the game runs at, including any speed boost. |
 | **Behind host** | Guests: how many ticks behind the host you are. Should be 0 or 1. |
 | **Guest behind**, **Guest fps** | Host: the slowest guest's lag in ticks, and the lowest guest frame rate. |
 | **Easing off** | Host: the share of the chosen speed the game runs at while a guest catches up, such as *75% of speed*. It returns to full speed by itself. |
@@ -46,9 +46,9 @@ player runs (a steward shows the colony they're running). In a shared game the r
 
 ## Pausing
 
-**Pause** pauses the game for everyone; the same button then reads **Resume**. It appears once the game has started,
-open or collapsed. Nothing else pauses a co-op game: not the game's pause button or key, the menu, or a dialog. The
-game's speed buttons still pick the speed; while paused, the game resumes at the speed picked.
+Pressing pause (the speed buttons' pause, or its key) pauses the game for everyone. While it is paused, the title line
+shows *Paused by* and the player's name, open or collapsed; a new game waiting to start shows *Paused*. Anyone can pick
+a speed to carry on. Menus, dialogs and panels don't pause a co-op game.
 
 ## Showing and hiding
 

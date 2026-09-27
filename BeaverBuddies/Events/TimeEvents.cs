@@ -26,11 +26,9 @@ namespace BeaverBuddies.Events
         {
             SpeedManager sm = context.GetSingleton<SpeedManager>();
             ReplayService replayService = context.GetSingleton<ReplayService>();
-            // Paused from the connection panel, a pick is the speed the game resumes at.
-            float target = replayService.IsPausedByPlayer ? 0 : SpeedBoost.Apply(speed, replayService.Boost);
+            float target = SpeedBoost.Apply(speed, replayService.Boost);
             Plugin.Log($"Event: Changing speed from {sm.CurrentSpeed} to {target}"
-                + (replayService.IsPausedByPlayer ? $" (speed {speed} once resumed)"
-                    : target != speed ? $" (speed {speed} with a boost of {SpeedBoost.Format(replayService.Boost)})" : ""));
+                + (target != speed ? $" (speed {speed} with a boost of {SpeedBoost.Format(replayService.Boost)})" : ""));
             if (sm.CurrentSpeed != target) SpeedChangePatcher.SetSpeedSilentlyNow(sm, target);
 
             if (speed != replayService.ChosenSpeed || target != replayService.TargetSpeed)
@@ -38,6 +36,8 @@ namespace BeaverBuddies.Events
                 Plugin.Log($"Event: Changing target speed from {replayService.TargetSpeed} to {target}");
                 replayService.SetChosenSpeed(speed);
             }
+            // The connection panel names who paused (0 the host, else a guest's number), for every player.
+            replayService.SetPausedBy(speed == 0 ? player : -1);
         }
     }
 
@@ -118,38 +118,21 @@ namespace BeaverBuddies.Events
             var replayService = ReplayEvent.GetReplayServiceIfReady();
             if (replayService == null) return true;
 
-            // In a co-op game only the connection panel's Pause button pauses (SessionPauseEvent). The game's pause
-            // button and key, the tick once key, a menu or a dialog asking for speed 0: refused, and the player is told
-            // where to pause. Silent changes (above) are the mod's own: waiting for the host, a slow guest, a pause.
-            if (speed == 0)
-            {
-                CoopPauseNotice.ShowPauseFromPanel();
-                return false;
-            }
-
             // A request for the speed the players already picked changes nothing. With a boost the game runs at that
             // speed plus the boost (and while catching up, above it), so the check against the current speed above
             // does not catch it; without this the game would run at the bare speed for a frame and record a no-op.
-            // Paused from the panel, the game's speed buttons and keys show paused, and the game's return from a pause
-            // asks for the picked speed: say where the game resumes.
-            if (speed == replayService.ChosenSpeed)
-            {
-                if (replayService.IsPausedByPlayer) CoopPauseNotice.ShowResumeFromPanel();
-                return false;
-            }
+            if (speed == replayService.ChosenSpeed) return false;
 
             replayService.RecordEvent(new SpeedSetEvent()
             {
                 speed = speed
             });
-            // Picked while paused: it is the speed the game resumes at, and the game stays paused until then.
-            if (replayService.IsPausedByPlayer) CoopPauseNotice.ShowResumeFromPanel();
 
             if (EventIO.ShouldPlayPatchedEvents)
             {
                 // If this will actually change the speed, make sure
                 // we shouldn't pause instead.
-                if (EventIO.ShouldPauseTicking || replayService.IsPausedByPlayer) speed = 0;
+                if (EventIO.ShouldPauseTicking) speed = 0;
                 return true;
             }
             return false;
@@ -172,8 +155,8 @@ namespace BeaverBuddies.Events
     {
         static bool Prefix(SpeedManager __instance, float value)
         {
-            // In a co-op game nobody freezes for menus, dialogs or panels: only the connection panel's Pause button
-            // pauses (SessionPauseEvent). The host freezing here stopped the game for everyone.
+            // In a co-op game nobody freezes for menus, dialogs or panels: only a player pressing pause (the speed
+            // buttons' pause, or its key) pauses, for everyone. The host freezing here stopped the game for everyone.
             if (!EventIO.IsNull)
             {
                 return false;
@@ -218,7 +201,7 @@ namespace BeaverBuddies.Events
     }
 
     // OverlayPanelSpeedLocker pauses the game under some panels, through ChangeAndLockSpeed. In a co-op game it
-    // pauses nobody (only the connection panel's Pause button does). Acting on a panel's stale view is safe: the host
+    // pauses nobody (only a player pressing pause does). Acting on a panel's stale view is safe: the host
     // refuses what no longer applies, and a guest's actions always arrive a moment later anyway.
     [HarmonyPatch(typeof(OverlayPanelSpeedLocker), nameof(OverlayPanelSpeedLocker.OnPanelShown))]
     public class OverlayPanelSpeedLockerShowPatcher
@@ -231,7 +214,7 @@ namespace BeaverBuddies.Events
 
     [ManualMethodOverwrite]
     /*
-        2026-09-22 (Timberborn 1.1.2.4, SpeedControlPanel.SetSpeed; in a co-op game a pause is refused in its place)
+        2026-09-22 (Timberborn 1.1.2.4, SpeedControlPanel.SetSpeed)
         if (timeSpeed == 0f)
         {
             float currentSpeed = _speedManager.CurrentSpeed;
@@ -241,24 +224,17 @@ namespace BeaverBuddies.Events
         }
         else _speedManager.ChangeSpeed(timeSpeed);
      */
-    // The game's pause button and pause key toggle: pause, or return to the speed before the pause. In a co-op game
-    // neither pauses (only the connection panel's Pause button does, SessionPauseEvent), so the player is told where
-    // to pause, or, while it is paused, where to resume. The game's return from a pause is skipped too: it would ask
-    // for whatever speed the game last ran at before its own pause, a stale pick (or the picked speed plus the boost,
-    // which would add the boost again).
+    // The game returns from a pause to the speed it was running at when paused. In a session that is the picked
+    // speed plus the boost (or a catch-up speed), and returning to it would pick that as the new speed and add the
+    // boost again: pause at 3 + 0.5, unpause, and the game would run at 4. The speed to return to is the picked one.
     [HarmonyPatch(typeof(SpeedControlPanel), "SetSpeed")]
     static class SpeedControlPanelSetSpeedPatcher
     {
-        static bool Prefix(float timeSpeed)
+        static void Postfix(SpeedControlPanel __instance, float timeSpeed)
         {
-            if (timeSpeed != 0) return true;
+            if (timeSpeed != 0) return;
             ReplayService replayService = ReplayEvent.GetReplayServiceIfReady();
-            if (replayService == null) return true;
-            // Before the game has started, the key starts it as in single player (the speed it asks for is recorded).
-            if (replayService.ChosenSpeed == 0 && !replayService.IsPausedByPlayer) return true;
-            if (replayService.IsPausedByPlayer) CoopPauseNotice.ShowResumeFromPanel();
-            else CoopPauseNotice.ShowPauseFromPanel();
-            return false;
+            if (replayService != null && replayService.ChosenSpeed > 0) __instance._speedBeforePause = replayService.ChosenSpeed;
         }
     }
 

@@ -144,20 +144,17 @@ namespace BeaverBuddies
         /// <summary>The speed the game is asked to run at: the chosen speed plus the session's boost (0 paused).</summary>
         public float TargetSpeed  { get; private set; } = 0;
 
-        /// <summary>
-        /// The speed the players picked at the top right (1, 3 or 7 for the game's speed 1, 2 and 3). 0 until the game
-        /// first runs, and again once a desync has stopped it. While paused it is the speed the game resumes at.
-        /// </summary>
+        /// <summary>The speed the players picked at the top right (1, 3 or 7 for the game's speed 1, 2 and 3; 0 paused).</summary>
         public float ChosenSpeed { get; private set; } = 0;
 
         /// <summary>
-        /// A player paused the game with the connection panel's Pause button (SessionPauseEvent), the only way a co-op
-        /// game pauses. The game stands still until someone resumes it there; the chosen speed is kept.
+        /// Who paused the game (0 the host, else a guest's connection number), for the connection panel; -1 while it
+        /// runs, or when nobody did (a new game waits at its start).
         /// </summary>
-        public bool IsPausedByPlayer { get; private set; }
-
-        /// <summary>Who paused it (0 the host, else a guest's connection number); -1 while it is not paused.</summary>
         public int PausedBy { get; private set; } = -1;
+
+        /// <summary>A pause was played (a SpeedSetEvent of 0) by <paramref name="player"/>; -1 for any other speed.</summary>
+        public void SetPausedBy(int player) => PausedBy = player;
 
         /// <summary>The session's speed boost (SpeedBoost): added to the chosen speed, the same for everyone.</summary>
         public float Boost { get; private set; } = 0;
@@ -818,23 +815,12 @@ namespace BeaverBuddies
             UpdateSpeed();
         }
 
-        /// <summary>The players picked a speed (a SpeedSetEvent): the game runs at it plus the boost, unless paused.</summary>
+        /// <summary>The players picked a speed (a SpeedSetEvent): the game runs at it plus the boost.</summary>
         public void SetChosenSpeed(float speed)
         {
             ChosenSpeed = speed;
-            SetTargetSpeed(PlayedSpeed());
+            SetTargetSpeed(SpeedBoost.Apply(speed, Boost));
         }
-
-        /// <summary>A player paused or resumed the game from the connection panel (a SessionPauseEvent).</summary>
-        public void SetPausedByPlayer(bool paused, int player)
-        {
-            IsPausedByPlayer = paused;
-            PausedBy = paused ? player : -1;
-            SetTargetSpeed(PlayedSpeed());
-        }
-
-        // What the game runs at: nothing while paused from the panel, else the chosen speed plus the boost.
-        private float PlayedSpeed() => IsPausedByPlayer ? 0 : SpeedBoost.Apply(ChosenSpeed, Boost);
 
         /// <summary>
         /// The session's boost changed (a SpeedBoostEvent, or the start message as a player joins): the chosen speed
@@ -844,7 +830,7 @@ namespace BeaverBuddies
         {
             Boost = SpeedBoost.Clamp(boost);
             sessionBoost = Boost;
-            float target = PlayedSpeed();
+            float target = SpeedBoost.Apply(ChosenSpeed, Boost);
             if (target != TargetSpeed) SetTargetSpeed(target);
         }
 
