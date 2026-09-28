@@ -33,6 +33,7 @@ namespace BeaverBuddies.Panel
         // never the one it drops.
         const float MinChatIntervalSeconds = .4f;
         // The sound button's pictures (files of this mod).
+        const string EyeOnIconPath = "UI/Images/BeaverBuddies/eye-on", EyeOffIconPath = "UI/Images/BeaverBuddies/eye-off";
         const string SoundOnIconPath = "UI/Images/BeaverBuddies/sound-on", SoundOffIconPath = "UI/Images/BeaverBuddies/sound-off";
 
         readonly UILayout layout;
@@ -86,6 +87,9 @@ namespace BeaverBuddies.Panel
                 view.RowClicked += OnRowClicked;
                 view.PanelPressed += OnPanelPressed;
                 view.SoundClicked += OnSoundClicked;
+                view.VisibilityClicked += OnVisibilityClicked;
+                try { view.SetEyeIcons(assets.LoadSafe<Sprite>(EyeOnIconPath), assets.LoadSafe<Sprite>(EyeOffIconPath)); }
+                catch (Exception error) { Plugin.LogWarning("The panel's eye button has no picture and shows a word: " + error.Message); }
                 try { view.SetSoundIcons(assets.LoadSafe<Sprite>(SoundOnIconPath), assets.LoadSafe<Sprite>(SoundOffIconPath)); }
                 catch (Exception error) { Plugin.LogWarning("The panel's sound button has no picture and shows a word: " + error.Message); }
                 if (view.Chat != null)
@@ -172,6 +176,16 @@ namespace BeaverBuddies.Panel
             nextRefresh = 0;
         }
 
+        // Another player's eye button: this computer draws their construction, or doesn't (ConstructionVisibility).
+        void OnVisibilityClicked(PanelRow row)
+        {
+            if (row.IsYou) return;
+            int slot = BeaverBuddies.Colonies.ColonySession.SlotOfPlayer(row.Id);
+            if (slot < 0) return;
+            BeaverBuddies.Colonies.ConstructionVisibility.SetHidden(slot, !BeaverBuddies.Colonies.ConstructionVisibility.IsHidden(slot));
+            nextRefresh = 0;
+        }
+
         void OnHeaderClicked()
         {
             var mode = Settings.ConnectionPanelDisplayMode;
@@ -233,7 +247,13 @@ namespace BeaverBuddies.Panel
             // Line up with the game's own panel above this one (measured, so it follows the UI scale and any change).
             view.SetWidth(view.MeasureMatchedWidth());
             var model = PanelModelBuilder.Build(Collect(net, replay, now), Translate);
-            foreach (var row in model.Rows) row.Muted = !row.IsYou && RemoteSounds.IsMuted(row.Id);
+            foreach (var row in model.Rows)
+            {
+                row.Muted = !row.IsYou && RemoteSounds.IsMuted(row.Id);
+                int slot = row.IsYou ? -1 : BeaverBuddies.Colonies.ColonySession.SlotOfPlayer(row.Id);
+                row.HasColony = slot >= 0 && BeaverBuddies.Colonies.ColonyModeService.IsSeparateColonies;
+                row.Hidden = row.HasColony && BeaverBuddies.Colonies.ConstructionVisibility.IsHidden(slot);
+            }
             view.Show(model, mode == PanelDisplayMode.Expanded);
             view.SetVisible(true);
             if (mode == PanelDisplayMode.Expanded) { RefreshChatColors(); ShowBoost(replay); }
@@ -247,6 +267,7 @@ namespace BeaverBuddies.Panel
             chatNet = net; countedSequence = 0; heardSequence = 0; unread = 0; lastChatSend = -100; myPlayerIdKnown = false;
             // Player numbers belong to a session: a new one starts with everyone heard.
             RemoteSounds.ClearMuted();
+            BeaverBuddies.Colonies.ConstructionVisibility.ShowAll();
             if (view.Chat == null || chatFailed) return;
             try { view.Chat.ReleaseFocus(); view.Chat.Clear(); view.SetUnread(0); }
             catch (Exception error) { DisableChat(error); }

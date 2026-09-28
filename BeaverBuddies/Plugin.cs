@@ -83,6 +83,7 @@ namespace BeaverBuddies
             containerDefinition.Bind<BeaverBuddies.Ping.PingService>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Activity.PlayerActivityService>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Panel.ConnectionPanelService>().AsSingleton();
+            containerDefinition.Bind<BeaverBuddies.Colonies.ConstructionVisibility>().AsSingleton();
             containerDefinition.Bind<BeaverBuddies.Activity.PlayerCursorSettingsUI>().AsSingleton();
             containerDefinition.Bind<ModMismatchWarningService>().AsSingleton();
             containerDefinition.Bind<DevModeCoopWarning>().AsSingleton();

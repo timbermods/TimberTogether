@@ -30,7 +30,7 @@ namespace BeaverBuddies.Panel
         readonly Label title, role, chevron, statusText, unreadBadge, pausedTag;
         readonly CornerLift lift = new CornerLift();
         // The sound button's two pictures (a file of this mod each); without them it writes a word instead.
-        Sprite soundOn, soundOff;
+        Sprite soundOn, soundOff, eyeOn, eyeOff;
         int shownUnread;
         float appliedWidth = -1;
         float? loggedWidth;
@@ -55,6 +55,9 @@ namespace BeaverBuddies.Panel
 
         /// <summary>Raised when the sound button on another player's row is clicked: hear their actions, or not.</summary>
         public event Action<PanelRow> SoundClicked;
+
+        /// <summary>Raised when the eye button on another player's row is clicked: see their construction, or not.</summary>
+        public event Action<PanelRow> VisibilityClicked;
 
         public ConnectionPanelView(ILoc loc, VisualElementInitializer initializer)
         {
@@ -134,6 +137,9 @@ namespace BeaverBuddies.Panel
             {
                 var target = e.target as VisualElement;
                 if (target == null || target == header || header.Contains(target)) return;
+                // The sound and eye buttons change how the game looks or sounds, not the chat: the cursor stays where it was.
+                for (VisualElement up = target; up != null && up != Root; up = up.parent)
+                    if (up.name == "BeaverBuddiesSoundButton" || up.name == "BeaverBuddiesEyeButton") return;
                 PanelPressed?.Invoke(target);
             }, TrickleDown.TrickleDown);
         }
@@ -143,6 +149,13 @@ namespace BeaverBuddies.Panel
         {
             soundOn = on;
             soundOff = off;
+        }
+
+        /// <summary>The pictures for the eye button: another player's construction shown, and hidden.</summary>
+        public void SetEyeIcons(Sprite on, Sprite off)
+        {
+            eyeOn = on;
+            eyeOff = off;
         }
 
         /// <summary>Removes chat for the rest of the scene, after it failed. The rest of the panel carries on.</summary>
@@ -283,6 +296,8 @@ namespace BeaverBuddies.Panel
             // Another player's row ends with a button that mutes the sounds of their actions; your own keeps its
             // place empty, so every ping lines up.
             line.Add(row.IsYou ? SoundSpacer() : SoundButton(row));
+            // Beside it, the eye: their construction drawn here, or not. Only a player with a colony has one.
+            line.Add(row.IsYou || !row.HasColony ? SoundSpacer() : EyeButton(row));
             // A click takes the camera to that player (your own row: back to your colony).
             line.tooltip = string.Format(CultureInfo.InvariantCulture, loc.T(row.IsYou ? "BeaverBuddies.Panel.RowYouTooltip" : "BeaverBuddies.Panel.RowTooltip"), row.Name);
             line.RegisterCallback<ClickEvent>(e => { RowClicked?.Invoke(row); e.StopPropagation(); });
@@ -316,7 +331,37 @@ namespace BeaverBuddies.Panel
             }
             button.tooltip = string.Format(CultureInfo.InvariantCulture,
                 loc.T(row.Muted ? "BeaverBuddies.Panel.SoundOffTooltip" : "BeaverBuddies.Panel.SoundOnTooltip"), row.Name);
+            button.name = "BeaverBuddiesSoundButton";
             button.RegisterCallback<ClickEvent>(e => { SoundClicked?.Invoke(row); e.StopPropagation(); });
+            return button;
+        }
+
+        // The same small box, with an eye (struck through while their construction is hidden).
+        VisualElement EyeButton(PanelRow row)
+        {
+            var button = new VisualElement { name = "BeaverBuddiesEyeButton" };
+            var s = button.style;
+            s.width = SoundButtonSize; s.height = SoundButtonSize; s.flexShrink = 0; s.marginLeft = 6;
+            s.alignItems = Align.Center; s.justifyContent = Justify.Center;
+            Border(button, 1, row.Hidden ? Fair : ButtonRule, 3);
+            Sprite sprite = row.Hidden ? eyeOff : eyeOn;
+            if (sprite != null)
+            {
+                var picture = new Image { sprite = sprite, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+                picture.style.width = 12; picture.style.height = 12;
+                picture.tintColor = row.Hidden ? Fair : ButtonInk;
+                button.Add(picture);
+            }
+            else
+            {
+                var word = Text(loc.T(row.Hidden ? "BeaverBuddies.Panel.EyeOffShort" : "BeaverBuddies.Panel.EyeOnShort"), 9, row.Hidden ? Fair : ButtonInk, bold: true);
+                word.style.unityTextAlign = TextAnchor.MiddleCenter; word.pickingMode = PickingMode.Ignore;
+                word.style.paddingLeft = 0; word.style.paddingRight = 0; word.style.marginLeft = 0; word.style.marginRight = 0;
+                button.Add(word);
+            }
+            button.tooltip = string.Format(CultureInfo.InvariantCulture,
+                loc.T(row.Hidden ? "BeaverBuddies.Panel.EyeOffTooltip" : "BeaverBuddies.Panel.EyeOnTooltip"), row.Name);
+            button.RegisterCallback<ClickEvent>(e => { VisibilityClicked?.Invoke(row); e.StopPropagation(); });
             return button;
         }
 

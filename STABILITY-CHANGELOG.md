@@ -5,6 +5,13 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+- **An eye button on the connection panel** beside each other player's speaker hides or shows that player's
+  construction on your computer (Trading Posts stay in view). Shown by default; display only, nothing simulated changes.
+- **Clicking the speaker or the eye no longer makes the chat box's placeholder flicker:** a press on either no longer
+  sends the cursor to the chat box. **Not played** (built without the game's assemblies).
+
 ## 1.4.0-rc24
 
 **The connection panel stays in front, Enter opens the chat, and the colonies window and Trading Post say more** (PRs
