@@ -1114,6 +1114,25 @@ static class ColonyChecks
             Check(JournalFilter.ShouldShow(false, -1, false, false, null, null));
         });
 
+        yield return ("Colony: the save keeps the colony of every body still lying there, not only the journal's", () =>
+        {
+            Guid inJournal = Guid.NewGuid(), body = Guid.NewGuid(), living = Guid.NewGuid(), gone = Guid.NewGuid(), cutOff = Guid.NewGuid();
+            var recorded = new Dictionary<Guid, int> { [inJournal] = 1, [body] = 0, [living] = 0, [gone] = 1, [cutOff] = 1 };
+            var live = new Dictionary<Guid, int> { [living] = 1 };
+            var existing = new HashSet<Guid> { body, living, cutOff };
+            var saved = JournalFilter.ToSave(new[] { inJournal, inJournal, living }, recorded,
+                s => live.TryGetValue(s, out int slot) ? slot : (int?)null, existing.Contains).ToDictionary(p => p.Key, p => p.Value);
+            // The journal's subjects, by their colony now, else as recorded.
+            Check(saved.TryGetValue(inJournal, out int a) && a == 1, "a journal entry's colony is not saved");
+            Check(saved.TryGetValue(living, out int b) && b == 1, "a journal subject is not saved by its colony now");
+            // A body out of the journal (its alert still shows) and a beaver cut off from its district keep their colony.
+            Check(saved.TryGetValue(body, out int c) && c == 0, "a body out of the journal loses its colony in the save: its alert is everyone's after a join");
+            Check(saved.TryGetValue(cutOff, out int d) && d == 1, "a cut-off beaver loses its colony in the save");
+            // Something gone and out of the journal is not kept.
+            Check(!saved.ContainsKey(gone), "a gone subject is saved");
+            Check(saved.Count == 4, "saved " + saved.Count);
+        });
+
         yield return ("Colony: an alert goes by the colony a thing is in, else the colony it was last in, else is everyone's", () =>
         {
             // A living beaver or a building: its colony now.
