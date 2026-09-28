@@ -40,7 +40,7 @@ namespace BeaverBuddies.Util
         /// <summary>Text as the game's entity panels write it (13 px, light grey), wrapping.</summary>
         public static Label Text(string text = "", int size = 13, bool bold = false)
         {
-            var label = new Label(text);
+            var label = new Label(SentencePerLine(text));
             label.AddToClassList("entity-panel__text");
             var s = label.style;
             s.fontSize = size;
@@ -180,8 +180,13 @@ namespace BeaverBuddies.Util
         /// <summary>Sets a label's text only when it changed (a text change lays the panel out again).</summary>
         public static void SetText(TextElement element, string text)
         {
+            text = SentencePerLine(text);
             if (element.text != text) element.text = text;
         }
+
+        /// <summary>Starts each sentence of a longer text on its own line, so a stray last word never sits alone on the line above.</summary>
+        public static string SentencePerLine(string text) =>
+            string.IsNullOrEmpty(text) ? text : System.Text.RegularExpressions.Regex.Replace(text, @"(?<=[.!?]) +(?=[\p{Lu}])", "\n");
 
         /// <summary>A name to put into rich text: it can add no markup of its own.</summary>
         public static string Plain(string value) => (value ?? "").Replace("<", "").Replace(">", "");

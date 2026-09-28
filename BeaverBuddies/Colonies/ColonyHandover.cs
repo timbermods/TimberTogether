@@ -134,6 +134,19 @@ namespace BeaverBuddies.Colonies
             return population;
         }
 
+        /// <summary>Bots living in a colony's districts.</summary>
+        public int BotsOf(int slot)
+        {
+            int bots = 0;
+            foreach (DistrictCenter districtCenter in _districtCenterRegistry.AllDistrictCenters)
+            {
+                if (DistrictOwner.OwnerOfDistrict(districtCenter) != slot) continue;
+                DistrictPopulation districtPopulation = districtCenter.GetComponent<DistrictPopulation>();
+                if (districtPopulation != null) bots += districtPopulation.NumberOfBots;
+            }
+            return bots;
+        }
+
         /// <summary>Days of hosted play the colony's player has missed in a row.</summary>
         public int? DaysAway(int slot) => slot >= 0 && slot < awayDays.Length ? awayDays[slot] : (int?)null;
 

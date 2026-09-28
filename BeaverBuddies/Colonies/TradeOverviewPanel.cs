@@ -482,7 +482,7 @@ namespace BeaverBuddies.Colonies
                 ShowFaction(card, slot);
                 NativeElements.SetText(card.Detail, DescribeColony(slot, lifecycle, present));
                 RefreshSupplies(card, slot, lifecycle, supplies);
-                RefreshGoods(card, slot, slot != me && slot != seat && lifecycle != null && lifecycle.OwnsDistrict(slot));
+                RefreshGoods(card, slot, lifecycle != null && lifecycle.OwnsDistrict(slot));
                 RefreshNote(card, slot, seat, me, myId, stewards, slotService);
                 if (slot != me) RefreshWishes(card, slot, wishlist);
             }
@@ -588,7 +588,12 @@ namespace BeaverBuddies.Colonies
                 else if (limit == 0) status = string.Format(T("BeaverBuddies.Colony.Overview.AwayNoLimit"), away.Value);
                 else status = string.Format(T("BeaverBuddies.Colony.Overview.Away"), away.Value);
             }
-            return string.Format(T("BeaverBuddies.Colony.Overview.Colony"), population, status);
+            // "Beavers: 208", bots on the next line only when there are some, and a status line only when not playing.
+            int bots = lifecycle.BotsOf(slot);
+            string text = string.Format(T("BeaverBuddies.Colony.Overview.Beavers"), population - bots);
+            if (bots > 0) text += "\n" + string.Format(T("BeaverBuddies.Colony.Overview.Bots"), bots);
+            if (population == 0 || !present.Contains(slot)) text += "\n" + status;
+            return text;
         }
 
         /// <summary>Food and water as the top bar draws them: the icon, the stock, and the days it lasts at yesterday's use.</summary>
@@ -742,7 +747,11 @@ namespace BeaverBuddies.Colonies
             chip.style.paddingLeft = 4; chip.style.paddingRight = 4; chip.style.paddingTop = 2; chip.style.paddingBottom = 2;
             chip.style.marginRight = 4;
             if (onClick == null) chip.pickingMode = PickingMode.Position;
+            chip.style.width = 32; chip.style.minWidth = 32;
+            chip.style.alignItems = Align.Center; chip.style.justifyContent = Justify.Center;
             Image icon = NativeElements.Icon(20);
+            icon.style.marginLeft = 0; icon.style.marginRight = 0; icon.style.marginTop = 0; icon.style.marginBottom = 0;
+            icon.style.alignSelf = Align.Center;
             icon.sprite = _items.IconOf(item);
             chip.Add(icon);
             _tooltipRegistrar.Register(chip, onClick == null ? _items.Name(item) : string.Format(T("BeaverBuddies.Colony.Overview.WishTooltip"), _items.Name(item)));

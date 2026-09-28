@@ -82,6 +82,7 @@ namespace BeaverBuddies.Colonies
             Root.Add(board);
 
             title = NativeElements.Text("", 13, bold: true);
+            title.style.color = Color.white;
             board.Add(title);
             inStockOnly = NativeElements.CheckBox(T("BeaverBuddies.Colony.Trade.InStockOnly"), small: true);
             inStockOnly.value = true;

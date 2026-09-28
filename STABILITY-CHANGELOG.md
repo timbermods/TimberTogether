@@ -7,6 +7,10 @@ entry above the current one.
 
 ## Unreleased
 
+- **Trading window touch-ups:** the goods picker's heading is white; the wish icons are centred; colony rows read
+  *Beavers: N* (and *Bots: N* on the next line, only when there are bots); your own colony shows its goods like the
+  others; the hint splits onto two lines; titles read *Trading Posts and Colonies* and *Trading Posts (N)*; and trade
+  notices and Trading Post texts start each sentence on its own line. **Not played.**
 - **An eye button on the connection panel** beside each other player's speaker hides or shows that player's
   construction on your computer (Trading Posts stay in view). Shown by default; display only, nothing simulated changes.
 - **Clicking the speaker or the eye no longer makes the chat box's placeholder flicker:** a press on either no longer
