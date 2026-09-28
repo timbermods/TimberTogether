@@ -156,7 +156,7 @@ namespace BeaverBuddies.Panel
 
         // A press anywhere on the open panel (a row, the facts, the messages) puts the cursor in the chat box, so the
         // player can type without clicking the box itself. A press on the game gives the keyboard back, as before.
-        void OnPanelPressed(VisualElement target)
+        void OnPanelPressed(UnityEngine.UIElements.VisualElement target)
         {
             if (view.Chat == null || chatFailed || CurrentNetwork() == null) return;
             if (Settings.ConnectionPanelDisplayMode != PanelDisplayMode.Expanded) return;
