@@ -1,3 +1,11 @@
+v1.4.0-rc24 (Timber Together)
+* The connection panel is always drawn in front of the game's alerts.
+* The chat shows how many messages you haven't seen yet. Click the badge to scroll to them.
+* Enter opens the chat box.
+* The colonies window shows each exchange as the whole deal, each side's round, and what the round waits on.
+* A Trading Post lists every good sent and received, and its Automate section stays on screen.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc23 (Timber Together)
 * Fixed a crash when confirming a deletion while something you picked was already removed.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
