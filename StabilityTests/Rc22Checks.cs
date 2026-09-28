@@ -134,6 +134,16 @@ static class Rc22Checks
                 "the goods add up other colonies' districts");
         });
 
+        yield return ("The colonies window says each exchange in three lines: the whole deal, each side's round, what it waits on", () =>
+        {
+            string describe = Body(Source("BeaverBuddies", "Colonies", "TradeOverviewPanel.cs"), "private void Describe(");
+            Check(describe.Contains("mine.Total * rounds") && describe.Contains("theirs.Total * rounds"), "the first line counts one round, not the whole deal");
+            Check(describe.Contains("deal + \"\\n\" + progress"), "the deal and the sides are not on lines of their own");
+            Check(describe.Contains("string.Format(T(dealKey), get, give)"), "an offer made to you names your goods first");
+            Check(Csv("BeaverBuddies.Colony.Overview.Progress") == "Your side: {0}. Their side: {1}.", "the sides' line changed");
+            Check(Csv("BeaverBuddies.Colony.Overview.Deal") == "{0} for {1}", "the deal's line changed");
+        });
+
         yield return ("rc22: the trade messages keep clear of the connection panel, and the panel is always in front of the game's alerts", () =>
         {
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
