@@ -427,7 +427,9 @@ namespace BeaverBuddies.Colonies
             int seat = ColonySession.LocalSeat;
             string myId = slotService?.LocalPlayerId;
             List<int> slots = Enumerable.Range(0, ColonySlotTable.MaxSlots)
-                .Where(slot => (lifecycle?.OwnsDistrict(slot) ?? false) || (table?.Entries.Any(e => e.Slot == slot) ?? false)).ToList();
+                .Where(slot => (lifecycle?.OwnsDistrict(slot) ?? false) || (table?.Entries.Any(e => e.Slot == slot) ?? false))
+                // This player's own colony first, then the rest in order.
+                .OrderBy(slot => slot == seat ? 0 : 1).ThenBy(slot => slot).ToList();
             bool host = EventIO.Get() is ServerEventIO;
             List<int> present = lifecycle?.PresentForDisplay(host) ?? ColonyLifecycle.PresentSlots();
             // The host's handover buttons depend on who may be handed over to whom.
@@ -476,7 +478,7 @@ namespace BeaverBuddies.Colonies
             foreach (int slot in slots)
             {
                 if (!colonyCards.TryGetValue(slot, out ColonyCard card)) continue;
-                string who = slot == seat ? " " + T("BeaverBuddies.Colony.Overview.You")
+                string who = slot == seat ? ""
                     : slot == me ? " " + T("BeaverBuddies.Colony.Overview.YouRunning") : "";
                 NativeElements.SetText(card.Title, ColoredName(slot) + who);
                 ShowFaction(card, slot);
