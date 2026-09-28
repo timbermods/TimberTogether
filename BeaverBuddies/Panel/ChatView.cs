@@ -104,6 +104,8 @@ namespace BeaverBuddies.Panel
             input = new TextField { name = "BeaverBuddiesChatInput", maxLength = ChatMessage.MaxTextLength };
             input.textEdition.placeholder = loc.T("BeaverBuddies.Chat.Placeholder");
             input.textEdition.hidePlaceholderOnFocus = true;
+            // The typing cursor is white, so it shows on the dark box.
+            input.textSelection.cursorColor = Color.white;
             input.style.flexShrink = 0;
             input.style.marginTop = 0; input.style.marginBottom = 0; input.style.marginLeft = 0; input.style.marginRight = 0;
             var box = input.Q<VisualElement>(TextField.textInputUssName);
@@ -308,6 +310,7 @@ namespace BeaverBuddies.Panel
                 b.paddingTop = 0; b.paddingBottom = 0; b.paddingLeft = 4; b.paddingRight = 4;
                 ConnectionPanelView.Border(box, 1, ConnectionPanelView.Rule, 4);
             }
+            boostBox.textSelection.cursorColor = Color.white;
             boostBox.SetValueWithoutNotify(SpeedBoost.Format(0));
             boostBox.RegisterCallback<KeyDownEvent>(OnBoostKeyDown, TrickleDown.TrickleDown);
             // Leaving the box (a click elsewhere, Tab) applies what was typed, as the game's number boxes do.
