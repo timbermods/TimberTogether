@@ -67,7 +67,7 @@ on one map, links them only through Trading Post barter, and still offers ordina
   - **Mixed factions:** the *Mixed factions* checkbox under *Separate colonies* on the New Game page, unticked by
     default. Each player picks Folktails or Iron Teeth for their own colony on the Co-op Game page.
   - **Away players keep their colony:** by default a colony is never handed over while its player is away. A friend
-    can look after it (Ctrl+T), and automatic hand-over after a set number of days away is opt-in, for groups where
+    can look after it (Y), and automatic hand-over after a set number of days away is opt-in, for groups where
     someone may not come back.
 - Inherited from the Stability Fork: Steam invites, the connection panel and chat, pings, player cursors, desync
   fixes.
@@ -88,7 +88,7 @@ on one map, links them only through Trading Post barter, and still offers ordina
 5. **Every player has the same game version and the exact same download. Update together:** a different build
    cannot join (*Multiplayer build mismatch*).
 
-**Status:** beta, current version **1.4.0-rc21** (a release candidate). The site names the newest published release,
+**Status:** beta, current version **1.4.0-rc22** (a release candidate). The site names the newest published release,
 and `docs/assets/release.js` fills the version badges from GitHub. 1.4.0 has not been released yet. It is built for
 Timberborn **1.1.2.4**, and only the Steam version on Windows has been tested. It passes a large automated test
 suite, and most features have been played; mixed factions and hand-overs have not. Players should play

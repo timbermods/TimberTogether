@@ -8,6 +8,8 @@
   'use strict';
 
   var MAX_AMOUNT = 100, MAX_ROUNDS = 99;
+  // An amount box takes a whole exchange's worth, a full round every round (TradeOfferForm.MaxTyped).
+  var MAX_TYPED = MAX_AMOUNT * MAX_ROUNDS;
   var SCIENCE = 'science', BEAVERS = 'beaver';
 
   var GOODS = [
@@ -57,11 +59,31 @@
     if (!d.give || !d.get) return { verdict: 'noItem' };
     if (d.give === d.get) return { verdict: 'same' };
     var give = d.giveAmount, get = d.getAmount;
-    if (isNaN(give) || isNaN(get) || give < 0 || get < 0 || give > MAX_AMOUNT || get > MAX_AMOUNT) return { verdict: 'badAmount' };
+    if (isNaN(give) || isNaN(get) || give < 0 || get < 0 || give > MAX_TYPED || get > MAX_TYPED) return { verdict: 'badAmount' };
     if (!d.repeat && (isNaN(d.rounds) || d.rounds < 1 || d.rounds > MAX_ROUNDS)) return { verdict: 'badRounds' };
     if (give === 0 && get === 0) return { verdict: 'nothing' };
+    var rounds = d.repeat ? 1 : d.rounds, wasSplit = false;
+    // More than a round carries: split the whole into rounds, as TradeOfferForm.Judge does.
+    if (give > MAX_AMOUNT || get > MAX_AMOUNT) {
+      var s = split(give, get, rounds, d.repeat);
+      if (!s) return { verdict: 'badAmount' };
+      give = s.give; get = s.get; rounds = s.rounds; wasSplit = true;
+    }
     var v = give > 0 && get > 0 ? 'exchange' : give > 0 ? 'gift' : 'request';
-    return { verdict: v, give: give, get: get, rounds: d.repeat ? 1 : d.rounds };
+    return { verdict: v, give: give, get: get, rounds: rounds, split: wasSplit };
+  }
+  // TradeOfferForm.Split: the whole (each amount times the rounds) over the fewest rounds that carry it, each side the
+  // nearest whole number to the same ratio and never 0 for a side that gives. A repeating offer keeps one round a time.
+  function split(give, get, rounds, repeat) {
+    if (repeat) rounds = 1;
+    var wholeGive = Math.max(0, give) * Math.max(1, rounds), wholeGet = Math.max(0, get) * Math.max(1, rounds);
+    var needed = Math.max(1, Math.ceil(Math.max(wholeGive, wholeGet) / MAX_AMOUNT));
+    if (!repeat && needed > MAX_ROUNDS) return null;
+    return { give: share(wholeGive, needed), get: share(wholeGet, needed), rounds: repeat ? 1 : needed };
+  }
+  function share(whole, rounds) {
+    if (whole <= 0) return 0;
+    return Math.max(1, Math.min(MAX_AMOUNT, Math.round(whole / rounds)));
   }
   function isOffer(v) { return v === 'exchange' || v === 'gift' || v === 'request'; }
   function step(item, shift) { return item === BEAVERS ? (shift ? 10 : 1) : (shift ? 1 : 10); }
@@ -193,7 +215,7 @@
     var me = S.me, them = 1 - me, x = S.exchange;
     var h = '';
     // header: "Trading with Colony 2" [All posts]
-    h += '<div class="tp-head"><span class="tp-title">Trading with ' + colored(them) + '</span><button class="tp-btn tp-btn--small" type="button" disabled title="Opens the trading posts and colonies window (Ctrl+T) in the game.">All posts</button></div>';
+    h += '<div class="tp-head"><span class="tp-title">Trading with ' + colored(them) + '</span><button class="tp-btn tp-btn--small" type="button" disabled title="Opens the Trading Posts and colonies window (Y) in the game.">All posts</button></div>';
 
     if (!x) {
       h += renderCompose(me, them);
@@ -203,8 +225,10 @@
       h += renderActive(me, them, x);
     }
     // ledger
-    h += '<div class="tp-rule"></div><span class="tp-caption" title="Every round that crossed at this Trading Post, newest first.">Ledger</span>';
     var L = S.ledger[me];
+    h += '<div class="tp-rule"></div><div class="tp-head"><span class="tp-caption" title="Every round that crossed at this Trading Post, newest first.">Ledger</span>'
+      + (L.length ? '<button class="tp-btn tp-btn--small" type="button" data-clear-ledger title="Empty this ledger. The totals traded below stay, and the other colony keeps its own ledger.">Clear</button>' : '')
+      + '</div>';
     if (!L.length) h += '<div class="tp-muted">No round has crossed here yet.</div>';
     for (var i = 0; i < Math.min(L.length, 4); i++) {
       var r = L[i];
@@ -227,7 +251,7 @@
   // Every render replaces the panel's markup, so keyboard focus is carried across by the control's data attributes.
   // When that control is gone (Accept after it was pressed, say), focus goes to the panel itself, not the page top.
   var FOCUS_ATTRS = ['data-pick', 'data-choose', 'data-step', 'data-dir', 'data-rounds', 'data-amount', 'data-rounds-box',
-    'data-repeat', 'data-propose', 'data-withdraw', 'data-accept', 'data-decline', 'data-ask', 'data-agree', 'data-keep'];
+    'data-repeat', 'data-propose', 'data-withdraw', 'data-accept', 'data-decline', 'data-ask', 'data-agree', 'data-keep', 'data-clear-ledger'];
   function focusKey() {
     var el = document.activeElement;
     if (!el || !root.contains(el)) return null;
@@ -262,13 +286,16 @@
       case 'exchange': text = esc(COLONY[them]) + ' gets ' + amountOf(j.give, d.give) + ', and you get ' + amountOf(j.get, d.get) + '.'; break;
       case 'gift': text = 'A gift: ' + esc(COLONY[them]) + ' gets ' + amountOf(j.give, d.give) + ', and you ask nothing back.'; break;
       case 'request': text = 'A request: you ask ' + esc(COLONY[them]) + ' for ' + amountOf(j.get, d.get) + ', and give nothing.'; break;
-      case 'badAmount': text = 'Each side gives 0 to ' + MAX_AMOUNT + ' per round. For more, add rounds.'; break;
+      case 'badAmount': text = 'Each side gives a whole number, up to ' + MAX_TYPED.toLocaleString('en-US') + ' in all over at most ' + MAX_ROUNDS + ' rounds.'; break;
       case 'badRounds': text = 'Rounds go from 1 to ' + MAX_ROUNDS + '.'; break;
       case 'nothing': text = 'Set an amount above 0 on at least one side.'; break;
       case 'same': text = 'Choose two different goods.'; break;
       default: text = 'Choose what to trade.';
     }
     if (ok) text += ' ' + roundsText(j.rounds, d.repeat, j.give, d.give, j.get, d.get);
+    if (ok && j.split) text += d.repeat
+      ? ' Each round is ' + (j.give > 0 ? amountOf(j.give, d.give) : 'nothing') + ' for ' + (j.get > 0 ? amountOf(j.get, d.get) : 'nothing') + ': a Trading Post carries up to ' + MAX_AMOUNT + ' of each a round.'
+      : ' Split into rounds: a Trading Post carries up to ' + MAX_AMOUNT + ' of each a round.';
     h += '<div class="tp-notice ' + (ok ? 'tp-muted' : 'tp-warn') + '" style="font-size:12px;margin-left:1px">' + text + '</div>';
     h += '<button class="tp-btn tp-btn--full" type="button" data-propose' + (ok ? '' : ' disabled') + ' title="Each round, your Trading Post workers bring what you give to your half, and ' + esc(COLONY[them]) + '\'s bring theirs to their half. When both are in, the round crosses.">Make offer</button>';
     return h;
@@ -279,7 +306,7 @@
     var h = '<div class="tp-card"><div class="tp-head"><span class="tp-caption">' + caption + '</span><span class="tp-muted">' + stock + '</span></div>'
       + '<div class="tp-row"><button class="tp-btn tp-select" type="button" data-pick="' + which + '" aria-expanded="' + open + '" title="Choose what to trade">' + icon(item, 60) + '<span>' + esc(good(item).name) + '</span><i></i></button>'
       + '<button class="tp-btn tp-sq" type="button" data-step="' + which + '" data-dir="-1" aria-label="' + step(item, false) + ' fewer ' + esc(good(item).plural) + ' you ' + which + '" title="-' + step(item, false) + ' (Shift+click: -' + step(item, true) + ')">&minus;</button>'
-      + '<input class="tp-input tp-input--amount" type="text" inputmode="numeric" maxlength="3" value="' + amount + '" data-amount="' + which + '" aria-label="' + esc(good(item).plural) + ' you ' + which + ' each round, 0 to ' + MAX_AMOUNT + '" title="How many each round: 0 to ' + MAX_AMOUNT + '.">'
+      + '<input class="tp-input tp-input--amount" type="text" inputmode="numeric" maxlength="4" value="' + amount + '" data-amount="' + which + '" aria-label="' + esc(good(item).plural) + ' you ' + which + ' each round, 0 to ' + MAX_AMOUNT + '" title="How many each round: 0 to ' + MAX_AMOUNT + '. Type more and the offer is split into rounds.">'
       + '<button class="tp-btn tp-sq" type="button" data-step="' + which + '" data-dir="1" aria-label="' + step(item, false) + ' more ' + esc(good(item).plural) + ' you ' + which + '" title="+' + step(item, false) + ' (Shift+click: +' + step(item, true) + ')">+</button></div>';
     if (open) {
       var owner = which === 'give' ? S.me : 1 - S.me;
@@ -379,6 +406,8 @@
     if ((b = q('[data-accept]'))) b.addEventListener('click', function () { accept(S.me, false); });
     if ((b = q('[data-decline]'))) b.addEventListener('click', function () { decline(S.me); });
     if ((b = q('[data-ask]'))) b.addEventListener('click', function () { askCancel(S.me); });
+    // Clear empties this colony's ledger only; the totals traded stay (LedgerClearedEvent).
+    if ((b = q('[data-clear-ledger]'))) b.addEventListener('click', function () { S.ledger[S.me] = []; say(colored(S.me) + ' cleared the ledger.'); render(); });
     if ((b = q('[data-agree]'))) b.addEventListener('click', function () { agreeCancel(S.me, false); });
     if ((b = q('[data-keep]'))) b.addEventListener('click', function () { keep(S.me); });
     Array.prototype.forEach.call(qa('[data-pick]'), function (el) {
@@ -396,7 +425,9 @@
     Array.prototype.forEach.call(qa('[data-step]'), function (el) {
       el.addEventListener('click', function (e) {
         var w = el.getAttribute('data-step'), up = el.getAttribute('data-dir') === '1', item = S.draft[w];
-        S.draft[w + 'Amount'] = stepped(S.draft[w + 'Amount'], step(item, e.shiftKey), up, 0, MAX_AMOUNT); render();
+        var now = S.draft[w + 'Amount'];
+        // An amount typed above a round steps on within the whole, as TradeOfferForm.Stepped does.
+        S.draft[w + 'Amount'] = stepped(now, step(item, e.shiftKey), up, 0, now > MAX_AMOUNT ? MAX_TYPED : MAX_AMOUNT); render();
       });
     });
     Array.prototype.forEach.call(qa('[data-amount]'), function (el) {

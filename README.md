@@ -98,12 +98,12 @@ Steam ID, whoever hosts.
 - **Folktails and Iron Teeth together** (Mixed factions): each colony plays its own faction. Between factions, Trading
   Posts carry the goods both use, and science, but not beavers.
 
-**Away for a while?** Your colony is kept for you. To keep it running, press **Ctrl+T** → **Let … look after it** on
+**Away for a while?** Your colony is kept for you. To keep it running, press **Y** → **Let … look after it** on
 your colony: your friend presses **Run this colony** to play it, and **Back to your colony** when done. **Take it
 back** any time.
 
 **A colony changes hands** only when it has no beavers or bots left for a whole day, when the host hands it over from
-the Ctrl+T window, or after its player misses the host's limit, **Hand over a colony after its player is away
+the colonies window (**Y**), or after its player misses the host's limit, **Hand over a colony after its player is away
 (days)** in Timber Together's settings (0, never, by default). Its player can then found a new colony with
 **Ctrl+K**.
 
@@ -112,19 +112,20 @@ the Ctrl+T window, or after its player misses the host's limit, **Hand over a co
 Build a **Trading Post** (District Management; 10 logs, no science) between your road and another colony's, one
 half's door on each road. It's the only place two colonies' roads meet, and it starts trading once both reach it.
 
-1. **Offer.** Select your half. Choose what **You give** and **You get** (0 to 100 of each a round) and how many
-   **Rounds**, or tick **Repeat until cancelled**. A side at 0 is a gift. **Keep at least** holds back a reserve so
+1. **Offer.** Select your half. Choose what **You give** and **You get** (up to 100 of each a round; type more and
+   it's split into rounds) and how many **Rounds**, or tick **Repeat until cancelled**. A side at 0 is a gift. **Keep at least** holds back a reserve so
    a long deal never empties your stock. Then **Make offer**.
 2. **They accept** on their half, or decline; a declined offer stays in your form, ready to adjust. The offer reaches
-   them as a message that stays until they click it, with a chime; clicking it takes them to the post.
+   them as a message that says the whole trade and stays until they answer or close it, with a chime. Clicking it
+   takes them to the post.
 3. **The beavers carry it out.** Each colony's workers bring its side to its own half, and when both are in, the
    round crosses at once. Nothing is given before what it was traded for is in.
 
 Science (with separate science) and adult beavers can be traded the same way. **Cancel exchange** needs the other player to agree; any goods
 already brought then go back to the colony that brought them. One exchange runs per post at a time: build more posts for more.
 
-**Ctrl+T** (or the **Trade** button, top right) lists your posts and every colony, with its food and water in days,
-what it is **looking for**, and who looks after it. Set what your colony is looking for there.
+**Y** (or the **Trade** button, top right) lists your posts and every colony, with its food and water in days, its
+goods in stock, what it is **looking for**, and who looks after it. Set what your colony is looking for there.
 
 ## One shared colony
 
@@ -139,7 +140,7 @@ so far, and each earns its own science from then on.
 |---|---|
 | **Ctrl+K** | Found your colony |
 | **Ctrl+L** | Show every colony's roads in its color |
-| **Ctrl+T** | Trading Posts and colonies |
+| **Y** | Trading Posts and colonies |
 | **Home** | Back to your colony (click a name in the connection panel to go to that player) |
 | **Ctrl+Shift+J** | Write a diagnostics report |
 
@@ -152,7 +153,8 @@ Change them under Options → Bindings → **Timber Together**. **Ping location*
 - **Direct IP** needs port **25565** forwarded to the host, or a virtual LAN such as Hamachi. Anyone who can reach
   that port while you host can join, unverified: open it only for people you trust.
 - **The connection panel** (top left) shows each player and their colony, ping, sync and tick rate, with chat and a
-  speed boost for everyone. A message from another player chimes while the panel is closed.
+  speed boost for everyone. A message from another player chimes while the panel is closed. The speaker on a
+  player's row mutes the sounds of their actions.
 - **Pausing** pauses the game for everyone, and the connection panel says who paused it. Menus and dialogs don't
   pause a co-op game.
 - **Other mods** must match on every computer, at the same versions. You get a warning when they differ; a mod that
