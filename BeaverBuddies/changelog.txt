@@ -1,3 +1,12 @@
+v1.4.0-rc25 (Timber Together)
+* An eye button beside each player's speaker hides or shows their buildings on your screen.
+* The speaker also mutes that player's chat sound, and chat now sounds while the panel is open.
+* Shorter trade messages; each sentence starts on its own line.
+* The colonies window lists your colony first, with beavers and bots on separate lines and your goods shown.
+* The chat box no longer flickers when you click the speaker; its typing cursor is white.
+* Alerts should no longer draw over the connection panel.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc24 (Timber Together)
 * The connection panel is always drawn in front of the game's alerts.
 * The chat shows how many messages you haven't seen yet. Click the badge to scroll to them.

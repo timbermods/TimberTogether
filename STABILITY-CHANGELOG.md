@@ -5,7 +5,10 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc25
+
+**An eye button, chat sound while open, shorter trade messages, and the panel in front of the alerts** (built without
+the game's assemblies; StabilityTests only). **Not played** (this release's changes).
 
 - **The chat chime also plays while the panel is open,** and a player's speaker button now mutes their chat chime as
   well as the sounds of their actions.
