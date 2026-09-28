@@ -139,6 +139,8 @@ namespace BeaverBuddies.Panel
         void FocusChat()
         {
             if (view.Chat == null || chatFailed || CurrentNetwork() == null) return;
+            // Enter (the key by default) also sends and leaves the chat: that press is not a new one to open it.
+            if (view.Chat.IsFocused || view.Chat.KeyJustHandled) return;
             // Asking for the chat shows it, whatever state the panel was in.
             if (Settings.ConnectionPanelDisplayMode != PanelDisplayMode.Expanded)
                 Settings.SetConnectionPanelDisplayMode(PanelDisplayMode.Expanded);

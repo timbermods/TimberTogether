@@ -141,11 +141,12 @@ so far, and each earns its own science from then on.
 | **Ctrl+K** | Found your colony |
 | **Ctrl+L** | Show every colony's roads in its color |
 | **Y** | Trading Posts and colonies |
+| **Enter** | Type in the chat |
 | **Home** | Back to your colony (click a name in the connection panel to go to that player) |
 | **Ctrl+Shift+J** | Write a diagnostics report |
 
-Change them under Options → Bindings → **Timber Together**. **Ping location**, **Toggle connection panel** and
-**Chat: start typing** have no key until you set one there.
+Change them under Options → Bindings → **Timber Together**. **Ping location** and **Toggle connection panel** have
+no key until you set one there.
 
 ## Co-op basics
 

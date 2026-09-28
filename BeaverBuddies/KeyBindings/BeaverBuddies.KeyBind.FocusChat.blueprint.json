@@ -6,5 +6,10 @@
     "Order": 2,
     "AllowOtherModifiers": false,
     "DevModeOnly": false
+  },
+  "PrimaryInputBindingSpec": {
+    "Path": "/Keyboard/enter",
+    "InputModifiers": "None",
+    "Unchangeable": false
   }
 }
