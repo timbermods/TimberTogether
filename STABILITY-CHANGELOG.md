@@ -5,6 +5,28 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## 1.4.0-rc24
+
+**The connection panel stays in front, Enter opens the chat, and the colonies window and Trading Post say more** (PRs
+#61, #62, #63). Kyler played rc23 for 12+ hours in one separate-colonies game with no desync: every feature works in a
+game except mixed factions, which is still unplayed (README warning, site status and PRODUCT.md follow). Built against
+Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 531 and RuntimeChecks 461 pass. **Not played**
+(this release's changes).
+
+- **The connection panel is always in front of the game's alerts** while it is on screen, open or collapsed, not only
+  while typing or after a press. Moving it to another corner restores the old corner's order first (PR #61).
+- **Unseen chat messages:** a yellow *N new* badge at the top right of the messages while messages from others have
+  arrived that were never on screen (at least half of the line in view). A click scrolls down to them (PR #61).
+- **"Click here to answer."** is on a line of its own in the trade messages that ask for an answer (PR #61).
+- **Enter opens the chat box.** *Chat: start typing* defaults to Enter and can still be rebound. The Enter or Esc that
+  leaves the box isn't read again as a press to open it, and a focused box ignores it (PR #62).
+- **The colonies window shows each exchange as the whole deal:** line 1 is the whole deal (the rounds added up, or one
+  round's amounts and *every round* for a repeating one), also for offers waiting on an answer; line 2 each side's
+  round (*Your side: 90/100 Logs. Their side: 80/100 Carrots.*); line 3 what the round waits on, as the post's panel
+  says it (PR #63).
+- **The Trading Post lists every good** sent, received and on its half, wrapping, instead of five and *+N more*. The
+  panel's fit to the screen leaves room for the game's sections under it, so **Automate** stays on screen (PR #63).
+
 ## 1.4.0-rc23
 
 **A deletion confirmed after part of it was already gone no longer crashes.** From a playtest (rc19): dragging the Delete
