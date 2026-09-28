@@ -800,7 +800,11 @@ namespace BeaverBuddies.Colonies
             nextRefresh = 0;
         }
 
-        /// <summary>"With {colony}" and one line on its exchange: the terms and the round's progress, or why it is idle.</summary>
+        /// <summary>
+        /// "With {colony}" and its exchange in up to three lines: the whole deal ("300 Logs for 300 Carrots"), each side's
+        /// part of the round ("Your side: 90/100 Logs. Their side: 80/100 Carrots."), and what the round waits on. Rounds
+        /// are how a post carries a large deal, so the first line counts the whole deal and never the round.
+        /// </summary>
         private void Describe(DistrictCrossing half, ColonyExchangeService exchanges, out string title, out string detail)
         {
             DistrictCrossing partner = TradingPosts.Partner(half);
@@ -821,35 +825,42 @@ namespace BeaverBuddies.Colonies
                 detail = T("BeaverBuddies.Colony.Overview.Idle");
                 return;
             }
-            string give = exchanges.Amount(mine.Total, mine.GoodId), get = exchanges.Amount(theirs.Total, theirs.GoodId);
+            // The whole deal: every round's amounts added up, or one round's for an exchange that repeats until stopped.
+            int rounds = mine.Repeat ? 1 : Math.Max(1, mine.Rounds);
+            string give = exchanges.Amount(mine.Total * rounds, mine.GoodId), get = exchanges.Amount(theirs.Total * rounds, theirs.GoodId);
+            string dealKey = mine.Repeat ? "BeaverBuddies.Colony.Overview.DealRepeat" : "BeaverBuddies.Colony.Overview.Deal";
+            string deal = string.Format(T(dealKey), give, get);
             if (mine.State == ExchangeState.Proposed)
             {
-                detail = string.Format(T(mine.ProposedHere ? "BeaverBuddies.Colony.Overview.YouOffered" : "BeaverBuddies.Colony.Overview.TheyOffer"), give, get);
+                // An offer made to this colony is said the way they made it: what they give, for what they ask.
+                detail = mine.ProposedHere ? string.Format(T("BeaverBuddies.Colony.Overview.YouOffered"), deal)
+                    : string.Format(T("BeaverBuddies.Colony.Overview.TheyOffer"), string.Format(T(dealKey), get, give));
                 return;
             }
-            string round = mine.Repeat
-                ? string.Format(T("BeaverBuddies.Colony.Trade.RoundRepeating"), mine.Done + 1)
-                : string.Format(T("BeaverBuddies.Colony.Trade.RoundOf"), mine.Done + 1, mine.Rounds);
             string progress = string.Format(T("BeaverBuddies.Colony.Overview.Progress"), Side(half, mine, exchanges), Side(partner, theirs, exchanges));
-            string asked = mine.CancelAsked || theirs.CancelAsked ? " " + T("BeaverBuddies.Colony.Overview.CancelAsked") : "";
-            // A round held up says why, as the post's own panel does (T5, T7: which of many posts waits, and for what).
-            string heldUp = "";
-            if (asked.Length == 0)
+            // What the round waits on, as the post's own panel says it (T5, T7: which of many posts waits, and for what).
+            string waiting = "";
+            if (mine.CancelAsked || theirs.CancelAsked) waiting = T("BeaverBuddies.Colony.Overview.CancelAsked");
+            else
             {
                 bool mineIn = exchanges.IsIn(half, mine), theirsIn = exchanges.IsIn(partner, theirs);
                 if (!mineIn || !theirsIn)
-                    heldUp = " " + TradingPostFragment.StatusLine(half, mine, theirs, mineIn, theirsIn, ColonyExchangeService.OwnerOf(half), them, exchanges);
+                    waiting = TradingPostFragment.StatusLine(half, mine, theirs, mineIn, theirsIn, ColonyExchangeService.OwnerOf(half), them, exchanges);
             }
-            detail = string.Format(T("BeaverBuddies.Colony.Overview.Running"), give, get) + " " + round + ". " + progress + asked + heldUp;
+            detail = deal + "\n" + progress + (waiting.Length > 0 ? "\n" + waiting : "");
         }
 
-        /// <summary>A side's part of the round: "60/100", or "ready" for science and beavers that can be paid.</summary>
+        /// <summary>
+        /// A side's part of the round: "60/100 Logs", "10 Science, ready" for science and beavers, which are paid all at
+        /// once, or "nothing" for a side that gives nothing.
+        /// </summary>
         private static string Side(DistrictCrossing half, CrossingExchange side, ColonyExchangeService exchanges)
         {
-            if (side.Total <= 0) return "-";
+            if (side.Total <= 0) return exchanges.Amount(0, side.GoodId);
             if (ExchangeTerms.IsSpecial(side.GoodId))
-                return T(exchanges.IsIn(half, side) ? "BeaverBuddies.Colony.Overview.SideReady" : "BeaverBuddies.Colony.Overview.SideNotReady");
-            return $"{side.Held}/{side.Total}";
+                return string.Format(T("BeaverBuddies.Colony.Overview.SideSpecial"), exchanges.Amount(side.Total, side.GoodId),
+                    T(exchanges.IsIn(half, side) ? "BeaverBuddies.Colony.Overview.SideReady" : "BeaverBuddies.Colony.Overview.SideNotReady"));
+            return $"{side.Held}/{side.Total} {exchanges.GoodName(side.GoodId, one: side.Total == 1)}";
         }
 
         private void GoTo(DistrictCrossing half)
