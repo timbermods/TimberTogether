@@ -269,7 +269,7 @@ namespace BeaverBuddies.Colonies
             VisualElement footer = NativeElements.Row();
             footer.style.marginTop = 12;
             footer.style.justifyContent = Justify.SpaceBetween;
-            Label hint = NativeElements.MutedText(T("BeaverBuddies.Colony.Overview.Hint"), 12);
+            Label hint = NativeElements.Text(T("BeaverBuddies.Colony.Overview.Hint"), 12);
             hint.style.flexShrink = 1;
             hint.style.marginRight = 8;
             footer.Add(hint);
@@ -283,6 +283,8 @@ namespace BeaverBuddies.Colonies
             box.Add(picker.Root);
 
             _visualElementInitializer.InitializeVisualElement(window);
+            // White on the dark board, set after the initializer so nothing it applies can darken it.
+            hint.style.color = Color.white;
             window.style.display = DisplayStyle.None;
             _uiLayout.AddAbsoluteItem(window);
         }
@@ -638,6 +640,7 @@ namespace BeaverBuddies.Colonies
                     icon.style.marginRight = 2;
                     chip.Add(icon);
                     Label amount = NativeElements.Text("", 12);
+                    amount.style.color = Color.white;
                     chip.Add(amount);
                     _tooltipRegistrar.Register(chip, _items.Name(good.Key));
                     card.GoodsChips.Add(chip);
