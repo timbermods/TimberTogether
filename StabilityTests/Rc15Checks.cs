@@ -103,6 +103,23 @@ static class Rc15Checks
             Check(Body(notices, "public bool Post(string text, DistrictCrossing half, bool warning)").Contains("posted.Add((text, half, warning));"), "a message is built inside the tick");
         });
 
+        yield return ("a colony handed over, and the warning the day before, stay on screen until the player closes them", () =>
+        {
+            string lifecycle = Source("BeaverBuddies", "Colonies", "ColonyHandover.cs");
+            Check(Body(lifecycle, "private void Tell(int from, int to, HandoverReason reason)").Contains("ShowUntilClosed(")
+                && Body(lifecycle, "private void WarnBeforeHandover(bool[] newlyAnnounced)").Contains("ShowUntilClosed(")
+                && !Body(lifecycle, "private void Tell(int from, int to, HandoverReason reason)").Contains("_colonyRulesService.ShowNotice(")
+                && !Body(lifecycle, "private void WarnBeforeHandover(bool[] newlyAnnounced)").Contains("_colonyRulesService.ShowNotice("),
+                "a hand-over notice is a passing notice again");
+            Check(Body(lifecycle, "private void ShowUntilClosed(string text, bool warning)").Contains("TradeNotices.Instance?.PostNews(text, warning) != true"),
+                "a hand-over notice no longer stays until clicked");
+            string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
+            Check(notices.Contains("public bool PostNews(string text, bool warning) => Post(text, null, warning);")
+                && Body(notices, "private void Show(string text, DistrictCrossing half, bool warning)").Contains("if (half != null) foreach (Notice old in shown.Where(n => n.Half == half)"),
+                "news with no Trading Post replaces other messages, or can't be posted");
+            Check(Body(notices, "private void GoTo(Notice notice)").Contains("if (!notice.Half) return;"), "a click on news with no Trading Post tries to go to one");
+        });
+
         yield return ("rc15: the trade messages read as plain English: no halves going back to colonies", () =>
         {
             Check(Csv("BeaverBuddies.Colony.Trade.Notice.Cancelled") == "The exchange between {0} and {1} was cancelled. Any goods already brought to the Trading Post go back to the colony that brought them.",

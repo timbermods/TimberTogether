@@ -15,7 +15,8 @@ namespace BeaverBuddies.Colonies
     /// A trade message that asks the player for an answer (an offer made to their colony, or a request to end one of its
     /// exchanges) stays on screen until the player clicks it away. A click on the message goes to their side of that
     /// Trading Post and selects it, where they answer; its close button only closes it; answering at that post closes
-    /// it too. It is drawn as the game's own quick notification is (the green board with the game's text, Common/
+    /// it too. News of a colony handed over (ColonyLifecycle) stays the same way, with no post to go to: a click on it
+    /// only closes it. It is drawn as the game's own quick notification is (the green board with the game's text, Common/
     /// QuickNotificationPanel), just below where that one appears, and it chimes as it appears (NoticeSounds). Display
     /// only: posted by an action every computer plays, it is built on the next frame, on the computer of the player it
     /// is for, so nothing of it runs inside a tick.
@@ -88,9 +89,16 @@ namespace BeaverBuddies.Colonies
             return true;
         }
 
+        /// <summary>
+        /// Shows <paramref name="text"/> until the player clicks it away, with no Trading Post to go to (a click on it
+        /// only closes it). False if it cannot be shown this way, as <see cref="Post"/>.
+        /// </summary>
+        public bool PostNews(string text, bool warning) => Post(text, null, warning);
+
         /// <summary>The player answered at <paramref name="half"/>: its message has done its job.</summary>
         public void Answered(DistrictCrossing half)
         {
+            if (half == null) return;
             posted.RemoveAll(p => p.Half == half);
             foreach (Notice notice in shown.Where(n => n.Half == half).ToList()) Close(notice);
         }
@@ -119,7 +127,8 @@ namespace BeaverBuddies.Colonies
         /// </summary>
         private void Show(string text, DistrictCrossing half, bool warning)
         {
-            foreach (Notice old in shown.Where(n => n.Half == half).ToList()) Close(old);
+            // A newer message for the same post replaces the older; news with no post (null) never replaces another.
+            if (half != null) foreach (Notice old in shown.Where(n => n.Half == half).ToList()) Close(old);
             while (shown.Count >= MaxShown) Close(shown[0]);
 
             var notice = new Notice { Half = half };

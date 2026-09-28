@@ -359,7 +359,7 @@ namespace BeaverBuddies.Colonies
                 for (int slot = 0; slot < newlyAnnounced.Length; slot++)
                 {
                     if (slot == local || !newlyAnnounced[slot]) continue;
-                    _colonyRulesService.ShowNotice(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Handover.Tomorrow"),
+                    ShowUntilClosed(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Handover.Tomorrow"),
                         ColonyExchangeService.ColonyName(slot), awayDays[slot]), warning: true);
                 }
             }
@@ -447,12 +447,18 @@ namespace BeaverBuddies.Colonies
                         : "BeaverBuddies.Colony.Handover.ReceivedByHost";
                 else return;
                 string other = ColonyExchangeService.ColonyName(local == from ? to : from);
-                _colonyRulesService.ShowNotice(string.Format(RegisteredLocalizationService.T(key), other), warning: local == from);
+                ShowUntilClosed(string.Format(RegisteredLocalizationService.T(key), other), warning: local == from);
             }
             catch (Exception error)
             {
                 Plugin.LogWarning("[Colony] Could not show a handover notice: " + error.Message);
             }
+        }
+
+        // News of a hand-over stays on screen until the player clicks it away, as a trade offer does (TradeNotices).
+        private void ShowUntilClosed(string text, bool warning)
+        {
+            if (TradeNotices.Instance?.PostNews(text, warning) != true) _colonyRulesService.ShowNotice(text, warning);
         }
     }
 

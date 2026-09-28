@@ -5,6 +5,14 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+- **Hand-over messages stay until closed.** The message that a colony was handed over (to the player who lost it and
+  the one who received it) and the warning the day before now stay under the top bar, with a chime, until the player
+  clicks them away, as a trade offer's does. `ColonyLifecycle.ShowUntilClosed` posts them through
+  `TradeNotices.PostNews`, a message with no Trading Post: a click only closes it, and it never replaces another
+  message. Display only. StabilityTests: one check.
+
 ## 1.4.0-rc19
 
 **Each colony has its own wellbeing high score** (PR #48). Built against Timberborn 1.1.2.4: both configurations with 0
