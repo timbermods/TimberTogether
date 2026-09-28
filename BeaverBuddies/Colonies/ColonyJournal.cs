@@ -72,14 +72,10 @@ namespace BeaverBuddies.Colonies
         {
             // Separate colonies only: a shared game's save holds only what the Stability Fork's does.
             if (!ColonyModeService.IsSeparateColonies) return;
-            var saved = new List<KeyValuePair<Guid, int>>();
-            var seen = new HashSet<Guid>();
-            foreach (Notification notification in _notificationSaver.Notifications)
-            {
-                if (!seen.Add(notification.Subject)) continue;
-                int? owner = LiveOwner(notification.Subject) ?? Recorded(notification.Subject);
-                if (owner != null) saved.Add(new KeyValuePair<Guid, int>(notification.Subject, owner.Value));
-            }
+            // Also every body still lying there: a guest joins from this save, and a body with no colony saved would be
+            // everyone's "died tragically" alert on the guest's screen.
+            List<KeyValuePair<Guid, int>> saved = JournalFilter.ToSave(_notificationSaver.Notifications.Select(n => n.Subject),
+                owners, LiveOwner, subject => Entity(subject) != null);
             if (saved.Count > 0) singletonSaver.GetSingleton(JournalKey).Set(OwnersKey, JournalFilter.Encode(saved));
         }
 

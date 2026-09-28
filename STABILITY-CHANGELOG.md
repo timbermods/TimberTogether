@@ -7,7 +7,7 @@ entry above the current one.
 
 ## Unreleased
 
-**The alerts move beside the connection panel** (built without the game's assemblies; StabilityTests only). **Not
+**The alerts move beside the connection panel, and the other colony's death alert stays out** (built without the game's assemblies; StabilityTests only). **Not
 played.**
 
 - **The game's alerts no longer cover the panel.** Drawing the panel's corner in front (rc24, rc25) did not work in
@@ -15,8 +15,14 @@ played.**
   bottom-left corner is moved right, beside it (`CornerLift.KeepAlertsClear`, a translation: display only, it changes
   nobody's layout, and it is put back when the panel is hidden or moved). The distance is `PanelLayout.AlertShift`,
   checked in StabilityTests. The log says once where the alerts went, or where the panel sits if the corner is not found.
+- **The other colony's *Beaver died tragically* alert no longer shows after a join.** From rc25 play: the guest's
+  alert counted the host's dead beavers, and a click went to them. The alert is on the dead beaver, which lies in no
+  district, so it goes by the colony recorded as it died (`ColonyJournal`). The save kept that only for the journal's
+  last 25 entries, and a guest joins from the host's save, so a body out of the journal was everyone's there. The save
+  now also keeps the colony of every recorded beaver still lying there in no district (`JournalFilter.ToSave`, checked
+  in StabilityTests).
 - **The log says whose alerts a computer lists** (`[Colony] Alerts and the journal show colony N only`), each time that
-  changes. From an rc25 report that the other player saw the host's alerts, which these checks could not reproduce.
+  changes.
 
 ## 1.4.0-rc25
 

@@ -42,6 +42,30 @@ namespace BeaverBuddies.Colonies
         public static List<Guid> Forgettable(IEnumerable<Guid> recorded, ICollection<Guid> kept, Func<Guid, bool> exists) =>
             recorded.Where(subject => !kept.Contains(subject) && !exists(subject)).ToList();
 
+        /// <summary>
+        /// Which owners the save keeps: each journal entry's subject, by its colony now or as recorded; and every recorded
+        /// subject that still exists in no colony (a dead beaver whose body and "died tragically" alert are still there,
+        /// or a beaver cut off from its district), whether or not the journal still lists it. A guest joins from the
+        /// host's save, so what the save leaves out is everyone's on the guest's screen.
+        /// </summary>
+        public static List<KeyValuePair<Guid, int>> ToSave(IEnumerable<Guid> journal, IEnumerable<KeyValuePair<Guid, int>> recorded,
+            Func<Guid, int?> liveOwner, Func<Guid, bool> exists)
+        {
+            var saved = new List<KeyValuePair<Guid, int>>();
+            var seen = new HashSet<Guid>();
+            var recordedOwners = new Dictionary<Guid, int>();
+            foreach (KeyValuePair<Guid, int> pair in recorded) recordedOwners[pair.Key] = pair.Value;
+            foreach (Guid subject in journal)
+            {
+                if (!seen.Add(subject)) continue;
+                int? owner = liveOwner(subject) ?? (recordedOwners.TryGetValue(subject, out int slot) ? slot : (int?)null);
+                if (owner != null) saved.Add(new KeyValuePair<Guid, int>(subject, owner.Value));
+            }
+            foreach (KeyValuePair<Guid, int> pair in recordedOwners)
+                if (seen.Add(pair.Key) && exists(pair.Key) && liveOwner(pair.Key) == null) saved.Add(pair);
+            return saved;
+        }
+
         /// <summary>The recorded owners, for the save: "subject:slot" separated by commas, in the order given.</summary>
         public static string Encode(IEnumerable<KeyValuePair<Guid, int>> owners) =>
             string.Join(",", owners.Select(pair => $"{pair.Key:N}:{pair.Value}"));
