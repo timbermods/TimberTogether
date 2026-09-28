@@ -239,8 +239,11 @@ namespace BeaverBuddies.Events
             bool result = ReplayEvent.DoPrefix(() =>
             {
                 // TODO: If this does work, it may affect other deletions too :(
+                // Only what is still there: the tool's list is picked while dragging, and an object in it can be
+                // deleted before the player confirms (a deletion sent a moment earlier, played now).
                 List<string> entityIDs = __instance._temporaryBlockObjects
-                        .Select(ReplayEvent.GetEntityID)
+                        .Select(LiveEntityID)
+                        .Where(id => id != null)
                         .ToList();
 
                 return new BuildingsDeconstructedEvent()
@@ -260,6 +263,21 @@ namespace BeaverBuddies.Events
             }
 
             return result;
+        }
+
+        // The entity's id, or null once it has been deleted. A deleted object's component cache is gone, so asking it
+        // for a component throws (a crash at the delete confirmation, 1.4.0-rc19).
+        internal static string LiveEntityID(BaseComponent component)
+        {
+            try
+            {
+                var entity = component?.GetComponent<EntityComponent>();
+                return entity == null || entity.Deleted ? null : entity.EntityId.ToString();
+            }
+            catch (NullReferenceException)
+            {
+                return null;
+            }
         }
     }
 

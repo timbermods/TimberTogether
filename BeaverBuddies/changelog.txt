@@ -1,3 +1,7 @@
+v1.4.0-rc23 (Timber Together)
+* Fixed a crash when confirming a deletion while something you picked was already removed.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc22 (Timber Together)
 * The colonies window opens with Y.
 * Offer more than 100 and it's split into rounds: 300 for 300 becomes 3 rounds of 100 for 100.
