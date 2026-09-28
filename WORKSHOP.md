@@ -40,7 +40,7 @@ gives each player a start.
 
 **Folktails and Iron Teeth together:** with *Mixed factions* ticked, each player picks their own faction in the room.
 
-**Away for the evening?** Ask a friend to look after your colony (Ctrl+T); it is kept for you.
+**Away for the evening?** Ask a friend to look after your colony (Y); it is kept for you.
 
 **Out of step? It stops at once:** every computer checks its colonies against the host's as the game runs, so a game
 that drifts stops the moment it happens instead of much later.

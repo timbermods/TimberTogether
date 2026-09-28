@@ -117,7 +117,7 @@ faction.
 
 **Which factions.** The host's unlocks count: Iron Teeth is available if it's unlocked on the hosting computer.
 
-**Changing your mind.** Until your colony builds anything of its own faction, the Ctrl+T window offers **Play …
+**Changing your mind.** Until your colony builds anything of its own faction, the colonies window (Y) offers **Play …
 instead** on your colony. Your district center and beavers switch in place, and your stock stays. Not while the
 colony has an offer or exchange open at a Trading Post.
 
@@ -190,13 +190,13 @@ the exchange pauses, and either colony can **End exchange** alone. An exchange a
 or if the post is removed.
 
 **Offer again.** A line above the form offers the last exchange at this post again. Clicking a row in the post's
-ledger puts that round's terms in the form.
+ledger puts that round's terms in the form. **Clear** empties your half's ledger; the totals traded stay.
 
-**The Ctrl+T window** (also the **Trade** button at the top right, or **All posts** on a post) lists:
+**The colonies window (Y)** (also the **Trade** button at the top right, or **All posts** on a post) lists:
 
 - each of your posts, its exchange and round, with **Go to**;
-- each colony: its population, whether its player is playing, its **food and water** in days, what it's **looking
-  for**, and who looks after it.
+- each colony: its population, whether its player is playing, its **food and water** in days, the goods it has in
+  stock (other colonies), what it's **looking for**, and who looks after it.
 
 **Looking for.** Set up to three items your colony would like to receive, on your colony's row in that window. Others
 see them there, under the header of a post you share, and in the goods grid when choosing what to give you.
@@ -206,6 +206,8 @@ see them there, under the header of a post you share, and in the goods grid when
 - One exchange at a time per post; build more posts for more.
 - A half holds up to 100 of a good for the round under way. The next round waits until the last one's goods have
   been hauled away, so staff both halves and keep storage room.
+- Type more than 100 in the form (300 for 300, say) and it's split into the fewest rounds that carry it, at the
+  nearest ratio. The offer's message says the whole trade.
 - Heavy goods take many trips: give busy posts more workers (up to 10).
 - Either of its two colonies may remove a post; no one else can. Its halves are placed as one.
 
@@ -213,10 +215,11 @@ see them there, under the header of a post you share, and in the goods grid when
 
 Going away for a while? Ask a friend to look after your colony.
 
-- **Asking.** In the Ctrl+T window, on your colony: **Let … look after it** (one button per other player), and later
+- **Asking.** In the colonies window (Y), on your colony: **Let … look after it** (one button per other player), and later
   **Take it back**. The host can ask a player to look after an away player's colony, and end that with **End
   stewardship**.
-- **Running it.** Your friend presses **Run this colony**, and **Back to your colony** when done. While they run it,
+- **Running it.** Your friend presses **Run this colony**, on the message telling them they were asked or in the
+  colonies window, and **Back to your colony** when done. While they run it,
   their toolbar, science and top bar are your colony's. You can both play it at once.
 - **Kept.** A colony looked after by someone in the game isn't handed over for its player's absence.
 
@@ -230,10 +233,10 @@ A colony goes to another colony, with its buildings, marks, stock and science, w
   (days)** in Timber Together's settings (**Mods** → the settings button beside it). The default is 0: never. It goes to the nearest colony whose player is playing
   (in a mixed game, only one of its own faction). Days the host plays alone, and the first day after loading, don't
   count;
-- **the host hands it over**, from the Ctrl+T window: any colony whose player is away, or that has no beavers. Useful
+- **the host hands it over**, from the colonies window (Y): any colony whose player is away, or that has no beavers. Useful
   if a player's Steam account changed.
 
-With a limit set, the Ctrl+T window shows how close it is (*missed 6 of 7 days*), and everyone is warned the day
+With a limit set, the colonies window (Y) shows how close it is (*missed 6 of 7 days*), and everyone is warned the day
 before. The warning, and the message telling both players of a hand-over, stay under the top bar until closed, as a
 trade offer does. A player who lost their colony can found a new one with **Ctrl+K**. The receiving colony can build whatever
 the old one had unlocked.
@@ -323,7 +326,7 @@ act as the next colony (1 → 2 → 3 → 4 → 1).
 - The room has no chat or map preview. Anyone who can reach the direct-IP port can join it; the host can remove them.
 - Trading needs a co-op session: host the game (even alone) to trade.
 - A post's reserve counts your stock in that half's district, not your whole colony's.
-- The days of food and water in the Ctrl+T window are an estimate from yesterday's use.
+- The days of food and water in the colonies window (Y) are an estimate from yesterday's use.
 - **Automation** runs on the game's ticks in co-op: up to a tick later than alone. A spring-return lever gives a
   one-tick pulse, which sets off a Detonator.
 - **The HTTP API** works in co-op: each computer runs its own, and switching an HTTP lever is that player's action

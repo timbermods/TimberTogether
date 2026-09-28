@@ -109,6 +109,31 @@ namespace BeaverBuddies.Colonies
             return total;
         }
 
+        /// <summary>
+        /// Every good a colony has in stock over all its districts, with how many, in the game's own order (its groups,
+        /// as the top bar lists them). Display only.
+        /// </summary>
+        public List<KeyValuePair<string, int>> GoodsOfColony(int slot)
+        {
+            var goods = new List<KeyValuePair<string, int>>();
+            if (slot < 0) return goods;
+            var districts = new List<DistrictCenter>();
+            foreach (DistrictCenter districtCenter in _districtCenterRegistry.FinishedDistrictCenters)
+                if (DistrictOwner.OwnerOfDistrict(districtCenter) == slot) districts.Add(districtCenter);
+            if (districts.Count == 0) return goods;
+            foreach (var (_, group) in Groups())
+            {
+                foreach (string good in group)
+                {
+                    int total = 0;
+                    foreach (DistrictCenter districtCenter in districts)
+                        total += _resourceCountingService.GetDistrictResourceCounter(districtCenter).GetResourceCount(good).AvailableStock;
+                    if (total > 0) goods.Add(new KeyValuePair<string, int>(good, total));
+                }
+            }
+            return goods;
+        }
+
         /// <summary>The good a colony has most of at a crossing half's district (a form's first choice), never another.</summary>
         public string MostStocked(DistrictCrossing half, int slot, string other, Func<string, bool> allowed = null)
         {

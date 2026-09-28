@@ -428,7 +428,10 @@ namespace BeaverBuddies
                 }
                 // Only broadcast successful events from an active session.
                 RecordRandomState(replayEvent);
-                replayEvent.Replay(this);
+                // The sounds the game plays while it plays this action are this player's (RemoteSounds: muted or not).
+                int soundsOf = BeaverBuddies.Activity.RemoteSounds.Enter(replayEvent.player);
+                try { replayEvent.Replay(this); }
+                finally { BeaverBuddies.Activity.RemoteSounds.Exit(soundsOf); }
                 // A player who joins from now on would load the save without this and never be sent it (the host
                 // serves the bytes it started from, and a joiner gets only what is played after it connects). So the
                 // first action that changes the game closes joining, as the first tick does. Closed before the action

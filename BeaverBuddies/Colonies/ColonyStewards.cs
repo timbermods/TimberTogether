@@ -140,7 +140,7 @@ namespace BeaverBuddies.Colonies
             names[slot] = name ?? "";
             ColonyDigest.Note("steward", slot, ColonyDigest.Of(playerId));
             Plugin.Log($"[Colony] {names[slot]} ({playerId}) now looks after slot {slot}'s colony (asked by slot {bySlot})");
-            Tell(playerId, "BeaverBuddies.Colony.Steward.YouWereAsked", ColonyExchangeService.ColonyName(slot), warning: false);
+            AskToRun(playerId, slot);
             TellSeat(slot, "BeaverBuddies.Colony.Steward.LooksAfterYours", names[slot], warning: false);
         }
 
@@ -180,6 +180,28 @@ namespace BeaverBuddies.Colonies
         {
             if (playerId == null || ColonySlotService.Instance?.LocalPlayerId != playerId) return;
             Notice(string.Format(RegisteredLocalizationService.T(key), argument), warning);
+        }
+
+        /// <summary>
+        /// The player asked to look after <paramref name="slot"/>'s colony is told so by a message that stays, with the
+        /// window's Run this colony button on it: one click switches them into the colony. Where that message can't be
+        /// shown, an ordinary notice says where the button is.
+        /// </summary>
+        private void AskToRun(string playerId, int slot)
+        {
+            if (playerId == null || ColonySlotService.Instance?.LocalPlayerId != playerId) return;
+            string colony = ColonyExchangeService.ColonyName(slot);
+            try
+            {
+                string text = string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Steward.YouWereAskedButton"), colony);
+                if (TradeNotices.Instance?.PostWithAction(text, false, RegisteredLocalizationService.T("BeaverBuddies.Colony.Overview.RunColony"),
+                    () => ReplayEvent.DoPrefix(() => new ActAsColonyEvent { colonySlot = slot })) == true) return;
+            }
+            catch (Exception error)
+            {
+                Plugin.LogWarning("[Colony] Could not show a stewardship message: " + error.Message);
+            }
+            Notice(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Steward.YouWereAsked"), colony), warning: false);
         }
 
         private void TellSeat(int slot, string key, string argument, bool warning)

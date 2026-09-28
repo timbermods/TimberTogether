@@ -87,7 +87,7 @@ static class Rc15Checks
         yield return ("rc15: an offer and a request to end an exchange stay until clicked, and a click goes to the player's side of the post", () =>
         {
             string exchange = Source("BeaverBuddies", "Colonies", "TradingPostExchange.cs");
-            Check(Body(exchange, "public void Propose(DistrictCrossing half,").Contains("Ask(() => to, partner, () => string.Format(T(\"BeaverBuddies.Colony.Trade.Notice.Proposed\")"),
+            Check(Body(exchange, "public void Propose(DistrictCrossing half,").Contains("Ask(() => to, partner, () => Whole(\"BeaverBuddies.Colony.Trade.Notice.Proposed\""),
                 "an offer is a passing notice again, or no longer goes to the other colony's side of the post");
             Check(Body(exchange, "public void Cancel(DistrictCrossing half,").Contains("Ask(() => them, partner, () => string.Format(T(\"BeaverBuddies.Colony.Trade.Notice.CancelAsked\")"),
                 "a request to end an exchange is a passing notice again");
@@ -95,12 +95,16 @@ static class Rc15Checks
                 Check(Body(exchange, answer).Contains("Answered(half, actorSlot);"), "answering no longer closes the post's message: " + answer);
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
             Check(!notices.Contains("Time.") && !notices.Contains("schedule"), "a trade message is timed: it must stay until clicked");
-            Check(notices.Contains("close.AddToClassList(\"close-button\");") && notices.Contains("board.AddToClassList(warning ? \"square-large--red\" : \"square-large--green\");")
+            Check(notices.Contains("close.AddToClassList(\"close-button\");") && notices.Contains("board.AddToClassList(message.Warning ? \"square-large--red\" : \"square-large--green\");")
                 && notices.Contains("label.AddToClassList(\"game-text-normal\");"), "the message no longer looks like the game's notification");
             Check(Body(notices, "private void GoTo(Notice notice)").Contains("_entitySelectionService.SelectAndFocusOn(notice.Half);"), "a click no longer goes to the post");
+            // A question for a post stays until it is answered or closed: going to the post leaves it on screen.
+            string goTo = Body(notices, "private void GoTo(Notice notice)");
+            Check(goTo.Contains("if (!notice.Asks) Close(notice);") && goTo.Split("Close(notice)").Length == 2, "a click on an offer closes it again");
             Check(Body(notices, "public void UpdateSingleton()").Contains("_noticeSounds.Play(NoticeSounds.TradeSound);"), "a trade message no longer chimes");
             // Built outside the tick: an action only posts it.
-            Check(Body(notices, "public bool Post(string text, DistrictCrossing half, bool warning)").Contains("posted.Add((text, half, warning));"), "a message is built inside the tick");
+            Check(Body(notices, "public bool Post(string text, DistrictCrossing half, bool warning)").Contains("posted.Add(new Posted(text, half, warning, null, null));"), "a message is built inside the tick");
+            Check(notices.Contains("public void ChimeSoon() => chimePending = true;"), "a chime is played inside the tick");
         });
 
         yield return ("a colony handed over, and the warning the day before, stay on screen until the player closes them", () =>
@@ -115,16 +119,18 @@ static class Rc15Checks
                 "a hand-over notice no longer stays until clicked");
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
             Check(notices.Contains("public bool PostNews(string text, bool warning) => Post(text, null, warning);")
-                && Body(notices, "private void Show(string text, DistrictCrossing half, bool warning)").Contains("if (half != null) foreach (Notice old in shown.Where(n => n.Half == half)"),
+                && Body(notices, "private void Show(Posted message)").Contains("if (half != null) foreach (Notice old in shown.Where(n => n.Half == half)"),
                 "news with no Trading Post replaces other messages, or can't be posted");
-            Check(Body(notices, "private void GoTo(Notice notice)").Contains("if (!notice.Half) return;"), "a click on news with no Trading Post tries to go to one");
+            string goToNews = Body(notices, "private void GoTo(Notice notice)");
+            Check(goToNews.Contains("if (!notice.Half)\n            {") && goToNews.IndexOf("return;", StringComparison.Ordinal) < goToNews.IndexOf("SelectAndFocusOn", StringComparison.Ordinal),
+                "a click on news with no Trading Post tries to go to one");
         });
 
         yield return ("rc15: the trade messages read as plain English: no halves going back to colonies", () =>
         {
             Check(Csv("BeaverBuddies.Colony.Trade.Notice.Cancelled") == "The exchange between {0} and {1} was cancelled. Any goods already brought to the Trading Post go back to the colony that brought them.",
                 "the cancelled exchange's message changed: " + Csv("BeaverBuddies.Colony.Trade.Notice.Cancelled"));
-            Check(Csv("BeaverBuddies.Colony.Trade.Notice.Proposed").EndsWith(" Click here to answer.") && Csv("BeaverBuddies.Colony.Trade.Notice.CancelAsked").EndsWith(" Click here to answer."),
+            Check(new[] { "Proposed", "ProposedRounds", "ProposedRepeat", "CancelAsked" }.All(key => Csv("BeaverBuddies.Colony.Trade.Notice." + key).EndsWith(" Click here to answer.")),
                 "the messages that stay no longer say a click answers them");
             foreach (string key in new[] { "Notice.Cancelled", "AskCancelTooltip", "AgreeCancelTooltip", "EndExchangeTooltip", "PausedCancel" })
             {

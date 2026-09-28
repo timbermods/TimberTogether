@@ -19,8 +19,8 @@ Multiplayer                                 Host   [-]
 o  In sync
 -------------------------------------------------------
 Player 1 (colony 1)                                -
-Player 2 (colony 2)                            42 ms
-Player 3 (colony 3)                           190 ms
+Player 2 (colony 2)                            42 ms [<)]
+Player 3 (colony 3)                           190 ms [<x]
 -------------------------------------------------------
 Tick rate   1.7 ticks/s
 Speed       1x
@@ -35,6 +35,7 @@ player runs (a steward shows the colony they're running). In a shared game the r
 | --- | --- |
 | **Status** | *In sync* is normal. *Catching up* (guests): a few ticks behind the host. *Waiting for host* (guests): waiting for the host's next tick. *Connection unstable*: someone hasn't responded for five seconds. *Out of sync*: a desync; see the [troubleshooting page](https://timbermods.github.io/TimberTogether/troubleshooting.html#desync). *Disconnected*: the session has ended. The dot is green in sync, yellow while catching up or waiting, red otherwise. |
 | **Players** | Everyone in the game, host first. On the host, a guest still loading shows *(loading)*: unpause once nobody does. **Click a row** to go to that player (their cursor, or what they've selected); your own row takes you back to your colony. |
+| **Sound** | The speaker at the end of another player's row. **Click it** to mute the sounds of that player's actions (deleting, placing) on your computer; click again to hear them. Only you are affected, for this session. |
 | **Ping** | Round trip to that player, in milliseconds. Normal text up to 80 ms, yellow up to 160 ms, red above or **No response**. A guest sees the other guests' pings to the host. |
 | **Tick rate** | Simulation ticks per second: about 1.7 at normal speed, about 11.7 at the fastest button, 0 when paused. |
 | **Speed** | The speed the game runs at, including any speed boost. |
@@ -47,12 +48,15 @@ player runs (a steward shows the colony they're running). In a shared game the r
 ## Pausing
 
 Pressing pause (the speed buttons' pause, or its key) pauses the game for everyone. While it is paused, the title line
-shows *Paused by* and the player's name, open or collapsed; a new game waiting to start shows *Paused*. Anyone can pick
+shows *Paused by* and the player's name, open or collapsed, cut short if it's long (hover for all of it); a new game
+waiting to start shows *Paused*. Anyone can pick
 a speed to carry on. Menus, dialogs and panels don't pause a co-op game.
 
 ## Showing and hiding
 
 - **Click the title** to collapse or expand it. Collapsed, it shows **N new** for unread chat messages.
+- **Click the panel** to bring it in front of trade messages and alerts; click the map to send it back. Trade messages
+  move aside so they don't cover it.
 - In Timber Together's settings (**Mods** → the settings button beside it): **Connection panel** is Expanded,
   Collapsed or Hidden, and **Connection panel position** is top left (default), top right, bottom left or bottom
   right.
@@ -96,6 +100,6 @@ computer still sets the real pace: the **Tick rate** line says what's achieved.
 - Chat is text only: no private messages, no emoji picker, no editing.
 - Ping is measured about once a second. The panel doesn't show packet loss or bandwidth.
 - Several game alerts at once can reach the chat box; while you type, the chat is drawn in front of them.
-- The panel lists who is connected. A colony whose player is away shows in the Ctrl+T window instead.
+- The panel lists who is connected. A colony whose player is away shows in the colonies window (Y) instead.
 
 How ping is measured and why the panel can't affect the game: [DEVELOPING.md](DEVELOPING.md#connection-panel-chat-and-player-cursors).

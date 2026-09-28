@@ -31,7 +31,7 @@ Players already in the game come along by themselves. Friends without Steam join
 
 - Everyone must be online in Steam and own Timberborn there, with the same mod build and game version.
 - **Your colony follows your Steam account.** The save remembers you by your Steam ID, whoever hosts. If your Steam
-  account changes, you join as a new player, and the host can hand your old colony to you from the Ctrl+T window.
+  account changes, you join as a new player, and the host can hand your old colony to you from the colonies window (Y).
 - **Over Steam, nobody can take your colony** by claiming your ID: the host checks each guest's Steam ID. Direct IP
   can't check, and the direct-IP port is open whenever someone hosts, so forward it only for people you trust.
 - Steam connects players directly when it can, and relays through its network otherwise. Either way, Valve keeps IP

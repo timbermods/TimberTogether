@@ -8,8 +8,8 @@
     "DevModeOnly": false
   },
   "PrimaryInputBindingSpec": {
-    "Path": "/Keyboard/t",
-    "InputModifiers": "Ctrl",
+    "Path": "/Keyboard/y",
+    "InputModifiers": "None",
     "Unchangeable": false
   }
 }

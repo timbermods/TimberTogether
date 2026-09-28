@@ -25,10 +25,11 @@ namespace BeaverBuddies.Colonies
     /// close button, as the population's well-being): every Trading Post of the player's colony with its exchange and a
     /// button to go there, and every colony with its player, population and whether it is being played. The host also
     /// finds here the buttons to hand a colony over (only a colony whose player is away, or which has no beavers left).
-    /// Each colony's row also shows its food and water (with the days they last), what it is looking for (its player
+    /// Each colony's row also shows its food and water (with the days they last), every good another colony has in stock
+    /// (drawn as the Trading Post's totals are: icons and amounts), what it is looking for (its player
     /// sets that here, from the game's goods grid), how close an absent player's colony is to a hand-over, and who
     /// looks after it: a player asks another to look after their colony here, and a steward switches into it and back.
-    /// It opens and closes with Ctrl+T, the square Trade button at the top right, or "All Posts" on a Trading Post, and
+    /// It opens and closes with Y (a key the player can change), the square Trade button at the top right, or "All Posts" on a Trading Post, and
     /// closes with its close button or Esc; its title or frame drags it anywhere on screen. It does not pause the game
     /// (pausing is shared in co-op). Display and buttons
     /// only: each button sends an ordinary action.
@@ -58,6 +59,11 @@ namespace BeaverBuddies.Colonies
             public VisualElement Supplies, Wishes;
             public Image FoodIcon, WaterIcon;
             public Label Food, Water;
+            // Another colony's goods in stock: the icons and amounts, and which goods they are for (rebuilt only when that changes).
+            public VisualElement Goods, GoodsChips;
+            public Label GoodsCaption;
+            public string ShownGoods;
+            public readonly Dictionary<string, Label> GoodsAmounts = new Dictionary<string, Label>();
             // A mixed-factions game: the colony's faction on the game's diamond, before its name.
             public VisualElement Faction;
             public string ShownFaction;
@@ -474,6 +480,7 @@ namespace BeaverBuddies.Colonies
                 ShowFaction(card, slot);
                 NativeElements.SetText(card.Detail, DescribeColony(slot, lifecycle, present));
                 RefreshSupplies(card, slot, lifecycle, supplies);
+                RefreshGoods(card, slot, slot != me && slot != seat && lifecycle != null && lifecycle.OwnsDistrict(slot));
                 RefreshNote(card, slot, seat, me, myId, stewards, slotService);
                 if (slot != me) RefreshWishes(card, slot, wishlist);
             }
@@ -602,6 +609,44 @@ namespace BeaverBuddies.Colonies
                 ? string.Format(T("BeaverBuddies.Colony.Overview.SupplyNoDays"), stock)
                 : string.Format(T("BeaverBuddies.Colony.Overview.SupplyDays"), stock, days));
             label.style.color = SupplyDays.IsLow(supply.Days) ? new StyleColor(NativeElements.Warning) : new StyleColor(NativeElements.Muted);
+        }
+
+        /// <summary>
+        /// Another colony's goods: "Goods" and every good it has in stock, as icons with amounts, in the game's order.
+        /// The icons are rebuilt only when the goods change, and the amounts are updated in place, so a tooltip stays.
+        /// </summary>
+        private void RefreshGoods(ColonyCard card, int slot, bool shown)
+        {
+            List<KeyValuePair<string, int>> goods = shown ? _items.GoodsOfColony(slot) : null;
+            NativeElements.Show(card.Goods, shown);
+            if (!shown) return;
+            NativeElements.SetText(card.GoodsCaption, string.Format(T("BeaverBuddies.Colony.Overview.Goods"), goods.Count));
+            string key = string.Join(",", goods.Select(g => g.Key));
+            if (key != card.ShownGoods)
+            {
+                card.ShownGoods = key;
+                card.GoodsChips.Clear();
+                card.GoodsAmounts.Clear();
+                if (goods.Count == 0) card.GoodsChips.Add(NativeElements.MutedText(T("BeaverBuddies.Colony.Trade.Nothing")));
+                foreach (var good in goods)
+                {
+                    VisualElement chip = NativeElements.Row();
+                    chip.style.marginRight = 8;
+                    chip.style.height = 20;
+                    Image icon = NativeElements.Icon(18);
+                    icon.sprite = _items.IconOf(good.Key);
+                    icon.style.marginRight = 2;
+                    chip.Add(icon);
+                    Label amount = NativeElements.Text("", 12);
+                    chip.Add(amount);
+                    _tooltipRegistrar.Register(chip, _items.Name(good.Key));
+                    card.GoodsChips.Add(chip);
+                    card.GoodsAmounts[good.Key] = amount;
+                }
+            }
+            foreach (var good in goods)
+                if (card.GoodsAmounts.TryGetValue(good.Key, out Label amount))
+                    NativeElements.SetText(amount, good.Value.ToString("N0", System.Globalization.CultureInfo.CurrentCulture));
         }
 
         /// <summary>Who looks after the colony, and who is running it now, in one muted line (or none).</summary>
@@ -850,6 +895,22 @@ namespace BeaverBuddies.Colonies
             card.Supplies.Add(card.Water);
             _tooltipRegistrar.Register(card.Supplies, T("BeaverBuddies.Colony.Overview.SuppliesTooltip"));
             text.Add(card.Supplies);
+            // Another colony's goods, laid out as the Trading Post's totals: a caption, then icons and amounts that wrap.
+            card.Goods = NativeElements.Row(Align.FlexStart);
+            card.Goods.style.marginTop = 4;
+            card.Goods.style.display = DisplayStyle.None;
+            card.GoodsCaption = NativeElements.MutedText("", 12);
+            card.GoodsCaption.style.marginRight = 6;
+            card.GoodsCaption.style.marginTop = 1;
+            card.GoodsCaption.style.flexShrink = 0;
+            _tooltipRegistrar.Register(card.GoodsCaption, T("BeaverBuddies.Colony.Overview.GoodsTooltip"));
+            card.GoodsChips = NativeElements.Row();
+            card.GoodsChips.style.flexWrap = Wrap.Wrap;
+            card.GoodsChips.style.flexGrow = 1;
+            card.GoodsChips.style.flexShrink = 1;
+            card.Goods.Add(card.GoodsCaption);
+            card.Goods.Add(card.GoodsChips);
+            text.Add(card.Goods);
             card.Note = NativeElements.MutedText("", 12);
             card.Note.style.marginTop = 2;
             card.Note.style.display = DisplayStyle.None;
