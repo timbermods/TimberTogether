@@ -119,5 +119,15 @@ static class RcColonyChecks
             Check(cleanup.Contains("_temporaryBlockObjects.Clear()") && cleanup.Contains("_temporaryTerrainCoords.Clear()"),
                 "the recorded deletion must clear the tool's picked terrain as the game's DeleteBlockObjects does");
         });
+
+        yield return ("rc23: confirming a deletion leaves out what was deleted since it was picked, instead of crashing", () =>
+        {
+            string patcher = Body(Source("BeaverBuddies", "Events", "ToolEvents.cs"), "class BuildingDeconstructionPatcher");
+            Check(patcher.Contains(".Select(LiveEntityID)") && !patcher.Contains(".Select(ReplayEvent.GetEntityID)"),
+                "the deletion must read each picked object's id with the guarded LiveEntityID");
+            string live = Body(patcher, "internal static string LiveEntityID(");
+            Check(live.Contains("catch (NullReferenceException)") && live.Contains("entity.Deleted"),
+                "an object deleted since it was picked (its component cache gone) must be left out, not asked for its id");
+        });
     }
 }

@@ -5,6 +5,16 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## 1.4.0-rc23
+
+**A deletion confirmed after part of it was already gone no longer crashes.** From a playtest (rc19): dragging the Delete
+tool over paths and a building while earlier deletions were still being played, confirming threw a
+`NullReferenceException` in `ReplayEvent.GetEntityID` (`ComponentCache.GetIndex`) and the game closed. The tool's list is
+picked while dragging; an object deleted before the confirmation has lost its component cache, and asking it for its
+`EntityComponent` throws. `BuildingDeconstructionPatcher` now reads ids through `LiveEntityID`, which leaves out an
+object that is deleted or whose lookup throws; the rest are deleted as before (an empty list is a no-op everywhere).
+StabilityTests adds a source check. Built against Timberborn 1.1.2.4. **Not played.**
+
 ## 1.4.0-rc22
 
 **Playtest round: trade, the colonies window and the connection panel** (PR #56). Built against Timberborn 1.1.2.4: both
