@@ -51,6 +51,8 @@ static class Rc15Checks
             Check(!ChatFormat.Chimes(new[] { Msg(5, 1) }, 1, 0), "your own message chimed");
             Check(ChatFormat.Chimes(new[] { Msg(5, 0) }, 1, 0), "another player's message did not chime");
             Check(!ChatFormat.Chimes(new[] { Msg(3, 0), Msg(4, 2) }, 1, 4), "the history a guest gets on joining chimed");
+            Check(!ChatFormat.Chimes(new[] { Msg(5, 0) }, 1, 0, player => player == 0), "a muted player's message chimed");
+            Check(ChatFormat.Chimes(new[] { Msg(5, 0), Msg(6, 2) }, 1, 0, player => player == 0), "an unmuted player's message did not chime");
             Check(ChatFormat.Chimes(new[] { Msg(4, 0), Msg(5, 2) }, 1, 4), "a live message after the history did not chime");
             Check(!ChatFormat.Chimes(Array.Empty<ChatMessage>(), 1, 0), "nothing new chimed");
         });

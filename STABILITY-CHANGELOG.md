@@ -7,6 +7,8 @@ entry above the current one.
 
 ## Unreleased
 
+- **The chat chime also plays while the panel is open,** and a player's speaker button now mutes their chat chime as
+  well as the sounds of their actions.
 - **Trading window touch-ups:** the goods picker's heading is white; the wish icons are centred; colony rows read
   *Beavers: N* (and *Bots: N* on the next line, only when there are bots); your own colony shows its goods like the
   others; the hint splits onto two lines; titles read *Trading Posts and Colonies* and *Trading Posts (N)*; and trade

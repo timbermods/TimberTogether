@@ -25,11 +25,11 @@ namespace BeaverBuddies.Panel
         static string Plain(string value) => (value ?? "").Replace("<", "").Replace(">", "");
 
         /// <summary>
-        /// Whether new messages chime: one from another player that arrived live. Your own never do, and nor does the
+        /// Whether new messages chime: one from another player that arrived live. Your own never do, nor do those of a player whose sound is muted (<paramref name="isMuted"/>), and nor does the
         /// history a guest is sent as it joins (up to <paramref name="historyThrough"/>): it was said before they came.
         /// </summary>
-        public static bool Chimes(IEnumerable<ChatMessage> fresh, int myPlayerId, int historyThrough) =>
-            fresh.Any(message => message.Sequence > historyThrough && message.PlayerId != myPlayerId);
+        public static bool Chimes(IEnumerable<ChatMessage> fresh, int myPlayerId, int historyThrough, Func<int, bool> isMuted = null) =>
+            fresh.Any(message => message.Sequence > historyThrough && message.PlayerId != myPlayerId && !(isMuted?.Invoke(message.PlayerId) ?? false));
 
         /// <summary>
         /// Whether a chat line counts as seen: at least half of it was inside the messages' visible area (for a line

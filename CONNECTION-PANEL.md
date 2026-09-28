@@ -35,7 +35,7 @@ player runs (a steward shows the colony they're running). In a shared game the r
 | --- | --- |
 | **Status** | *In sync* is normal. *Catching up* (guests): a few ticks behind the host. *Waiting for host* (guests): waiting for the host's next tick. *Connection unstable*: someone hasn't responded for five seconds. *Out of sync*: a desync; see the [troubleshooting page](https://timbermods.github.io/TimberTogether/troubleshooting.html#desync). *Disconnected*: the session has ended. The dot is green in sync, yellow while catching up or waiting, red otherwise. |
 | **Players** | Everyone in the game, host first. On the host, a guest still loading shows *(loading)*: unpause once nobody does. **Click a row** to go to that player (their cursor, or what they've selected); your own row takes you back to your colony. |
-| **Sound** | The speaker at the end of another player's row. **Click it** to mute the sounds of that player's actions (deleting, placing) on your computer; click again to hear them. Only you are affected, for this session. |
+| **Sound** | The speaker at the end of another player's row. **Click it** to mute the sounds of that player's actions (deleting, placing) and their chat chime on your computer; click again to hear them. Only you are affected, for this session. |
 | **Eye** | Next to the speaker, in a separate-colonies game. **Click it** to stop drawing that player's buildings on your computer (Trading Posts stay in view); click again to see them. Shown by default. Only you are affected, for this session. |
 | **Ping** | Round trip to that player, in milliseconds. Normal text up to 80 ms, yellow up to 160 ms, red above or **No response**. A guest sees the other guests' pings to the host. |
 | **Tick rate** | Simulation ticks per second: about 1.7 at normal speed, about 11.7 at the fastest button, 0 when paused. |
@@ -83,8 +83,8 @@ Player 2: on it
   a color by player number, so no two start the same. Pick the color you see your own name in under Options (Esc) →
   **Player cursors**.
 - **Everyone sees the same conversation**, in the same order. A player who joins later gets the history.
-- **A chime** plays when another player's message arrives while the panel is collapsed or hidden (at most once a
-  second). With the panel open, the chat is on screen and nothing chimes.
+- **A chime** plays when another player's message arrives, open, collapsed or hidden (at most once a
+  second). Muting a player's speaker silences their chime.
   It follows the game's interface volume. Your own messages and the history you get on joining are silent.
 - **New messages you haven't seen** (you scrolled up to read older ones) show as a yellow *2 new* at the top right
   of the messages. Click it to go down to them.
