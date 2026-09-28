@@ -1,5 +1,5 @@
 # Timber Together
-
+***Tested for 12+ hours in a single multi colony game without any desyncs or issues. Every feature confirmed working in game besides mixed factions.***
 ***Build apart. Thrive together.***
 
 Co-op Timberborn where every player runs their own colony on one shared map: their own districts, beavers, stock,
