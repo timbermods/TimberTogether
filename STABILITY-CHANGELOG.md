@@ -5,6 +5,18 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## 1.4.0-rc21
+
+**Chat keeps the cursor after sending; a click on the panel starts typing** (PR #53). Built against Timberborn 1.1.2.4:
+both configurations with 0 warnings; StabilityTests 517 and RuntimeChecks 460 pass. **Not played.** Released as Latest
+on GitHub (a full release), at Kyler's request.
+
+- **Chat:** after Enter sends a message, the cursor goes back into the box, and Enter's newline character is stopped so
+  the box stays empty. `PanelPressed` fires on a trickle-down `PointerDownEvent` anywhere on the open panel and puts the
+  cursor in the box, except on the header and the speed boost box. Opening the panel from its header focuses the chat
+  too. Display only. (PR #53 didn't build against the game at first: `OnPanelPressed` now names
+  `UnityEngine.UIElements.VisualElement` in full.)
+
 ## 1.4.0-rc20
 
 **Hand-over messages stay until closed** (PR #51). Built against Timberborn 1.1.2.4: both configurations with 0
