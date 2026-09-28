@@ -70,6 +70,7 @@ namespace BeaverBuddies.Panel
                 view.HeaderClicked += OnHeaderClicked;
                 view.FpsFloorClicked += OnFpsFloorClicked;
                 view.RowClicked += OnRowClicked;
+                view.PanelPressed += OnPanelPressed;
                 if (view.Chat != null)
                 {
                     view.Chat.Submit = OnChatSubmit; view.Chat.ColorOf = ChatColorOf;
@@ -146,8 +147,21 @@ namespace BeaverBuddies.Panel
         void OnHeaderClicked()
         {
             var mode = Settings.ConnectionPanelDisplayMode;
-            Settings.SetConnectionPanelDisplayMode(mode == PanelDisplayMode.Expanded ? PanelDisplayMode.Collapsed : PanelDisplayMode.Expanded);
+            bool expanding = mode != PanelDisplayMode.Expanded;
+            Settings.SetConnectionPanelDisplayMode(expanding ? PanelDisplayMode.Expanded : PanelDisplayMode.Collapsed);
+            // Opening the panel is opening the chat: the cursor goes to the box.
+            if (expanding && view.Chat != null && !chatFailed && CurrentNetwork() != null) view.Chat.RequestFocus();
             nextRefresh = 0;
+        }
+
+        // A press anywhere on the open panel (a row, the facts, the messages) puts the cursor in the chat box, so the
+        // player can type without clicking the box itself. A press on the game gives the keyboard back, as before.
+        void OnPanelPressed(UnityEngine.UIElements.VisualElement target)
+        {
+            if (view.Chat == null || chatFailed || CurrentNetwork() == null) return;
+            if (Settings.ConnectionPanelDisplayMode != PanelDisplayMode.Expanded) return;
+            try { view.Chat.FocusAfterPress(target); }
+            catch (Exception error) { DisableChat(error); }
         }
 
         // ---- per frame ----
