@@ -307,6 +307,15 @@ namespace BeaverBuddies.Panel
             if (boostResult.text != result) boostResult.text = result;
         }
 
+        bool IsInputFocused
+        {
+            get
+            {
+                var current = FocusedInside();
+                return current != null && (current == input || input.Contains(current));
+            }
+        }
+
         bool IsBoostBoxFocused
         {
             get
@@ -327,6 +336,16 @@ namespace BeaverBuddies.Panel
         /// <summary>Puts the cursor in the box a moment from now (it cannot take focus in the same frame it appears).</summary>
         public void RequestFocus() => focusDelayFrames = 2;
 
+        /// <summary>
+        /// A press anywhere on the panel puts the cursor in the box, so the player can type at once. Not a press on the
+        /// speed boost's number, which takes the cursor itself.
+        /// </summary>
+        public void FocusAfterPress(VisualElement target)
+        {
+            if (target != null && (target == boostBox || boostBox.Contains(target))) return;
+            RequestFocus();
+        }
+
         /// <summary>Takes the cursor out of the box on the next frame, after the key that asked for it has been dealt with.</summary>
         public void RequestBlur() => blurRequested = true;
 
@@ -334,7 +353,7 @@ namespace BeaverBuddies.Panel
         public void Tick()
         {
             if (blurRequested) { blurRequested = false; ReleaseFocus(); }
-            if (focusDelayFrames > 0 && --focusDelayFrames == 0) input.Focus();
+            if (focusDelayFrames > 0 && --focusDelayFrames == 0 && !IsInputFocused) input.Focus();
         }
 
         /// <summary>
@@ -366,7 +385,19 @@ namespace BeaverBuddies.Panel
                 string text = (input.value ?? "").Trim();
                 // Enter on an empty box is how you leave the chat.
                 if (text.Length == 0) RequestBlur();
-                else if (Submit != null && Submit(text)) input.SetValueWithoutNotify("");
+                else
+                {
+                    if (Submit != null && Submit(text)) input.SetValueWithoutNotify("");
+                    // Sent or not, the cursor stays in the box, ready for the next message: Enter can take it out
+                    // of a one-line box on its own, and this puts it back.
+                    RequestFocus();
+                }
+            }
+            else if (e.keyCode == KeyCode.None && (e.character == '\n' || e.character == '\r'))
+            {
+                // The second half of an Enter press (its character), which would otherwise reach the box's own
+                // handling and take the cursor out.
+                e.StopImmediatePropagation();
             }
             else if (e.keyCode == KeyCode.Escape)
             {

@@ -42,6 +42,9 @@ namespace BeaverBuddies.Panel
         /// <summary>Raised when the header is clicked: the player wants to collapse or expand the panel.</summary>
         public event Action HeaderClicked;
 
+        /// <summary>Raised when the panel is pressed anywhere but its header, with what was pressed: the chat takes the cursor.</summary>
+        public event Action<VisualElement> PanelPressed;
+
         /// <summary>Raised when the host clicks the guest frame rate floor: pick the next one.</summary>
         public event Action FpsFloorClicked;
 
@@ -114,6 +117,15 @@ namespace BeaverBuddies.Panel
             }
             chatArea.style.display = DisplayStyle.None;
             Root.Add(chatArea);
+
+            // Seen before anything inside the panel handles the press (the player rows stop their clicks), and never
+            // stopped here. The header is left out: it collapses and expands the panel.
+            Root.RegisterCallback<PointerDownEvent>(e =>
+            {
+                var target = e.target as VisualElement;
+                if (target == null || target == header || header.Contains(target)) return;
+                PanelPressed?.Invoke(target);
+            }, TrickleDown.TrickleDown);
         }
 
         /// <summary>Removes chat for the rest of the scene, after it failed. The rest of the panel carries on.</summary>
