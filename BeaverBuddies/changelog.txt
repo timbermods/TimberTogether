@@ -1,3 +1,7 @@
+v1.4.0-rc20 (Timber Together)
+* Messages about a colony being handed over stay on screen until you close them, like trade messages.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc19 (Timber Together)
 * Each colony has its own wellbeing high score. Only its player is told of a new one.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.

@@ -5,7 +5,11 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc20
+
+**Hand-over messages stay until closed** (PR #51). Built against Timberborn 1.1.2.4: both configurations with 0
+warnings; StabilityTests 517 and RuntimeChecks 460 pass. **Not played.** Released as Latest on GitHub (a full release),
+at Kyler's request.
 
 - **Hand-over messages stay until closed.** The message that a colony was handed over (to the player who lost it and
   the one who received it) and the warning the day before now stay under the top bar, with a chime, until the player

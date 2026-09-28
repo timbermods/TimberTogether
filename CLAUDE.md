@@ -10,7 +10,7 @@ Mod checks, as CI runs them (`.github/workflows/tests.yml`, .NET 8; CI restores 
 
 ```
 dotnet restore StabilityTests/StabilityTests.csproj --source https://api.nuget.org/v3/index.json
-dotnet run --project StabilityTests --no-restore        # ends "N/N passed" (516/516 at rc19)
+dotnet run --project StabilityTests --no-restore        # ends "N/N passed" (517/517 at rc20)
 python -m unittest discover -s RuntimeChecks -p test_water_snapshots.py
 ```
 
