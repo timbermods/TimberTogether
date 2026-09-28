@@ -981,7 +981,9 @@ namespace BeaverBuddies.Colonies
             NativeElements.Show(lastRow, known);
             if (!known) return;
             string terms = string.Format(T("BeaverBuddies.Colony.Trade.LastTerms"), AmountOf(giveAmount, give), AmountOf(getAmount, get))
-                + " " + RoundsText(rounds, repeat, giveAmount, give, getAmount, get);
+                ;
+            string lastRounds = RoundsText(rounds, repeat, giveAmount, getAmount);
+            if (lastRounds.Length > 0) terms += "\n" + lastRounds;
             NativeElements.SetText(lastLabel, terms);
         }
 
@@ -1065,13 +1067,13 @@ namespace BeaverBuddies.Colonies
             switch (verdict)
             {
                 case TradeOfferForm.Verdict.Exchange:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryExchange"), partner, AmountOf(give, giveItem), AmountOf(get, getItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryExchange"), AmountOf(give * (repeat ? 1 : rounds), giveItem), AmountOf(get * (repeat ? 1 : rounds), getItem));
                     break;
                 case TradeOfferForm.Verdict.Gift:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryGift"), partner, AmountOf(give, giveItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryGift"), partner, AmountOf(give * (repeat ? 1 : rounds), giveItem));
                     break;
                 case TradeOfferForm.Verdict.Request:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryRequest"), partner, AmountOf(get, getItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryRequest"), partner, AmountOf(get * (repeat ? 1 : rounds), getItem));
                     break;
                 case TradeOfferForm.Verdict.BadAmount:
                     text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), Count(TradeOfferForm.MaxTyped), ExchangeTerms.MaxRounds);
@@ -1098,22 +1100,25 @@ namespace BeaverBuddies.Colonies
                     break;
             }
             bool offer = TradeOfferForm.IsOffer(verdict);
-            if (offer) text += " " + RoundsText(rounds, repeat, give, giveItem, get, getItem);
-            // Typed as more than a round carries: say how it was split.
-            if (offer && split) text += " " + string.Format(T(repeat ? "BeaverBuddies.Colony.Trade.SummarySplitRepeat" : "BeaverBuddies.Colony.Trade.SummarySplit"),
-                AmountOf(give, giveItem), AmountOf(get, getItem), ExchangeTerms.MaxAmount);
-            if (offer && keepShown && keep > 0) text += " " + string.Format(T("BeaverBuddies.Colony.Trade.SummaryKeep"), Count(keep), _items.Name(giveItem));
+            // Each thing on its own line: the deal, then how it is split into rounds.
+            if (offer)
+            {
+                string rounding = RoundsText(rounds, repeat, give, get);
+                if (rounding.Length > 0) text += "\n" + rounding;
+            }
+            if (offer && keepShown && keep > 0) text += "\n" + string.Format(T("BeaverBuddies.Colony.Trade.SummaryKeep"), Count(keep), _items.Name(giveItem));
             NativeElements.SetText(summary, text);
             summary.style.color = offer ? NativeElements.Muted : NativeElements.Warning;
             makeOfferButton.SetEnabled(offer);
         }
 
         /// <summary>"Once.", "3 rounds: 300 Berries for 3 Beavers in all.", or "Round after round, until you both agree to stop."</summary>
-        private string RoundsText(int rounds, bool repeat, int give, string giveGood, int get, string getGood)
+        private string RoundsText(int rounds, bool repeat, int give, int get)
         {
-            if (repeat) return T("BeaverBuddies.Colony.Trade.RoundsRepeat");
-            if (rounds <= 1) return T("BeaverBuddies.Colony.Trade.RoundsOnce");
-            return string.Format(T("BeaverBuddies.Colony.Trade.RoundsMany"), rounds, AmountOf(give * rounds, giveGood), AmountOf(get * rounds, getGood));
+            if (rounds <= 1 && !repeat) return "";
+            string each = give > 0 && get > 0 ? Count(give) + "/" + Count(get) : Count(Math.Max(give, get));
+            return repeat ? string.Format(T("BeaverBuddies.Colony.Trade.RoundsRepeat"), each)
+                : string.Format(T("BeaverBuddies.Colony.Trade.RoundsMany"), rounds, each);
         }
 
         private string ItemOf(OfferSide side) => side.Side == Give ? giveItem : getItem;
@@ -1203,7 +1208,7 @@ namespace BeaverBuddies.Colonies
                     : "";
                 ShowTerm(secondTerm, T("BeaverBuddies.Colony.Trade.YouGiveCaption"), ax, have);
             }
-            NativeElements.SetText(proposalRounds, RoundsText(ax.Rounds, ax.Repeat, ax.Total, ax.GoodId, bx.Total, bx.GoodId));
+            NativeElements.SetText(proposalRounds, RoundsText(ax.Rounds, ax.Repeat, ax.Total, bx.Total));
             NativeElements.Show(acceptButton, !offeredHere && canAccept);
             NativeElements.Show(declineButton, !offeredHere);
             NativeElements.Show(withdrawButton, offeredHere);

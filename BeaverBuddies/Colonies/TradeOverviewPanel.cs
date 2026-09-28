@@ -729,6 +729,7 @@ namespace BeaverBuddies.Colonies
             {
                 Button clear = NativeElements.RedButton(T("BeaverBuddies.Colony.Overview.ClearWishes"), () => SendWishes(new List<string>()));
                 clear.style.fontSize = 12;
+                clear.style.color = Color.white;
                 clear.style.minHeight = 24;
                 clear.style.height = 24;
                 clear.style.paddingTop = 0;
