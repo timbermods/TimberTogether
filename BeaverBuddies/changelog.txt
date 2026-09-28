@@ -1,3 +1,8 @@
+v1.4.0-rc21 (Timber Together)
+* The chat box keeps the cursor after you send, so you can type the next message straight away.
+* A click anywhere on the open connection panel puts the cursor in the chat box.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc20 (Timber Together)
 * Messages about a colony being handed over stay on screen until you close them, like trade messages.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
