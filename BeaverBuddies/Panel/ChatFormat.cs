@@ -31,6 +31,18 @@ namespace BeaverBuddies.Panel
         public static bool Chimes(IEnumerable<ChatMessage> fresh, int myPlayerId, int historyThrough) =>
             fresh.Any(message => message.Sequence > historyThrough && message.PlayerId != myPlayerId);
 
+        /// <summary>
+        /// Whether a chat line counts as seen: at least half of it was inside the messages' visible area (for a line
+        /// taller than that area, most of the area was taken by it). Tops and bottoms in the same units, downward.
+        /// </summary>
+        public static bool IsSeen(float lineTop, float lineBottom, float viewTop, float viewBottom)
+        {
+            float line = lineBottom - lineTop, view = viewBottom - viewTop;
+            if (float.IsNaN(line) || float.IsNaN(view) || line <= 0 || view <= 0) return false;
+            float inside = Math.Min(lineBottom, viewBottom) - Math.Max(lineTop, viewTop);
+            return inside >= Math.Min(line, view) / 2;
+        }
+
         /// <summary>The color as six hex digits, lightened if it would be hard to read on the panel's dark background.</summary>
         public static string ReadableHex(string hex)
         {

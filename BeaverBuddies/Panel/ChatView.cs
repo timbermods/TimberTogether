@@ -40,10 +40,15 @@ namespace BeaverBuddies.Panel
         Label boostResult;
         // The boost the row shows; NaN until the session's has been shown once. While a request is out, the asked value.
         float shownBoost = float.NaN, pendingBoost, pendingUntil;
-        readonly Queue<Line> lines = new Queue<Line>();
+        readonly List<Line> lines = new List<Line>();
         // Who is which color, worked out once per refresh instead of once per line.
         readonly Dictionary<(int Player, string Name, string Sent), string> colors = new Dictionary<(int, string, string), string>();
         Label emptyHint;
+        // "2 new" at the top right of the messages, while others' messages have arrived that were never on screen.
+        readonly VisualElement unseenBadge;
+        readonly Label unseenCount;
+        // Everything up to this message has been on screen; the others' messages after it are counted as unseen.
+        int seenSequence, shownUnseen;
         int renderedSequence, focusDelayFrames;
         bool stickToBottom = true, blurRequested;
 
@@ -67,6 +72,9 @@ namespace BeaverBuddies.Panel
         /// it fails, a line uses the color that came with the message.
         /// </summary>
         public Func<ChatMessage, string> ColorOf;
+
+        /// <summary>Whether a message is this player's own, which never counts as unseen. Without it, none is.</summary>
+        public Func<ChatMessage, bool> IsOwn;
 
         public ChatView(ILoc loc, VisualElementInitializer initializer)
         {
@@ -105,8 +113,15 @@ namespace BeaverBuddies.Panel
             // The speed boost row sits above the messages, so it is in view however full the log is.
             boostRow = BuildBoostRow();
 
+            // The messages and, over their top right corner, the badge for messages not seen yet.
+            var logArea = new VisualElement { name = "BeaverBuddiesChatLogArea" };
+            logArea.style.flexGrow = 1; logArea.style.flexShrink = 1;
+            logArea.Add(log);
+            (unseenBadge, unseenCount) = BuildUnseenBadge();
+            logArea.Add(unseenBadge);
+
             Root.Add(boostRow);
-            Root.Add(log);
+            Root.Add(logArea);
             Root.Add(input);
 
             // The game's own setup for these: its scroll bar look and the wheel speed the player chose, and, for
@@ -129,6 +144,68 @@ namespace BeaverBuddies.Panel
             if (stickToBottom) log.verticalScroller.value = log.verticalScroller.highValue;
         }
 
+        // A yellow dot and "2 new", like the header's count while the panel is collapsed. Clear of the scroll bar.
+        (VisualElement, Label) BuildUnseenBadge()
+        {
+            var badge = new VisualElement { name = "BeaverBuddiesChatUnseen" };
+            var s = badge.style;
+            s.position = Position.Absolute; s.top = 0; s.right = 14;
+            s.flexDirection = FlexDirection.Row; s.alignItems = Align.Center;
+            s.paddingTop = 1; s.paddingBottom = 1; s.paddingLeft = 5; s.paddingRight = 6;
+            s.backgroundColor = new Color(.09f, .08f, .06f, .95f);
+            ConnectionPanelView.Border(badge, 1, ConnectionPanelView.Fair, 8);
+            badge.tooltip = loc.T("BeaverBuddies.Chat.Unseen.Tooltip");
+            var dot = new VisualElement { pickingMode = PickingMode.Ignore };
+            dot.style.width = 7; dot.style.height = 7; dot.style.marginRight = 4;
+            dot.style.backgroundColor = ConnectionPanelView.Fair;
+            ConnectionPanelView.Border(dot, 0, ConnectionPanelView.Fair, 4);
+            var count = ConnectionPanelView.Text("", 11, ConnectionPanelView.Fair, bold: true);
+            count.pickingMode = PickingMode.Ignore;
+            badge.Add(dot); badge.Add(count);
+            s.display = DisplayStyle.None;
+            // A click goes down to the newest message, which shows it and so clears the badge.
+            badge.RegisterCallback<ClickEvent>(e =>
+            {
+                stickToBottom = true;
+                ScrollIfFollowing();
+                e.StopPropagation();
+            });
+            return (badge, count);
+        }
+
+        // Called every frame the chat is open: what is on screen now counts as seen, and the badge counts the rest.
+        void UpdateUnseen()
+        {
+            int unseen = 0;
+            if (renderedSequence > seenSequence)
+            {
+                Rect view = log.contentViewport.worldBound;
+                // Newest first: the newest line on screen marks everything before it as seen.
+                for (int i = lines.Count - 1; i >= 0; i--)
+                {
+                    Line line = lines[i];
+                    if (line.Message.Sequence <= seenSequence) break;
+                    Rect bound = line.Label.worldBound;
+                    // Not laid out yet (it arrived this frame): nothing is decided until it is.
+                    if (float.IsNaN(bound.height) || bound.height <= 0) return;
+                    if (ChatFormat.IsSeen(bound.yMin, bound.yMax, view.yMin, view.yMax)) { seenSequence = line.Message.Sequence; break; }
+                }
+                for (int i = lines.Count - 1; i >= 0 && lines[i].Message.Sequence > seenSequence; i--)
+                    if (!Own(lines[i].Message)) unseen++;
+            }
+            if (unseen == shownUnseen) return;
+            shownUnseen = unseen;
+            unseenCount.text = unseen > 0 ? string.Format(CultureInfo.InvariantCulture, loc.T("BeaverBuddies.Chat.Unread"), unseen) : "";
+            unseenBadge.style.display = unseen > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
+        // Your own messages were seen as you typed them; if asking fails, a message counts as someone else's.
+        bool Own(ChatMessage message)
+        {
+            try { return IsOwn?.Invoke(message) ?? false; }
+            catch (Exception) { return false; }
+        }
+
         // ---- messages ----
 
         /// <summary>Draws messages that arrived since last time (a batch at a time, oldest first).</summary>
@@ -144,11 +221,11 @@ namespace BeaverBuddies.Panel
                 label.enableRichText = true;
                 label.style.marginBottom = 3; label.style.flexShrink = 0;
                 log.contentContainer.Add(label);
-                lines.Enqueue(new Line(label, message, hex));
+                lines.Add(new Line(label, message, hex));
                 renderedSequence = message.Sequence;
             }
             // Only the drawing is trimmed here; the log itself keeps its own cap.
-            while (lines.Count > ChatLog.MaxMessages) lines.Dequeue().Label.RemoveFromHierarchy();
+            while (lines.Count > ChatLog.MaxMessages) { lines[0].Label.RemoveFromHierarchy(); lines.RemoveAt(0); }
         }
 
         /// <summary>
@@ -182,6 +259,8 @@ namespace BeaverBuddies.Panel
             log.contentContainer.Clear();
             lines.Clear();
             renderedSequence = 0; stickToBottom = true;
+            seenSequence = 0; shownUnseen = 0;
+            unseenBadge.style.display = DisplayStyle.None;
             shownBoost = float.NaN; pendingUntil = 0;
             AddEmptyHint();
         }
@@ -354,6 +433,7 @@ namespace BeaverBuddies.Panel
         {
             if (blurRequested) { blurRequested = false; ReleaseFocus(); }
             if (focusDelayFrames > 0 && --focusDelayFrames == 0 && !IsInputFocused) input.Focus();
+            UpdateUnseen();
         }
 
         /// <summary>

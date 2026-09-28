@@ -54,8 +54,6 @@ namespace BeaverBuddies.Panel
         // Whether myPlayerId has been read from the connection yet (a guest is told its number a moment after joining).
         bool myPlayerIdKnown;
         float lastChatSend;
-        // The panel was the last thing pressed on the interface: it stays in front until something else is.
-        bool pressedLast;
         PanelCorner placedIn = (PanelCorner)(-1);
         PanelDisplayMode lastVisibleMode = PanelDisplayMode.Expanded;
         float nextRefresh, nextTickSample, waitingSince = -1;
@@ -88,12 +86,12 @@ namespace BeaverBuddies.Panel
                 view.RowClicked += OnRowClicked;
                 view.PanelPressed += OnPanelPressed;
                 view.SoundClicked += OnSoundClicked;
-                view.Pressed += inside => pressedLast = inside;
                 try { view.SetSoundIcons(assets.LoadSafe<Sprite>(SoundOnIconPath), assets.LoadSafe<Sprite>(SoundOffIconPath)); }
                 catch (Exception error) { Plugin.LogWarning("The panel's sound button has no picture and shows a word: " + error.Message); }
                 if (view.Chat != null)
                 {
                     view.Chat.Submit = OnChatSubmit; view.Chat.ColorOf = ChatColorOf;
+                    view.Chat.IsOwn = message => myPlayerIdKnown && message.PlayerId == myPlayerId;
                     view.Chat.BoostRequested = OnBoostRequested;
                 }
                 view.SetVisible(false);
@@ -207,16 +205,16 @@ namespace BeaverBuddies.Panel
             var net = CurrentNetwork();
             if (!ReferenceEquals(net, chatNet)) StartChatSession(net);
             if (net != null && !chimeFailed) ListenForChat(net, mode == PanelDisplayMode.Expanded);
-            // A click on the game itself, not on any interface, sends the panel back behind the rest.
-            if (pressedLast && input.MainMouseButtonDown && !input.MouseOverUI) pressedLast = false;
             if (mode == PanelDisplayMode.Hidden || net == null)
             {
-                pressedLast = false;
                 view.SetVisible(false);
                 tickMeter.Reset(); tickRate = null; waitingSince = -1;
                 return;
             }
             PlaceIfNeeded();
+            // Whenever it is on screen, open or collapsed, the panel is drawn in front of the game's alerts, which
+            // otherwise cover its chat from the bottom of the screen (a no-op once it is in front).
+            view.SetLifted(true);
             // Every frame, not just at each refresh: typing and new messages must not wait half a second.
             UpdateChat(net, mode == PanelDisplayMode.Expanded);
 
@@ -262,17 +260,9 @@ namespace BeaverBuddies.Panel
                 {
                     view.Chat.Tick();
                     view.Chat.Sync(log);
-                    // Asked of the panel once per frame (it is a walk of the focused element's parents).
-                    bool focused = view.Chat.IsFocused;
-                    // A click on the game itself, not on any interface, gives the keyboard back to the game.
-                    if (focused && input.MainMouseButtonDown && !input.MouseOverUI)
-                    {
-                        view.Chat.ReleaseFocus();
-                        focused = false;
-                    }
-                    // While the cursor is in the box, or the panel was pressed last, it is drawn in front of the game's
-                    // alerts and the trade messages.
-                    view.SetLifted(focused || pressedLast);
+                    // A click on the game itself, not on any interface, gives the keyboard back to the game. Focus is
+                    // asked of the panel only then (it is a walk of the focused element's parents).
+                    if (input.MainMouseButtonDown && !input.MouseOverUI && view.Chat.IsFocused) view.Chat.ReleaseFocus();
                     countedSequence = log.LastSequence; unread = 0;
                 }
                 else
@@ -280,7 +270,6 @@ namespace BeaverBuddies.Panel
                     // Collapsed: the box is off screen, so the keyboard goes back to the game at once (waiting for the
                     // next refresh would leave the hotkeys off for up to half a second).
                     view.Chat.ReleaseFocus();
-                    view.SetLifted(pressedLast);
                     // And count what others say, so the header can say there is something to read.
                     if (log.LastSequence > countedSequence)
                     {
@@ -381,6 +370,8 @@ namespace BeaverBuddies.Panel
         {
             var corner = Settings.ConnectionPanelCornerValue;
             if (corner == placedIn) return;
+            // The corner it leaves goes back to its place in the drawing order; the new one is lifted next frame.
+            view.SetLifted(false);
             view.Root.RemoveFromHierarchy();
             switch (corner)
             {

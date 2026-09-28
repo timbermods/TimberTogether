@@ -4,8 +4,8 @@ using UnityEngine.UIElements;
 namespace BeaverBuddies.Panel
 {
     /// <summary>
-    /// Keeps the panel in front of the rest of the game's interface while the chat box has the cursor, so the alerts
-    /// at the bottom of the screen cannot draw over what is being typed, and puts everything back afterwards.
+    /// Keeps the panel in front of the rest of the game's interface while it is on screen, so the alerts at the bottom
+    /// of the screen cannot draw over it and its chat, and puts everything back when it is hidden or moved.
     /// </summary>
     /// <remarks>
     /// The game's interface is a set of corner containers ("Top-left", "Bottom-left", and so on) that are drawn in the
@@ -48,7 +48,7 @@ namespace BeaverBuddies.Panel
             wasBehind = holder[mine + 1];
             corner.PlaceInFront(front);
             lifted = corner;
-            if (!warned) { warned = true; Plugin.Log($"Chat: '{corner.name}' is drawn in front of '{front.name}' while the chat box has the cursor."); }
+            if (!warned) { warned = true; Plugin.Log($"Chat: '{corner.name}' is drawn in front of '{front.name}' while the panel is on screen."); }
         }
 
         /// <summary>Puts the corner back exactly where it was in the drawing order. Safe to call at any time.</summary>
