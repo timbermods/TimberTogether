@@ -50,12 +50,20 @@ namespace BeaverBuddies.Panel
         // Everything up to this message has been on screen; the others' messages after it are counted as unseen.
         int seenSequence, shownUnseen;
         int renderedSequence, focusDelayFrames;
+        // The frame a key press in the box (Enter, Esc) was handled on, so the same press can't open the chat again.
+        int keyFrame = -10;
         bool stickToBottom = true, blurRequested;
 
         public VisualElement Root { get; }
 
         /// <summary>Whether the cursor is in the box right now, asked of the panel itself rather than remembered.</summary>
         public bool IsFocused => FocusedInside() != null;
+
+        /// <summary>
+        /// Whether a key was just pressed in the box. Enter both leaves the chat (on an empty box) and opens it, so the
+        /// press that left it must not be read again as one to open it.
+        /// </summary>
+        public bool KeyJustHandled => Time.frameCount - keyFrame <= 2;
 
         /// <summary>Asked to send what was typed. Returns true if it went out, and only then is the box cleared.</summary>
         public Func<string, bool> Submit;
@@ -462,6 +470,7 @@ namespace BeaverBuddies.Panel
             if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
             {
                 e.StopImmediatePropagation();
+                keyFrame = Time.frameCount;
                 string text = (input.value ?? "").Trim();
                 // Enter on an empty box is how you leave the chat.
                 if (text.Length == 0) RequestBlur();
@@ -482,6 +491,7 @@ namespace BeaverBuddies.Panel
             else if (e.keyCode == KeyCode.Escape)
             {
                 e.StopImmediatePropagation();
+                keyFrame = Time.frameCount;
                 // Not at once: the game reads the same key press for its own menu, and must still see input blocked.
                 RequestBlur();
             }
