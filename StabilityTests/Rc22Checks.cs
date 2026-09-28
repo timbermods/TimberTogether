@@ -125,10 +125,10 @@ static class Rc22Checks
             Check(Csv("BeaverBuddies.Colony.Trade.LedgerClear") == "Clear", "the button's label changed");
         });
 
-        yield return ("rc22: the colonies window shows every good another colony has, as icons and amounts", () =>
+        yield return ("rc22: the colonies window shows every good each colony has, as icons and amounts", () =>
         {
             string window = Source("BeaverBuddies", "Colonies", "TradeOverviewPanel.cs");
-            Check(window.Contains("RefreshGoods(card, slot, slot != me && slot != seat"), "the goods show for this player's own colony, or not at all");
+            Check(window.Contains("RefreshGoods(card, slot, lifecycle != null && lifecycle.OwnsDistrict(slot)"), "the goods do not show for every colony, this player's own included");
             Check(Body(window, "private void RefreshGoods(ColonyCard card, int slot, bool shown)").Contains("_items.GoodsOfColony(slot)"), "the goods are not the colony's");
             Check(Body(Source("BeaverBuddies", "Colonies", "TradeItems.cs"), "public List<KeyValuePair<string, int>> GoodsOfColony(int slot)").Contains("DistrictOwner.OwnerOfDistrict(districtCenter) == slot"),
                 "the goods add up other colonies' districts");
