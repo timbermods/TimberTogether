@@ -324,7 +324,7 @@
         </article>
         <article class="plate enamel">
           <h3>Away for a while? Your colony waits <span class="not-played">Not played yet</span></h3>
-          <p>Your colony is kept for you. To keep it running, press <kbd>Ctrl</kbd>+<kbd>T</kbd> &rarr; <b>Let &hellip; look after it</b>. Your friend presses <b>Run this colony</b> to play it, and <b>Back to your colony</b> when done. <b>Take it back</b> any time.</p>
+          <p>Your colony is kept for you. To keep it running, press <kbd>Y</kbd> &rarr; <b>Let &hellip; look after it</b>. Your friend presses <b>Run this colony</b> to play it, and <b>Back to your colony</b> when done. <b>Take it back</b> any time.</p>
           <p class="muted">The host can also set <b>Hand over a colony after its player is away (days)</b> in Timber Together's settings. It's 0, never, by default.</p>
         </article>
       </div>
@@ -390,7 +390,8 @@
           <li>Untick <strong>answers automatically</strong> and make an offer. Then switch to <strong>Player 2</strong> to <strong>Accept</strong> or <strong>Decline</strong> it.</li>
           <li>Set <strong>Workers on your half</strong> to 0 during a round. Your side stops, and nothing crosses.</li>
           <li>Press <strong>Cancel exchange</strong>. It ends when the other player agrees, and any goods already brought go back to the colony that brought them.</li>
-          <li>Type <strong>150</strong> in an amount box. Each side gives at most 100 per round, so add <strong>Rounds</strong> or tick <strong>Repeat until cancelled</strong>.</li>
+          <li>Type <strong>300</strong> in both amount boxes. A post carries at most 100 of each a round, so the whole trade is split into more rounds of 100 for 100.</li>
+          <li>After a round crosses, press <strong>Clear</strong> on the <strong>Ledger</strong>. The totals traded below it stay.</li>
         </ol>
         <div class="tp-log" data-tp-log aria-live="polite"></div>
       </div>
@@ -418,7 +419,7 @@
         <p class="tp-fine"><span data-clock>Cycle 3, day 12</span> &middot; A copy to try things out; nothing is saved. Goods icons are Timberborn's.</p>
       </div>
     </div>
-    <p class="muted" style="margin-top:2rem;max-width:72ch">In the game: build a <b>Trading Post</b> (District Management, 10 logs) with one half's door on your road and the other on a neighbour's. It trades once both roads reach it. <kbd>Ctrl</kbd>+<kbd>T</kbd> lists your Trading Posts and every colony.</p>
+    <p class="muted" style="margin-top:2rem;max-width:72ch">In the game: build a <b>Trading Post</b> (District Management, 10 logs) with one half's door on your road and the other on a neighbour's. It trades once both roads reach it. <kbd>Y</kbd> lists your Trading Posts and every colony, with its goods in stock. An offer's message stays on the other player's screen until they answer or close it, and says the whole trade.</p>
   </div>
 </section>
 
@@ -432,7 +433,7 @@
     </div>
     <ul class="inherited">
       <li><b>Steam invites</b><p>Invite friends from Steam's overlay, with no port forwarding. Direct IP and Hamachi work too.</p></li>
-      <li><b>Connection panel and chat</b><p>Who's connected and which colony they run, ping, sync status and tick rate, with chat, a speed boost and who paused the game.</p></li>
+      <li><b>Connection panel and chat</b><p>Who's connected and which colony they run, ping, sync status and tick rate, with chat, a speed boost and who paused the game. A speaker on each player's row mutes their sounds.</p></li>
       <li><b>Pings</b><p>Bind <b>Ping location</b> and mark a spot on everyone's map, in your own color.</p></li>
       <li><b>Player cursors</b><p>See your friends' cursors, selections and what they're editing, anywhere on the map.</p></li>
     </ul>
@@ -559,17 +560,15 @@
         </div>
         <p style="margin:1.1rem 0 0"><a href="https://github.com/timbermods/TimberTogether/releases">All releases</a> &middot; <a href="https://github.com/timbermods/TimberTogether/blob/main/STABILITY-CHANGELOG.md">Changelog</a></p>
       </div>
-      <div class="measure" data-release-pinned="1.4.0-rc21">
+      <div class="measure" data-release-pinned="1.4.0-rc22">
+        <h3>Bigger offers, clearer messages</h3>
+        <p>Type more than 100 and the offer is split into rounds. An offer's message stays until it's answered, and says the whole trade.</p>
+        <h3>The colonies window opens with Y</h3>
+        <p>It shows every colony's goods in stock. <b>Clear</b> empties a Trading Post's ledger.</p>
+        <h3>Mute a player's sounds</h3>
+        <p>The speaker on a player's row in the connection panel mutes the sounds of their actions on your computer.</p>
         <h3>Chat keeps the cursor</h3>
         <p>After you send a message, the cursor stays in the chat box. A click anywhere on the open connection panel puts it there too.</p>
-        <h3>Hand-over messages stay until closed</h3>
-        <p>The warning before a hand-over, and the message when a colony changes hands, stay on screen until you close them.</p>
-        <h3>Each colony's own wellbeing high score</h3>
-        <p>Each colony keeps its own wellbeing high score. Only its player is told of a new one.</p>
-        <h3>Only a player's pause pauses</h3>
-        <p>Menus and dialogs don't pause a co-op game. Pressing pause pauses it for everyone, and the connection panel shows who paused.</p>
-        <h3>Played end to end</h3>
-        <p>Hosting, the room, splitting, rehosting, Trading Posts at scale and the late game have all been played. Mixed factions and hand-overs haven't yet.</p>
       </div>
     </div>
   </div>
