@@ -36,6 +36,24 @@ namespace BeaverBuddies.Panel
             return null;
         }
 
+        /// <summary>The room left between the panel and the game's alerts when they are moved beside it.</summary>
+        public const float AlertGap = 8;
+
+        /// <summary>
+        /// How far right the game's alerts move so they sit beside the panel instead of under it: 0 when their rows and
+        /// the panel don't meet. Screen rectangles, the alerts' as the game lays them out (before any move). Anything
+        /// not laid out yet (NaN, no size) moves nothing.
+        /// </summary>
+        public static float AlertShift(float panelLeft, float panelTop, float panelRight, float panelBottom,
+            float alertsLeft, float alertsTop, float alertsRight, float alertsBottom)
+        {
+            foreach (float value in new[] { panelLeft, panelTop, panelRight, panelBottom, alertsLeft, alertsTop, alertsRight, alertsBottom })
+                if (float.IsNaN(value) || float.IsInfinity(value)) return 0;
+            if (panelRight - panelLeft < 1 || panelBottom - panelTop < 1 || alertsRight - alertsLeft < 1 || alertsBottom - alertsTop < 1) return 0;
+            bool meet = alertsTop < panelBottom && alertsBottom > panelTop && alertsLeft < panelRight && alertsRight > panelLeft;
+            return meet ? panelRight + AlertGap - alertsLeft : 0;
+        }
+
         static bool Usable(float? width) =>
             width.HasValue && !float.IsNaN(width.Value) && width.Value >= MinMatchedWidth && width.Value <= MaxMatchedWidth;
     }

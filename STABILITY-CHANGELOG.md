@@ -5,6 +5,19 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**The alerts move beside the connection panel** (built without the game's assemblies; StabilityTests only). **Not
+played.**
+
+- **The game's alerts no longer cover the panel.** Drawing the panel's corner in front (rc24, rc25) did not work in
+  play: in rc25 the game's alerts still covered the chat. Now, wherever the alert rows would meet the panel, the game's
+  bottom-left corner is moved right, beside it (`CornerLift.KeepAlertsClear`, a translation: display only, it changes
+  nobody's layout, and it is put back when the panel is hidden or moved). The distance is `PanelLayout.AlertShift`,
+  checked in StabilityTests. The log says once where the alerts went, or where the panel sits if the corner is not found.
+- **The log says whose alerts a computer lists** (`[Colony] Alerts and the journal show colony N only`), each time that
+  changes. From an rc25 report that the other player saw the host's alerts, which these checks could not reproduce.
+
 ## 1.4.0-rc25
 
 **An eye button, chat sound while open, shorter trade messages, and the panel in front of the alerts** (built without

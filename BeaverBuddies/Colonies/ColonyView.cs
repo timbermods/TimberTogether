@@ -104,8 +104,13 @@ namespace BeaverBuddies.Colonies
             if (frame != filterFrame)
             {
                 filterFrame = frame;
-                filtersThisFrame = Active;
-                slotThisFrame = ColonySession.LocalSlot;
+                bool filters = Active;
+                int slot = ColonySession.LocalSlot;
+                // Written when it changes, so a log shows whose alerts this computer listed and from when.
+                if (filters != filtersThisFrame || slot != slotThisFrame)
+                    Plugin.Log(filters ? $"[Colony] Alerts and the journal show colony {slot + 1} only" : "[Colony] Alerts and the journal show every colony (slot " + slot + ")");
+                filtersThisFrame = filters;
+                slotThisFrame = slot;
             }
             localSlot = slotThisFrame;
             return filtersThisFrame;
