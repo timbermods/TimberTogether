@@ -234,7 +234,8 @@ A colony goes to another colony, with its buildings, marks, stock and science, w
   if a player's Steam account changed.
 
 With a limit set, the Ctrl+T window shows how close it is (*missed 6 of 7 days*), and everyone is warned the day
-before. A player who lost their colony can found a new one with **Ctrl+K**. The receiving colony can build whatever
+before. The warning, and the message telling both players of a hand-over, stay under the top bar until closed, as a
+trade offer does. A player who lost their colony can found a new one with **Ctrl+K**. The receiving colony can build whatever
 the old one had unlocked.
 
 ## Separate science and unlocks
