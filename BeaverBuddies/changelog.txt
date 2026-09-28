@@ -1,3 +1,8 @@
+v1.4.0-rc26 (Timber Together)
+* The game's alerts sit beside the connection panel instead of under it.
+* The other colony's "Beaver died tragically" alert no longer shows after you join.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc25 (Timber Together)
 * An eye button beside each player's speaker hides or shows their buildings on your screen.
 * The speaker also mutes that player's chat sound, and chat now sounds while the panel is open.

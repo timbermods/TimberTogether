@@ -5,7 +5,7 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc26
 
 **The alerts move beside the connection panel, and the other colony's death alert stays out** (built without the game's assemblies; StabilityTests only). **Not
 played.**
