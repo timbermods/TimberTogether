@@ -10,7 +10,7 @@ Co-op Timberborn with a colony each: every player runs their own districts, beav
 
 [b]Folktails and Iron Teeth together:[/b] with Mixed factions ticked, each player picks their own faction in the room.
 
-[b]Away for the evening?[/b] Ask a friend to look after your colony (Ctrl+T); it is kept for you.
+[b]Away for the evening?[/b] Ask a friend to look after your colony (Y); it is kept for you.
 
 [b]Out of step? It stops at once:[/b] every computer checks its colonies against the host's as the game runs, so a game that drifts stops the moment it happens instead of much later.
 

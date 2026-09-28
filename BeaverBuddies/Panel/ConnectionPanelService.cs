@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using BeaverBuddies.Activity;
 using BeaverBuddies.IO;
+using Timberborn.AssetSystem;
 using Timberborn.CoreUI;
 using Timberborn.InputSystem;
 using Timberborn.Localization;
@@ -31,6 +32,8 @@ namespace BeaverBuddies.Panel
         // The host allows a short burst and then a steady rate; staying a little under it means an honest sender is
         // never the one it drops.
         const float MinChatIntervalSeconds = .4f;
+        // The sound button's pictures (files of this mod).
+        const string SoundOnIconPath = "UI/Images/BeaverBuddies/sound-on", SoundOffIconPath = "UI/Images/BeaverBuddies/sound-off";
 
         readonly UILayout layout;
         readonly VisualElementInitializer initializer;
@@ -38,6 +41,7 @@ namespace BeaverBuddies.Panel
         readonly ILoc loc;
         readonly SpeedManager speed;
         readonly BeaverBuddies.Util.NoticeSounds sounds;
+        readonly IAssetLoader assets;
         readonly TickRateMeter tickMeter = new TickRateMeter();
         ConnectionPanelView view;
         bool loaded, failed, chatFailed;
@@ -50,16 +54,28 @@ namespace BeaverBuddies.Panel
         // Whether myPlayerId has been read from the connection yet (a guest is told its number a moment after joining).
         bool myPlayerIdKnown;
         float lastChatSend;
+        // The panel was the last thing pressed on the interface: it stays in front until something else is.
+        bool pressedLast;
         PanelCorner placedIn = (PanelCorner)(-1);
         PanelDisplayMode lastVisibleMode = PanelDisplayMode.Expanded;
         float nextRefresh, nextTickSample, waitingSince = -1;
         double? tickRate;
 
         public ConnectionPanelService(UILayout layout, VisualElementInitializer initializer, InputService input, ILoc loc, SpeedManager speed,
-            BeaverBuddies.Util.NoticeSounds sounds)
+            BeaverBuddies.Util.NoticeSounds sounds, IAssetLoader assets)
         {
             this.layout = layout; this.initializer = initializer; this.input = input; this.loc = loc; this.speed = speed;
-            this.sounds = sounds;
+            this.sounds = sounds; this.assets = assets;
+        }
+
+        /// <summary>The panel on screen (null before it is built or after it failed), for what must keep clear of it.</summary>
+        public static UnityEngine.UIElements.VisualElement PanelRoot
+        {
+            get
+            {
+                var service = SingletonManager.GetSingleton<ConnectionPanelService>();
+                return service != null && service.loaded && !service.failed ? service.view?.Root : null;
+            }
         }
 
         public void PostLoad()
@@ -71,6 +87,10 @@ namespace BeaverBuddies.Panel
                 view.FpsFloorClicked += OnFpsFloorClicked;
                 view.RowClicked += OnRowClicked;
                 view.PanelPressed += OnPanelPressed;
+                view.SoundClicked += OnSoundClicked;
+                view.Pressed += inside => pressedLast = inside;
+                try { view.SetSoundIcons(assets.LoadSafe<Sprite>(SoundOnIconPath), assets.LoadSafe<Sprite>(SoundOffIconPath)); }
+                catch (Exception error) { Plugin.LogWarning("The panel's sound button has no picture and shows a word: " + error.Message); }
                 if (view.Chat != null)
                 {
                     view.Chat.Submit = OnChatSubmit; view.Chat.ColorOf = ChatColorOf;
@@ -144,6 +164,14 @@ namespace BeaverBuddies.Panel
             else navigation.GoToPlayer(row.Id, row.Name);
         }
 
+        // Another player's sound button: this computer plays their actions' sounds, or doesn't (RemoteSounds).
+        void OnSoundClicked(PanelRow row)
+        {
+            if (row.IsYou) return;
+            RemoteSounds.SetMuted(row.Id, !RemoteSounds.IsMuted(row.Id));
+            nextRefresh = 0;
+        }
+
         void OnHeaderClicked()
         {
             var mode = Settings.ConnectionPanelDisplayMode;
@@ -179,8 +207,11 @@ namespace BeaverBuddies.Panel
             var net = CurrentNetwork();
             if (!ReferenceEquals(net, chatNet)) StartChatSession(net);
             if (net != null && !chimeFailed) ListenForChat(net, mode == PanelDisplayMode.Expanded);
+            // A click on the game itself, not on any interface, sends the panel back behind the rest.
+            if (pressedLast && input.MainMouseButtonDown && !input.MouseOverUI) pressedLast = false;
             if (mode == PanelDisplayMode.Hidden || net == null)
             {
+                pressedLast = false;
                 view.SetVisible(false);
                 tickMeter.Reset(); tickRate = null; waitingSince = -1;
                 return;
@@ -202,6 +233,7 @@ namespace BeaverBuddies.Panel
             // Line up with the game's own panel above this one (measured, so it follows the UI scale and any change).
             view.SetWidth(view.MeasureMatchedWidth());
             var model = PanelModelBuilder.Build(Collect(net, replay, now), Translate);
+            foreach (var row in model.Rows) row.Muted = !row.IsYou && RemoteSounds.IsMuted(row.Id);
             view.Show(model, mode == PanelDisplayMode.Expanded);
             view.SetVisible(true);
             if (mode == PanelDisplayMode.Expanded) { RefreshChatColors(); ShowBoost(replay); }
@@ -213,6 +245,8 @@ namespace BeaverBuddies.Panel
         void StartChatSession(TimberNetBase net)
         {
             chatNet = net; countedSequence = 0; heardSequence = 0; unread = 0; lastChatSend = -100; myPlayerIdKnown = false;
+            // Player numbers belong to a session: a new one starts with everyone heard.
+            RemoteSounds.ClearMuted();
             if (view.Chat == null || chatFailed) return;
             try { view.Chat.ReleaseFocus(); view.Chat.Clear(); view.SetUnread(0); }
             catch (Exception error) { DisableChat(error); }
@@ -236,8 +270,9 @@ namespace BeaverBuddies.Panel
                         view.Chat.ReleaseFocus();
                         focused = false;
                     }
-                    // While the cursor is in the box, the panel is drawn in front of the game's alerts.
-                    view.SetLifted(focused);
+                    // While the cursor is in the box, or the panel was pressed last, it is drawn in front of the game's
+                    // alerts and the trade messages.
+                    view.SetLifted(focused || pressedLast);
                     countedSequence = log.LastSequence; unread = 0;
                 }
                 else
@@ -245,7 +280,7 @@ namespace BeaverBuddies.Panel
                     // Collapsed: the box is off screen, so the keyboard goes back to the game at once (waiting for the
                     // next refresh would leave the hotkeys off for up to half a second).
                     view.Chat.ReleaseFocus();
-                    view.SetLifted(false);
+                    view.SetLifted(pressedLast);
                     // And count what others say, so the header can say there is something to read.
                     if (log.LastSequence > countedSequence)
                     {

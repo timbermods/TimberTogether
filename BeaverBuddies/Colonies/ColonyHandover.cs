@@ -32,7 +32,7 @@ namespace BeaverBuddies.Colonies
     ///   and a day the player is in the game starts the count again. It is always announced the day before, in the
     ///   same session, also when the count passed the limit while a steward in the game looked after it.
     /// - The host may hand over any colony whose player is away, or that has no beavers, by hand (the trading posts
-    ///   and colonies window, Ctrl+T), for example to a player whose Steam account changed.
+    ///   and colonies window, Y), for example to a player whose Steam account changed.
     ///
     /// The count of missed days is saved: the host tells every computer once a day who is playing.
     /// </summary>
@@ -72,7 +72,7 @@ namespace BeaverBuddies.Colonies
         public bool IsPlayerPresent(string playerId) => playerId != null && presentPlayerIds.Contains(playerId);
 
         /// <summary>
-        /// Display: the colonies being played, as Ctrl+T shows them. The host knows who is connected now; a guest knows
+        /// Display: the colonies being played, as the colonies window (Y) shows them. The host knows who is connected now; a guest knows
         /// only what the host last said (a guest's session list keeps a player who left), which is also what the warnings
         /// and hand-overs follow (1.4.0-rc5 review, B2). Before the host's first word this session, the session list.
         /// </summary>

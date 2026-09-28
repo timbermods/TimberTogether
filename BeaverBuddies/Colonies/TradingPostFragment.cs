@@ -114,6 +114,7 @@ namespace BeaverBuddies.Colonies
         private ChipRow dockRow;
         private VisualElement ledgerSection, ledgerRows, historySection;
         private Label ledgerTitle, historyTitle;
+        private Button ledgerClearButton;
         private ChipRow sentRow, receivedRow;
         private string ledgerShown;
         // What the other colony is looking for, under the header.
@@ -210,7 +211,7 @@ namespace BeaverBuddies.Colonies
             myHalfButton = NativeElements.WoodenButton(T("BeaverBuddies.Colony.Trade.SelectMyHalf"), SelectMyHalf);
             myHalfButton.style.marginTop = 6;
             body.Add(myHalfButton);
-            // "Player 2 is looking for: [icons]" (their wishlist, Ctrl+T), so a player sees what would please before choosing.
+            // "Player 2 is looking for: [icons]" (their wishlist, set in the colonies window), so a player sees what would please before choosing.
             wantsRow = BuildChipRow();
             wantsRow.Root.style.marginTop = 5;
             wantsRow.Caption.style.width = StyleKeyword.Auto;
@@ -325,7 +326,8 @@ namespace BeaverBuddies.Colonies
             minus.style.marginLeft = 4;
             _tooltipRegistrar.Register(minus, () => StepTooltip(o, "BeaverBuddies.Colony.Trade.StepLess"));
             row.Add(minus);
-            o.Amount = NativeElements.InputBox(maxLength: 3, width: 44);
+            // Room for more than a round carries: the offer is then split into rounds (TradeOfferForm.Split).
+            o.Amount = NativeElements.InputBox(maxLength: 4, width: 50);
             o.Amount.value = ExchangeTerms.MaxAmount.ToString(CultureInfo.InvariantCulture);
             o.Amount.RegisterValueChangedCallback(_ => RefreshSummary());
             _tooltipRegistrar.Register(o.Amount, () => string.Format(T("BeaverBuddies.Colony.Trade.AmountTooltip"), ExchangeTerms.MaxAmount));
@@ -531,10 +533,18 @@ namespace BeaverBuddies.Colonies
         {
             ledgerSection = new VisualElement();
             ledgerSection.Add(NativeElements.Rule());
+            // "Ledger" with Clear at the right, the same small wooden button as All posts.
+            VisualElement titleRow = NativeElements.Row();
+            titleRow.style.justifyContent = Justify.SpaceBetween;
+            titleRow.style.marginBottom = 2;
             ledgerTitle = NativeElements.Caption(T("BeaverBuddies.Colony.Trade.LedgerTitle"));
-            ledgerTitle.style.marginBottom = 2;
             _tooltipRegistrar.Register(ledgerTitle, T("BeaverBuddies.Colony.Trade.LedgerTooltip"));
-            ledgerSection.Add(ledgerTitle);
+            titleRow.Add(ledgerTitle);
+            ledgerClearButton = SmallButton(T("BeaverBuddies.Colony.Trade.LedgerClear"), ClearLedger);
+            ledgerClearButton.style.marginLeft = 6;
+            _tooltipRegistrar.Register(ledgerClearButton, T("BeaverBuddies.Colony.Trade.LedgerClearTooltip"));
+            titleRow.Add(ledgerClearButton);
+            ledgerSection.Add(titleRow);
             ledgerRows = new VisualElement();
             ledgerSection.Add(ledgerRows);
             return ledgerSection;
@@ -983,7 +993,7 @@ namespace BeaverBuddies.Colonies
             keepBox.SetValueWithoutNotify(Math.Max(0, Math.Min(ExchangeTerms.MaxKeep, prefillKeep)).ToString(CultureInfo.InvariantCulture));
         }
 
-        /// <summary>"Player 2 is looking for: [icons]" under the header, when they have said so (Ctrl+T).</summary>
+        /// <summary>"Player 2 is looking for: [icons]" under the header, when they have said so (the colonies window).</summary>
         private void RefreshWants(int them)
         {
             IReadOnlyList<string> wants = ColonyWishlist.Instance?.Of(them) ?? (IReadOnlyList<string>)Array.Empty<string>();
@@ -1011,7 +1021,7 @@ namespace BeaverBuddies.Colonies
             roundsLess.SetEnabled(!repeat);
             roundsMore.SetEnabled(!repeat);
             TradeOfferForm.Verdict verdict = TradeOfferForm.Judge(giveItem, giveSide.Amount.value, getItem, getSide.Amount.value,
-                roundsBox.value, repeat, out int give, out int get, out int rounds, GiveAllowed(), GetAllowed());
+                roundsBox.value, repeat, out int give, out int get, out int rounds, out bool split, GiveAllowed(), GetAllowed());
             // A reserve matters over more than one round, and only when this side gives something.
             bool keepShown = give > 0 && (repeat || rounds > 1);
             NativeElements.Show(keepCard, keepShown);
@@ -1037,7 +1047,7 @@ namespace BeaverBuddies.Colonies
                     text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryRequest"), partner, AmountOf(get, getItem));
                     break;
                 case TradeOfferForm.Verdict.BadAmount:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), ExchangeTerms.MaxAmount);
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), Count(TradeOfferForm.MaxTyped), ExchangeTerms.MaxRounds);
                     break;
                 case TradeOfferForm.Verdict.BadRounds:
                     text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorRounds"), ExchangeTerms.MaxRounds);
@@ -1062,6 +1072,9 @@ namespace BeaverBuddies.Colonies
             }
             bool offer = TradeOfferForm.IsOffer(verdict);
             if (offer) text += " " + RoundsText(rounds, repeat, give, giveItem, get, getItem);
+            // Typed as more than a round carries: say how it was split.
+            if (offer && split) text += " " + string.Format(T(repeat ? "BeaverBuddies.Colony.Trade.SummarySplitRepeat" : "BeaverBuddies.Colony.Trade.SummarySplit"),
+                AmountOf(give, giveItem), AmountOf(get, getItem), ExchangeTerms.MaxAmount);
             if (offer && keepShown && keep > 0) text += " " + string.Format(T("BeaverBuddies.Colony.Trade.SummaryKeep"), Count(keep), _items.Name(giveItem));
             NativeElements.SetText(summary, text);
             summary.style.color = offer ? NativeElements.Muted : NativeElements.Warning;
@@ -1277,7 +1290,7 @@ namespace BeaverBuddies.Colonies
 
         /// <summary>
         /// What the round at the player's half <paramref name="crossing"/> waits for now, in one line: the panel's, and the
-        /// Ctrl+T window's for a round that is held up. Display only.
+        /// colonies window's for a round that is held up. Display only.
         /// </summary>
         internal static string StatusLine(DistrictCrossing crossing, CrossingExchange ax, CrossingExchange bx, bool mineIn, bool theirsIn,
             int me, int them, ColonyExchangeService exchanges)
@@ -1381,6 +1394,7 @@ namespace BeaverBuddies.Colonies
         {
             NativeElements.Show(ledgerSection, true);
             IReadOnlyList<TradeRecord> records = side?.Ledger ?? (IReadOnlyList<TradeRecord>)Array.Empty<TradeRecord>();
+            NativeElements.Show(ledgerClearButton, records.Count > 0);
             string shown = records.Count + "|" + (records.Count > 0 ? records[records.Count - 1].Encode() : "");
             if (shown == ledgerShown) return;
             ledgerShown = shown;
@@ -1490,6 +1504,15 @@ namespace BeaverBuddies.Colonies
         private void OpenOverview()
         {
             if (TradeOverviewPanel.Instance?.Toggle() != true) Notice(T("BeaverBuddies.Colony.Trade.HostFirst"));
+        }
+
+        /// <summary>Empties this half's ledger, on every computer (the totals traded stay).</summary>
+        private void ClearLedger()
+        {
+            DistrictCrossing myHalf = MyHalf();
+            if (!myHalf) return;
+            string halfId = ReplayEvent.GetEntityID(myHalf);
+            Send(() => new LedgerClearedEvent { crossingID = halfId });
         }
 
         /// <summary>From the other colony's half, to the player's own (which has the trading).</summary>

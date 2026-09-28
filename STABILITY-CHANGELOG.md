@@ -5,6 +5,40 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**Playtest round: trade, the colonies window and the connection panel.** Not built against the game in the session that
+wrote it (no game assemblies there): build it before playing. StabilityTests 526 pass. **Not played.**
+
+- **An accepted offer chimes** for the colony that made it (`Tell(..., chime: true)`, played on the next frame by
+  `TradeNotices.ChimeSoon`).
+- **Offers' messages stay until answered or closed.** A click on one selects the post and leaves it on screen; only
+  answering there (Accept, Decline, Keep trading, Cancel) or its close button closes it. When five are shown, news
+  goes first. Their text says the whole exchange: *300 Logs for 300 Bread in all, over 3 rounds* (`Notice.ProposedRounds`,
+  `ProposedRepeat`; the acceptance's message likewise).
+- **More than a round carries is split.** An amount box takes up to 9,900 (`TradeOfferForm.MaxTyped`); any amount
+  above 100 splits the whole (amount x rounds) into the fewest rounds, each side the nearest whole number to the same
+  ratio and never 0 for a side that gives (`TradeOfferForm.Split`): 300 for 300 is 3 rounds of 100 for 100, 250 for 130
+  is 3 of 83 for 43. A repeating offer keeps repeating, its round cut to fit. The summary says it was split. What is
+  sent is still at most 100 a round, so the exchange and its checks are unchanged.
+- **The colonies window opens with Y** (a key the player can change; Ctrl+T also made water see-through by accident).
+- **Mute a player's sounds.** A speaker at the end of each other player's row in the connection panel: muted, the
+  sounds the game plays while that player's actions are played here are skipped (`RemoteSounds`: `ReplayService` marks
+  whose action is playing, and a prefix on every void `ISoundSystem.Play*` implementation skips it). Display only,
+  for the session; if the game's sound system has no such method the log says so and co-op goes on.
+- **A long name pausing the game** no longer widens or wraps the panel: the paused tag takes only the spare room and
+  cuts the name short, the whole line in its tooltip.
+- **Run this colony on the steward's message.** A player asked to look after a colony gets a message that stays, with
+  **Run this colony** on it (`TradeNotices.PostWithAction`, sending `ActAsColonyEvent`).
+- **Clear on the ledger.** A small button at the ledger's top right empties that half's ledger on every computer
+  (`LedgerClearedEvent`, judged like the other exchange actions; the totals traded stay). In the colony digest.
+- **Other colonies' goods in the colonies window:** every good in stock, as icons with amounts in the game's order,
+  laid out as the post's totals (`TradeItems.GoodsOfColony`).
+- **Trade messages keep clear of the connection panel**, moving aside when they would cover it, and the panel comes to
+  the front (over the messages) when pressed, until the map is clicked.
+- **Global view is saved for a later release.** The top bar's district list naming the other player and going to their
+  first district center needs the game's district selector, which wasn't available to check against.
+
 ## 1.4.0-rc21
 
 **Chat keeps the cursor after sending; a click on the panel starts typing** (PR #53). Built against Timberborn 1.1.2.4:

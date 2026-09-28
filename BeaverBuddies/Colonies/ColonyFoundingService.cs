@@ -479,7 +479,7 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>
-        /// Display: whether a colony is untouched, stopping at the first building of its own faction. The Ctrl+T window
+        /// Display: whether a colony is untouched, stopping at the first building of its own faction. The colonies window (Y)
         /// asks once a second while it is open; a late game's colony is touched, and the building that showed it last
         /// time is looked at first, so the walk over every entity is made only while the answer may be yes.
         /// </summary>

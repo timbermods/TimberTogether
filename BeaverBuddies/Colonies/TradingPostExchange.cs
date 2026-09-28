@@ -154,6 +154,13 @@ namespace BeaverBuddies.Colonies
             Changed("exchange-cancel-asked");
         }
 
+        /// <summary>Its colony cleared this half's ledger (the totals traded, and the other half's ledger, stay).</summary>
+        internal void ClearLedger()
+        {
+            ledger.Clear();
+            Changed("exchange-ledger-clear");
+        }
+
         internal void Record(TradeRecord record)
         {
             ledger.Add(record);
@@ -779,8 +786,9 @@ namespace BeaverBuddies.Colonies
             theirs.RememberTerms(ExchangeTerms.EncodeTerms(getGood, getAmount, giveGood, giveAmount, rounds, repeat, 0));
             Plugin.Log($"[Colony] Slot {from} offers {giveAmount} {giveGood} for {getAmount} {getGood} from slot {to}, "
                 + $"{(repeat ? "repeating" : rounds + " rounds")}{(keep > 0 ? $", keeping {keep}" : "")} (exchange {serial})");
-            Ask(() => to, partner, () => string.Format(T("BeaverBuddies.Colony.Trade.Notice.Proposed"),
-                ColonyName(from), Amount(giveAmount, giveGood), Amount(getAmount, getGood)), warning: false);
+            // The notice says the whole exchange (every round's goods), not one round's.
+            Ask(() => to, partner, () => Whole("BeaverBuddies.Colony.Trade.Notice.Proposed", "BeaverBuddies.Colony.Trade.Notice.ProposedRounds",
+                "BeaverBuddies.Colony.Trade.Notice.ProposedRepeat", ColonyName(from), giveGood, giveAmount, getGood, getAmount, rounds, repeat), warning: false);
         }
 
         /// <summary>
@@ -820,8 +828,10 @@ namespace BeaverBuddies.Colonies
             theirs.Activate();
             int me = OwnerOf(half), them = OwnerOf(partner);
             Plugin.Log($"[Colony] Slot {me} accepted exchange {serial}: {getAmount} {getGood} for {giveAmount} {giveGood}");
-            Tell(() => them, null, () => string.Format(T("BeaverBuddies.Colony.Trade.Notice.Accepted"),
-                ColonyName(me), Amount(theirs.Total, theirs.GoodId), Amount(mine.Total, mine.GoodId)), warning: false);
+            // The colony that offered hears it, and a chime says so (it may be looking elsewhere).
+            Tell(() => them, null, () => Whole("BeaverBuddies.Colony.Trade.Notice.Accepted", "BeaverBuddies.Colony.Trade.Notice.AcceptedRounds",
+                "BeaverBuddies.Colony.Trade.Notice.AcceptedRepeat", ColonyName(me), theirs.GoodId, theirs.Total, mine.GoodId, mine.Total,
+                mine.Rounds, mine.Repeat), warning: false, chime: true);
         }
 
         /// <summary>
@@ -889,6 +899,23 @@ namespace BeaverBuddies.Colonies
             Plugin.Log($"[Colony] Slot {me} keeps exchange {serial} going");
             string key = theyAsked ? "BeaverBuddies.Colony.Trade.Notice.CancelRefused" : "BeaverBuddies.Colony.Trade.Notice.CancelWithdrawn";
             Tell(() => them, null, () => string.Format(T(key), ColonyName(me)), warning: false);
+        }
+
+        /// <summary>
+        /// The colony of <paramref name="half"/> clears that half's ledger: the rounds listed there. The other colony's
+        /// half keeps its own, and the totals traded between the two stay.
+        /// </summary>
+        public void ClearLedger(DistrictCrossing half, int actorSlot)
+        {
+            CrossingExchange mine = Of(half);
+            if (mine == null || actorSlot < 0 || OwnerOf(half) != actorSlot)
+            {
+                Plugin.LogWarning($"[Colony] Ledger clearing skipped: the half is slot {OwnerOf(half)}'s, not slot {actorSlot}'s");
+                return;
+            }
+            if (mine.Ledger.Count == 0) return;
+            mine.ClearLedger();
+            Plugin.Log($"[Colony] Slot {actorSlot} cleared its ledger at a Trading Post");
         }
 
         private bool TryGetOwnOpen(DistrictCrossing half, int actorSlot, int serial, string what, out CrossingExchange mine,
@@ -1064,13 +1091,15 @@ namespace BeaverBuddies.Colonies
         /// Shows a notice if the local player plays one of the colonies named. Called from actions and ticks that every
         /// computer plays, so it is built only where shown and can never throw into the simulation.
         /// </summary>
-        private void Tell(Func<int> a, Func<int> b, Func<string> text, bool warning)
+        private void Tell(Func<int> a, Func<int> b, Func<string> text, bool warning, bool chime = false)
         {
             try
             {
                 int local = ColonySession.LocalSlot;
                 if (local < 0 || (local != a() && (b == null || local != b()))) return;
                 _colonyRulesService.ShowNotice(text(), warning);
+                // Played on the next frame, outside the tick, as the messages that stay are (TradeNotices).
+                if (chime) TradeNotices.Instance?.ChimeSoon();
             }
             catch (Exception error)
             {
@@ -1109,6 +1138,19 @@ namespace BeaverBuddies.Colonies
             {
                 Plugin.LogWarning("[Colony] Could not close an exchange notice: " + error.Message);
             }
+        }
+
+        /// <summary>
+        /// A notice about a whole exchange, "{colony} offers {1} for {2}": <paramref name="once"/> for one round,
+        /// <paramref name="many"/> with every round's goods added up and the rounds, <paramref name="repeating"/> for a
+        /// standing deal (one round's goods, every round).
+        /// </summary>
+        private string Whole(string once, string many, string repeating, string colony, string giveGood, int giveAmount, string getGood,
+            int getAmount, int rounds, bool repeat)
+        {
+            if (repeat) return string.Format(T(repeating), colony, Amount(giveAmount, giveGood), Amount(getAmount, getGood));
+            if (rounds <= 1) return string.Format(T(once), colony, Amount(giveAmount, giveGood), Amount(getAmount, getGood));
+            return string.Format(T(many), colony, Amount(giveAmount * rounds, giveGood), Amount(getAmount * rounds, getGood), rounds);
         }
 
         /// <summary>"100 Planks", "1 Beaver", or "nothing" for a side that gives nothing.</summary>
@@ -1229,6 +1271,24 @@ namespace BeaverBuddies.Colonies
         }
 
         public override string ToActionString() => $"Keeping {keep} back in an exchange";
+    }
+
+    /// <summary>A colony clears the ledger of its half of a trading post.</summary>
+    [Serializable]
+    public class LedgerClearedEvent : ReplayEvent
+    {
+        public string crossingID;
+
+        public override ColonyScope GetColonyScope() => ColonyScope.Entities(crossingID);
+
+        public override void Replay(IReplayContext context)
+        {
+            var half = GetComponent<DistrictCrossing>(context, crossingID);
+            if (half == null) return;
+            ColonyExchangeService.Instance?.ClearLedger(half, slot);
+        }
+
+        public override string ToActionString() => "Clearing a Trading Post's ledger";
     }
 
     /// <summary>A colony wants the exchange at its half of a trading post to go on (no longer asks, or refuses, to end it).</summary>

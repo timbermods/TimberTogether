@@ -96,6 +96,8 @@ namespace BeaverBuddies.Panel
         public Quality Quality;
         /// <summary>Your own row. It is drawn in bold, and its ping is a dash: you have no ping to yourself.</summary>
         public bool IsYou;
+        /// <summary>This computer doesn't play the sounds of this player's actions (set by the game, not the model).</summary>
+        public bool Muted;
     }
 
     /// <summary>The finished text and states the view shows. No layout, no colors: just what to say.</summary>

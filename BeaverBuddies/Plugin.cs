@@ -210,6 +210,8 @@ namespace BeaverBuddies
             Harmony harmony = new Harmony(ID);
             PatchAllIsolatingFactions(harmony);
             AutomationEvent.ApplyAutomationPatches(harmony);
+            // Display only (a player's sounds, heard or not): never a reason to refuse co-op, so not in FailedPatches.
+            BeaverBuddies.Activity.RemoteSounds.Install(harmony);
 
             // apply each advanced monomod patch manually.
             Install(nameof(GameSaverSavePatcher), GameSaverSavePatcher.Install);

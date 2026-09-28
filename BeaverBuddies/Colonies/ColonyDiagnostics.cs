@@ -30,7 +30,7 @@ namespace BeaverBuddies.Colonies
 {
     /// <summary>
     /// A diagnostics report for performance, desync and colony problems, written on request (Ctrl+Shift+J, or the
-    /// button in the Ctrl+T window) and by itself when this computer desyncs. It is saved next to Player.log, in
+    /// button in the colonies window (Y)) and by itself when this computer desyncs. It is saved next to Player.log, in
     /// TimberTogether-Reports, and copied to the clipboard, ready to paste into a bug report.
     ///
     /// Once a day, every computer also logs a one-line fingerprint of the colony state (owners, marks, science,

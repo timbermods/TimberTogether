@@ -29,6 +29,8 @@ namespace BeaverBuddies.Panel
         readonly VisualElement topSection, header, headerDot, body, statusDot, rows, facts, chatArea;
         readonly Label title, role, chevron, statusText, unreadBadge, pausedTag;
         readonly CornerLift lift = new CornerLift();
+        // The sound button's two pictures (a file of this mod each); without them it writes a word instead.
+        Sprite soundOn, soundOff;
         int shownUnread;
         float appliedWidth = -1;
         float? loggedWidth;
@@ -50,6 +52,15 @@ namespace BeaverBuddies.Panel
 
         /// <summary>Raised when a player's row is clicked: take the camera to them (or, for your own row, home).</summary>
         public event Action<PanelRow> RowClicked;
+
+        /// <summary>Raised when the sound button on another player's row is clicked: hear their actions, or not.</summary>
+        public event Action<PanelRow> SoundClicked;
+
+        /// <summary>
+        /// Raised on every press on the interface: true when it was on this panel (it comes to the front, over the
+        /// trade messages and alerts), false when it was on something else.
+        /// </summary>
+        public event Action<bool> Pressed;
 
         public ConnectionPanelView(ILoc loc, VisualElementInitializer initializer)
         {
@@ -80,7 +91,12 @@ namespace BeaverBuddies.Panel
             unreadBadge.style.display = DisplayStyle.None;
             // Between the title and the role: the game is paused, and who paused it. Shown open or collapsed, in yellow,
             // so nobody wonders why the game has stopped.
-            pausedTag = Text("", 11, Fair, bold: true); pausedTag.style.marginLeft = 8; pausedTag.style.flexShrink = 1;
+            // It takes only the room left over (a zero basis) and cuts a long name short, so a player with a long name
+            // pausing never makes the panel wider or taller. The whole line is its tooltip.
+            pausedTag = Text("", 11, Fair, bold: true); pausedTag.style.marginLeft = 8;
+            pausedTag.style.flexBasis = 0; pausedTag.style.flexGrow = 1; pausedTag.style.flexShrink = 1; pausedTag.style.minWidth = 0;
+            pausedTag.style.whiteSpace = WhiteSpace.NoWrap; pausedTag.style.overflow = Overflow.Hidden;
+            pausedTag.style.textOverflow = TextOverflow.Ellipsis;
             pausedTag.style.display = DisplayStyle.None;
             header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(pausedTag); header.Add(role); header.Add(chevron);
             header.RegisterCallback<ClickEvent>(_ => HeaderClicked?.Invoke());
@@ -126,6 +142,24 @@ namespace BeaverBuddies.Panel
                 if (target == null || target == header || header.Contains(target)) return;
                 PanelPressed?.Invoke(target);
             }, TrickleDown.TrickleDown);
+
+            // Every press on the interface, to know whether the panel or something else was pressed last. Listened
+            // for on the whole interface while the panel is on it (it moves between corners).
+            Root.RegisterCallback<AttachToPanelEvent>(e => e.destinationPanel?.visualTree.RegisterCallback<PointerDownEvent>(OnAnyPress, TrickleDown.TrickleDown));
+            Root.RegisterCallback<DetachFromPanelEvent>(e => e.originPanel?.visualTree.UnregisterCallback<PointerDownEvent>(OnAnyPress, TrickleDown.TrickleDown));
+        }
+
+        void OnAnyPress(PointerDownEvent e)
+        {
+            var target = e.target as VisualElement;
+            Pressed?.Invoke(target != null && (target == Root || Root.Contains(target)));
+        }
+
+        /// <summary>The pictures for the sound button: another player's actions heard, and not.</summary>
+        public void SetSoundIcons(Sprite on, Sprite off)
+        {
+            soundOn = on;
+            soundOff = off;
         }
 
         /// <summary>Removes chat for the rest of the scene, after it failed. The rest of the panel carries on.</summary>
@@ -190,7 +224,10 @@ namespace BeaverBuddies.Panel
             return chosen;
         }
 
-        /// <summary>While the chat box has the cursor, draws the panel in front of the game's alerts (see <see cref="CornerLift"/>).</summary>
+        /// <summary>
+        /// While the chat box has the cursor, or the panel was the last thing pressed, draws the panel in front of the
+        /// game's alerts and the trade messages (see <see cref="CornerLift"/>).
+        /// </summary>
         public void SetLifted(bool lifted)
         {
             if (lifted) lift.Lift(Root); else lift.Restore();
@@ -227,6 +264,7 @@ namespace BeaverBuddies.Panel
             role.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             chevron.text = expanded ? "-" : "+";
             pausedTag.text = model.PausedText ?? "";
+            pausedTag.tooltip = model.PausedText ?? "";
             pausedTag.style.display = model.PausedText != null ? DisplayStyle.Flex : DisplayStyle.None;
             body.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             if (!expanded) { Chat?.ReleaseFocus(); lift.Restore(); }
@@ -260,10 +298,51 @@ namespace BeaverBuddies.Panel
             var ping = Text(row.PingText, 13, PingColor(row.Quality), bold: row.IsYou);
             ping.style.marginLeft = 10; ping.style.minWidth = 52; ping.style.unityTextAlign = TextAnchor.MiddleRight;
             line.Add(name); line.Add(ping);
+            // Another player's row ends with a button that mutes the sounds of their actions; your own keeps its
+            // place empty, so every ping lines up.
+            line.Add(row.IsYou ? SoundSpacer() : SoundButton(row));
             // A click takes the camera to that player (your own row: back to your colony).
             line.tooltip = string.Format(CultureInfo.InvariantCulture, loc.T(row.IsYou ? "BeaverBuddies.Panel.RowYouTooltip" : "BeaverBuddies.Panel.RowTooltip"), row.Name);
             line.RegisterCallback<ClickEvent>(e => { RowClicked?.Invoke(row); e.StopPropagation(); });
             return line;
+        }
+
+        const float SoundButtonSize = 18;
+
+        // A small box like the collapse button, with a speaker (struck through while muted).
+        VisualElement SoundButton(PanelRow row)
+        {
+            var button = new VisualElement();
+            var s = button.style;
+            s.width = SoundButtonSize; s.height = SoundButtonSize; s.flexShrink = 0; s.marginLeft = 6;
+            s.alignItems = Align.Center; s.justifyContent = Justify.Center;
+            Border(button, 1, row.Muted ? Fair : ButtonRule, 3);
+            Sprite sprite = row.Muted ? soundOff : soundOn;
+            if (sprite != null)
+            {
+                var picture = new Image { sprite = sprite, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+                picture.style.width = 12; picture.style.height = 12;
+                picture.tintColor = row.Muted ? Fair : ButtonInk;
+                button.Add(picture);
+            }
+            else
+            {
+                var word = Text(loc.T(row.Muted ? "BeaverBuddies.Panel.SoundOffShort" : "BeaverBuddies.Panel.SoundOnShort"), 9, row.Muted ? Fair : ButtonInk, bold: true);
+                word.style.unityTextAlign = TextAnchor.MiddleCenter; word.pickingMode = PickingMode.Ignore;
+                word.style.paddingLeft = 0; word.style.paddingRight = 0; word.style.marginLeft = 0; word.style.marginRight = 0;
+                button.Add(word);
+            }
+            button.tooltip = string.Format(CultureInfo.InvariantCulture,
+                loc.T(row.Muted ? "BeaverBuddies.Panel.SoundOffTooltip" : "BeaverBuddies.Panel.SoundOnTooltip"), row.Name);
+            button.RegisterCallback<ClickEvent>(e => { SoundClicked?.Invoke(row); e.StopPropagation(); });
+            return button;
+        }
+
+        static VisualElement SoundSpacer()
+        {
+            var spacer = new VisualElement();
+            spacer.style.width = SoundButtonSize; spacer.style.flexShrink = 0; spacer.style.marginLeft = 6;
+            return spacer;
         }
 
         // A fact the player can change: the value is underlined by a rule and clicking the line picks the next choice.
