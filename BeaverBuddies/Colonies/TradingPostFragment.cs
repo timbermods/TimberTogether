@@ -38,7 +38,6 @@ namespace BeaverBuddies.Colonies
         private const float RefreshInterval = 0.5f;
         // The panel keeps this far from the screen's bottom edge, and is never squeezed smaller than this.
         private const float ScreenMargin = 12, MinHeight = 150;
-        private const int ChipsShown = 5;
         private const int LedgerShown = 8;
         // More beavers than this in one click of a good's amount is never meant: choosing beavers starts at 1.
         private const int MostBeaversByDefault = 10;
@@ -738,8 +737,8 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>
-        /// The panel ends above the screen's bottom edge: when the game's sections above it (the description, the
-        /// workers) leave too little room, its content scrolls.
+        /// The panel, and the game's sections below it (Automate), end above the screen's bottom edge: when the
+        /// sections above it (the description, the workers) leave too little room, its content scrolls.
         /// </summary>
         private void FitToScreen()
         {
@@ -747,10 +746,38 @@ namespace BeaverBuddies.Colonies
             if (panel == null || root.style.display == DisplayStyle.None) return;
             float top = root.worldBound.yMin, bottom = panel.visualTree.worldBound.yMax;
             if (float.IsNaN(top) || float.IsNaN(bottom) || bottom <= 0) return;
-            float height = Mathf.Max(MinHeight, bottom - top - ScreenMargin);
+            float height = Mathf.Max(MinHeight, bottom - top - ScreenMargin - HeightBelow());
             if (Mathf.Abs(height - fittedHeight) < 1) return;
             fittedHeight = height;
             root.style.maxHeight = height;
+        }
+
+        /// <summary>
+        /// How tall the game's sections stacked under this one are, up to the panel that holds them all (the first
+        /// container placed on its own): each shown section after this one, and after each container of it, that sits
+        /// below it in the same column, with its margins.
+        /// </summary>
+        private float HeightBelow()
+        {
+            float below = 0;
+            Rect mine = root.worldBound;
+            VisualElement child = root;
+            for (VisualElement parent = root.parent; parent != null; child = parent, parent = parent.parent)
+            {
+                for (int i = parent.IndexOf(child) + 1; i < parent.childCount; i++)
+                {
+                    VisualElement next = parent[i];
+                    IResolvedStyle style = next.resolvedStyle;
+                    if (style.display == DisplayStyle.None || style.position == Position.Absolute) continue;
+                    // Only what is stacked under this panel, in its column: nothing beside it, and nothing above it.
+                    Rect bound = next.worldBound;
+                    if (bound.yMin < mine.yMax - 1 || bound.xMax <= mine.xMin || bound.xMin >= mine.xMax) continue;
+                    float height = next.layout.height + style.marginTop + style.marginBottom;
+                    if (!float.IsNaN(height) && height > 0) below += height;
+                }
+                if (parent.resolvedStyle.position == Position.Absolute) break;
+            }
+            return below;
         }
 
         // ---- who is who ----
@@ -1468,12 +1495,15 @@ namespace BeaverBuddies.Colonies
             ShowChips(receivedRow, T("BeaverBuddies.Colony.Trade.YouReceived"), ledger?.Sent(them, me));
         }
 
-        /// <summary>A caption and the goods as icons with their amounts, most first; rebuilt only when they change.</summary>
+        /// <summary>
+        /// A caption and every good as an icon with its amount, most first, wrapping onto more lines as needed (the game
+        /// has only so many goods); rebuilt only when they change.
+        /// </summary>
         private void ShowChips(ChipRow row, string caption, List<KeyValuePair<string, int>> goods, bool amounts = true)
         {
             NativeElements.SetText(row.Caption, caption);
             goods = goods ?? new List<KeyValuePair<string, int>>();
-            string shown = string.Join("|", goods.Take(ChipsShown).Select(g => g.Key + ":" + g.Value)) + "|" + goods.Count + (amounts ? "" : "|plain");
+            string shown = string.Join("|", goods.Select(g => g.Key + ":" + g.Value)) + (amounts ? "" : "|plain");
             if (shown == row.Shown) return;
             row.Shown = shown;
             row.Chips.Clear();
@@ -1482,7 +1512,7 @@ namespace BeaverBuddies.Colonies
                 row.Chips.Add(NativeElements.MutedText(T("BeaverBuddies.Colony.Trade.Nothing")));
                 return;
             }
-            foreach (var good in goods.Take(ChipsShown))
+            foreach (var good in goods)
             {
                 VisualElement chip = NativeElements.Row();
                 chip.style.marginRight = 8;
@@ -1495,8 +1525,6 @@ namespace BeaverBuddies.Colonies
                 _tooltipRegistrar.Register(chip, _items.Name(good.Key));
                 row.Chips.Add(chip);
             }
-            if (goods.Count > ChipsShown)
-                row.Chips.Add(NativeElements.MutedText(string.Format(T("BeaverBuddies.Colony.Trade.MoreChips"), goods.Count - ChipsShown)));
         }
 
         // ---- actions ----

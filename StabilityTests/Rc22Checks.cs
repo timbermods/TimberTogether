@@ -144,6 +144,16 @@ static class Rc22Checks
             Check(Csv("BeaverBuddies.Colony.Overview.Deal") == "{0} for {1}", "the deal's line changed");
         });
 
+        yield return ("A Trading Post lists every good sent and received, and leaves room for the game's sections below it", () =>
+        {
+            string fragment = Source("BeaverBuddies", "Colonies", "TradingPostFragment.cs");
+            string chips = Body(fragment, "private void ShowChips(");
+            Check(chips.Contains("foreach (var good in goods)") && !fragment.Contains("ChipsShown") && !fragment.Contains("MoreChips"),
+                "the goods rows cut off after a few and say \"+N more\"");
+            Check(Body(fragment, "private void FitToScreen()").Contains("- HeightBelow()"), "the panel fills the screen and pushes Automate off it");
+            Check(Body(fragment, "private float HeightBelow()").Contains("bound.yMin < mine.yMax - 1"), "sections beside or above the panel shrink it");
+        });
+
         yield return ("rc22: the trade messages keep clear of the connection panel, and the panel is always in front of the game's alerts", () =>
         {
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");

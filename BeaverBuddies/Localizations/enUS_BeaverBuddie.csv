@@ -318,7 +318,6 @@ BeaverBuddies.Colony.Trade.TradedWith,"Traded with {0} (all posts)",""
 BeaverBuddies.Colony.Trade.YouSent,"You sent",""
 BeaverBuddies.Colony.Trade.YouReceived,"You received",""
 BeaverBuddies.Colony.Trade.Nothing,"nothing yet",""
-BeaverBuddies.Colony.Trade.MoreChips,"+{0} more",""
 BeaverBuddies.Colony.Trade.NothingInReturn,"nothing",""
 BeaverBuddies.Colony.Trade.HostFirst,"Trading works in a co-op game: host the game first (even alone).",""
 BeaverBuddies.Colony.Trade.Notice.Proposed,"{0} offers {1} for {2} at a Trading Post.
