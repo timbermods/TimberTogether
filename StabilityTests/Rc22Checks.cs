@@ -134,16 +134,21 @@ static class Rc22Checks
                 "the goods add up other colonies' districts");
         });
 
-        yield return ("rc22: the trade messages keep clear of the connection panel, and the panel comes to the front when pressed", () =>
+        yield return ("rc22: the trade messages keep clear of the connection panel, and the panel is always in front of the game's alerts", () =>
         {
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
             Check(Body(notices, "public void UpdateSingleton()").Contains("if (shown.Count > 0) KeepClearOfPanel();"), "the messages no longer move aside");
             Check(Body(notices, "private void KeepClearOfPanel()").Contains("ConnectionPanelService.PanelRoot"), "the messages don't know where the panel is");
             Check(!notices.Contains("Time."), "a trade message is timed");
             string service = Source("BeaverBuddies", "Panel", "ConnectionPanelService.cs");
-            Check(service.Contains("view.SetLifted(focused || pressedLast);") && service.Contains("view.Pressed += inside => pressedLast = inside;"),
-                "pressing the panel no longer brings it to the front");
-            Check(service.Contains("if (pressedLast && input.MainMouseButtonDown && !input.MouseOverUI) pressedLast = false;"), "a click on the game leaves the panel in front");
+            string tick = Body(service, "void Tick()");
+            Check(tick.IndexOf("view.SetLifted(true);", StringComparison.Ordinal) > tick.IndexOf("PlaceIfNeeded();", StringComparison.Ordinal)
+                && tick.IndexOf("PlaceIfNeeded();", StringComparison.Ordinal) > tick.IndexOf("return;", StringComparison.Ordinal),
+                "the panel on screen is not always drawn in front of the alerts");
+            Check(!service.Contains("pressedLast"), "the panel only comes to the front when pressed");
+            Check(Body(service, "void PlaceIfNeeded()").Contains("view.SetLifted(false);"), "moving the panel to another corner leaves the old corner in front");
+            string view = Source("BeaverBuddies", "Panel", "ConnectionPanelView.cs");
+            Check(!Body(view, "public void Show(PanelModel model, bool expanded)").Contains("lift.Restore()"), "collapsing the panel sends it behind the alerts");
         });
     }
 }

@@ -11,6 +11,14 @@ static class ChatChecks
     static void Equal<T>(T expected, T actual) =>
         Check(EqualityComparer<T>.Default.Equals(expected, actual), $"expected {expected}, got {actual}");
 
+    static string Root()
+    {
+        string root = AppContext.BaseDirectory;
+        while (root != null && !File.Exists(Path.Combine(root, "BeaverBuddies.sln"))) root = Path.GetDirectoryName(root)!;
+        Check(root != null, "could not find the repository root");
+        return root!;
+    }
+
     static ChatMessage Msg(int sequence, int player = 1, string name = "Ann", string color = "FF8800", string text = "hi") =>
         new ChatMessage(sequence, player, name, color, text);
 
@@ -432,6 +440,27 @@ static class ChatChecks
             }
             Equal("F2E8D0", ChatFormat.ReadableHex("12"));
             Equal("F2E8D0", ChatFormat.ReadableHex(null!));
+        });
+
+        yield return ("A chat line counts as seen once at least half of it has been in the visible area", () =>
+        {
+            Check(ChatFormat.IsSeen(10, 30, 0, 100), "a line fully on screen is not seen");
+            Check(ChatFormat.IsSeen(90, 110, 0, 100), "a line half on screen is not seen");
+            Check(!ChatFormat.IsSeen(95, 115, 0, 100), "a line barely on screen is seen");
+            Check(!ChatFormat.IsSeen(120, 140, 0, 100), "a line below the visible area is seen");
+            Check(!ChatFormat.IsSeen(-40, -20, 0, 100), "a line above the visible area is seen");
+            Check(ChatFormat.IsSeen(-100, 300, 0, 100), "a line taller than the visible area is never seen");
+            Check(!ChatFormat.IsSeen(float.NaN, float.NaN, 0, 100) && !ChatFormat.IsSeen(10, 30, 0, 0), "a line not laid out, or a hidden chat, counts as seen");
+        });
+
+        yield return ("The chat shows a count of messages from others that were never on screen, cleared by a click", () =>
+        {
+            string view = File.ReadAllText(Path.Combine(Root(), "BeaverBuddies", "Panel", "ChatView.cs"));
+            Check(view.Contains("loc.T(\"BeaverBuddies.Chat.Unseen.Tooltip\")") && view.Contains("if (!Own(lines[i].Message)) unseen++;"), "the unseen count is gone or counts your own messages");
+            Check(view.Contains("ChatFormat.IsSeen(bound.yMin, bound.yMax, view.yMin, view.yMax)"), "seen no longer means on screen");
+            Check(view.Contains("UpdateUnseen();"), "the unseen count is never updated");
+            string service = File.ReadAllText(Path.Combine(Root(), "BeaverBuddies", "Panel", "ConnectionPanelService.cs"));
+            Check(service.Contains("view.Chat.IsOwn = message => myPlayerIdKnown && message.PlayerId == myPlayerId;"), "the chat can't tell your own messages");
         });
     }
 }

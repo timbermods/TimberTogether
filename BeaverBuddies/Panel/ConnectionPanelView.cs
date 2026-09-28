@@ -21,7 +21,7 @@ namespace BeaverBuddies.Panel
         static readonly Color ButtonInk = new Color(.85f, .81f, .73f);
         static readonly Color ButtonRule = new Color(1f, 1f, 1f, .4f);
         static readonly Color Good = new Color(.42f, .80f, .47f);
-        static readonly Color Fair = new Color(.96f, .76f, .26f);
+        internal static readonly Color Fair = new Color(.96f, .76f, .26f);
         static readonly Color Bad = new Color(.93f, .36f, .32f);
         static readonly Color Unknown = new Color(.62f, .60f, .56f);
 
@@ -55,12 +55,6 @@ namespace BeaverBuddies.Panel
 
         /// <summary>Raised when the sound button on another player's row is clicked: hear their actions, or not.</summary>
         public event Action<PanelRow> SoundClicked;
-
-        /// <summary>
-        /// Raised on every press on the interface: true when it was on this panel (it comes to the front, over the
-        /// trade messages and alerts), false when it was on something else.
-        /// </summary>
-        public event Action<bool> Pressed;
 
         public ConnectionPanelView(ILoc loc, VisualElementInitializer initializer)
         {
@@ -142,17 +136,6 @@ namespace BeaverBuddies.Panel
                 if (target == null || target == header || header.Contains(target)) return;
                 PanelPressed?.Invoke(target);
             }, TrickleDown.TrickleDown);
-
-            // Every press on the interface, to know whether the panel or something else was pressed last. Listened
-            // for on the whole interface while the panel is on it (it moves between corners).
-            Root.RegisterCallback<AttachToPanelEvent>(e => e.destinationPanel?.visualTree.RegisterCallback<PointerDownEvent>(OnAnyPress, TrickleDown.TrickleDown));
-            Root.RegisterCallback<DetachFromPanelEvent>(e => e.originPanel?.visualTree.UnregisterCallback<PointerDownEvent>(OnAnyPress, TrickleDown.TrickleDown));
-        }
-
-        void OnAnyPress(PointerDownEvent e)
-        {
-            var target = e.target as VisualElement;
-            Pressed?.Invoke(target != null && (target == Root || Root.Contains(target)));
         }
 
         /// <summary>The pictures for the sound button: another player's actions heard, and not.</summary>
@@ -167,7 +150,6 @@ namespace BeaverBuddies.Panel
         {
             chatDisabled = true;
             try { Chat?.ReleaseFocus(); } catch (Exception) { }
-            try { lift.Restore(); } catch (Exception) { }
             chatArea.style.display = DisplayStyle.None;
             SetUnread(0);
         }
@@ -225,8 +207,8 @@ namespace BeaverBuddies.Panel
         }
 
         /// <summary>
-        /// While the chat box has the cursor, or the panel was the last thing pressed, draws the panel in front of the
-        /// game's alerts and the trade messages (see <see cref="CornerLift"/>).
+        /// Draws the panel in front of the game's alerts (see <see cref="CornerLift"/>), or puts it back in the drawing
+        /// order. It is in front whenever it is on screen.
         /// </summary>
         public void SetLifted(bool lifted)
         {
@@ -267,7 +249,7 @@ namespace BeaverBuddies.Panel
             pausedTag.tooltip = model.PausedText ?? "";
             pausedTag.style.display = model.PausedText != null ? DisplayStyle.Flex : DisplayStyle.None;
             body.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
-            if (!expanded) { Chat?.ReleaseFocus(); lift.Restore(); }
+            if (!expanded) Chat?.ReleaseFocus();
             chatArea.style.display = expanded && !chatDisabled ? DisplayStyle.Flex : DisplayStyle.None;
             if (!expanded) return;
 

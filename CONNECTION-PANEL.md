@@ -85,6 +85,8 @@ Player 2: on it
 - **A chime** plays when another player's message arrives while the panel is collapsed or hidden (at most once a
   second). With the panel open, the chat is on screen and nothing chimes.
   It follows the game's interface volume. Your own messages and the history you get on joining are silent.
+- **New messages you haven't seen** (you scrolled up to read older ones) show as a yellow *2 new* at the top right
+  of the messages. Click it to go down to them.
 - **Chat isn't saved**: it starts empty after a reload or a rehost. Messages are one line, up to 200 characters.
 
 **Speed boost.** The row at the top of the chat adds to the speed everyone picked. **−** and **+** step by 0.5, or
@@ -99,7 +101,7 @@ computer still sets the real pace: the **Tick rate** line says what's achieved.
 - With your **Player activity indicators** off, other players show as *Player N* (the host as *Host*).
 - Chat is text only: no private messages, no emoji picker, no editing.
 - Ping is measured about once a second. The panel doesn't show packet loss or bandwidth.
-- Several game alerts at once can reach the chat box; while you type, the chat is drawn in front of them.
+- Several game alerts at once can reach the chat box. The panel is drawn in front of them, so they hide behind it.
 - The panel lists who is connected. A colony whose player is away shows in the colonies window (Y) instead.
 
 How ping is measured and why the panel can't affect the game: [DEVELOPING.md](DEVELOPING.md#connection-panel-chat-and-player-cursors).
