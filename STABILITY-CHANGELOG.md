@@ -5,10 +5,13 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc22
 
-**Playtest round: trade, the colonies window and the connection panel.** Not built against the game in the session that
-wrote it (no game assemblies there): build it before playing. StabilityTests 526 pass. **Not played.**
+**Playtest round: trade, the colonies window and the connection panel** (PR #56). Built against Timberborn 1.1.2.4: both
+configurations with 0 warnings; StabilityTests 526 and RuntimeChecks 461 pass. **Not played.** Released as Latest on
+GitHub (a full release), at Kyler's request. Built against the game, a RuntimeCheck needed the 11-parameter
+`TradeOfferForm.Judge` (the split added an overload), and a new one finds what the mute covers: `SoundSystem`'s
+`PlaySound2D` (two) and `PlaySound3D` (two).
 
 - **An accepted offer chimes** for the colony that made it (`Tell(..., chime: true)`, played on the next frame by
   `TradeNotices.ChimeSoon`).

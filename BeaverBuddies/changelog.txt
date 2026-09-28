@@ -1,3 +1,13 @@
+v1.4.0-rc22 (Timber Together)
+* The colonies window opens with Y.
+* Offer more than 100 and it's split into rounds: 300 for 300 becomes 3 rounds of 100 for 100.
+* An offer's message stays until you answer or close it, and says the whole trade. Your accepted offers chime.
+* Mute a player's sounds with the speaker on their row in the connection panel.
+* The colonies window shows every colony's goods in stock.
+* Clear empties a Trading Post's ledger.
+* A player asked to look after a colony gets Run this colony right on the message.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc21 (Timber Together)
 * The chat box keeps the cursor after you send, so you can type the next message straight away.
 * A click anywhere on the open connection panel puts the cursor in the chat box.
