@@ -141,6 +141,8 @@ Rc7RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc14RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 // 1.4.0-rc15: trade messages that stay until clicked, and the chimes.
 Rc15RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
+// 1.4.0-rc22: the per-player mute finds the game's sounds to skip.
+Rc22RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Console.WriteLine($"{total-failures}/{total} passed");
 return failures == 0 ? 0 : 1;
 

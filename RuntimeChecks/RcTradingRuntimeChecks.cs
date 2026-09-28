@@ -182,7 +182,8 @@ internal static class RcTradingRuntimeChecks
             Type rules = mod.GetType("BeaverBuddies.Factions.FactionRules", true)!;
             MethodInfo allows = Only(rules, "FactionAllows");
             Type form = mod.GetType("BeaverBuddies.Colonies.TradeOfferForm", true)!;
-            MethodInfo judge = Only(form, "Judge");
+            // The form's Judge without the split flag (1.4.0-rc22 added an overload that also says whether it split).
+            MethodInfo judge = form.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(m => m.Name == "Judge" && m.GetParameters().Length == 11);
             string science = (string)terms.GetField("Science")!.GetValue(null)!, beavers = (string)terms.GetField("Beavers")!.GetValue(null)!;
             int max = (int)terms.GetField("MaxAmount")!.GetValue(null)!;
             Need(max == 100, "a half's room for a good is no longer 100");

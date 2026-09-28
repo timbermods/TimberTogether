@@ -36,8 +36,8 @@ wrote it (no game assemblies there): build it before playing. StabilityTests 526
   laid out as the post's totals (`TradeItems.GoodsOfColony`).
 - **Trade messages keep clear of the connection panel**, moving aside when they would cover it, and the panel comes to
   the front (over the messages) when pressed, until the map is clicked.
-- **Not done: Global view.** The top bar's district list naming the other player and going to their first district
-  center needs the game's district selector, which wasn't available to check against.
+- **Global view is saved for a later release.** The top bar's district list naming the other player and going to their
+  first district center needs the game's district selector, which wasn't available to check against.
 
 ## 1.4.0-rc21
 
