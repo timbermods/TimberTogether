@@ -5,6 +5,22 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## 1.4.0-rc25
+
+**An eye button, chat sound while open, shorter trade messages, and the panel in front of the alerts** (built without
+the game's assemblies; StabilityTests only). **Not played** (this release's changes).
+
+- **The chat chime also plays while the panel is open,** and a player's speaker button now mutes their chat chime as
+  well as the sounds of their actions.
+- **Trading window touch-ups:** the goods picker's heading is white; the wish icons are centred; colony rows read
+  *Beavers: N* (and *Bots: N* on the next line, only when there are bots); your own colony shows its goods like the
+  others; the hint splits onto two lines; titles read *Trading Posts and Colonies* and *Trading Posts (N)*; and trade
+  notices and Trading Post texts start each sentence on its own line. **Not played.**
+- **An eye button on the connection panel** beside each other player's speaker hides or shows that player's
+  construction on your computer (Trading Posts stay in view). Shown by default; display only, nothing simulated changes.
+- **Clicking the speaker or the eye no longer makes the chat box's placeholder flicker:** a press on either no longer
+  sends the cursor to the chat box. **Not played** (built without the game's assemblies).
+
 ## 1.4.0-rc24
 
 **The connection panel stays in front, Enter opens the chat, and the colonies window and Trading Post say more** (PRs

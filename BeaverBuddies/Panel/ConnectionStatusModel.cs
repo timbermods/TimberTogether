@@ -98,6 +98,10 @@ namespace BeaverBuddies.Panel
         public bool IsYou;
         /// <summary>This computer doesn't play the sounds of this player's actions (set by the game, not the model).</summary>
         public bool Muted;
+        /// <summary>This computer doesn't draw this player's construction (set by the game, not the model).</summary>
+        public bool Hidden;
+        /// <summary>Whether the player has a colony whose construction can be hidden.</summary>
+        public bool HasColony;
     }
 
     /// <summary>The finished text and states the view shows. No layout, no colors: just what to say.</summary>

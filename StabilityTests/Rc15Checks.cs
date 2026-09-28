@@ -51,6 +51,8 @@ static class Rc15Checks
             Check(!ChatFormat.Chimes(new[] { Msg(5, 1) }, 1, 0), "your own message chimed");
             Check(ChatFormat.Chimes(new[] { Msg(5, 0) }, 1, 0), "another player's message did not chime");
             Check(!ChatFormat.Chimes(new[] { Msg(3, 0), Msg(4, 2) }, 1, 4), "the history a guest gets on joining chimed");
+            Check(!ChatFormat.Chimes(new[] { Msg(5, 0) }, 1, 0, player => player == 0), "a muted player's message chimed");
+            Check(ChatFormat.Chimes(new[] { Msg(5, 0), Msg(6, 2) }, 1, 0, player => player == 0), "an unmuted player's message did not chime");
             Check(ChatFormat.Chimes(new[] { Msg(4, 0), Msg(5, 2) }, 1, 4), "a live message after the history did not chime");
             Check(!ChatFormat.Chimes(Array.Empty<ChatMessage>(), 1, 0), "nothing new chimed");
         });
@@ -69,15 +71,15 @@ static class Rc15Checks
             Check(client.Contains("if (isHistory) Chat.AddHistory(numbered);"), "a guest no longer marks the history it is sent as history");
         });
 
-        yield return ("a chat message from another player chimes only while the connection panel is collapsed or hidden", () =>
+        yield return ("a chat message from another player chimes, whether the connection panel is open or not, unless that player is muted", () =>
         {
             string panel = Source("BeaverBuddies", "Panel", "ConnectionPanelService.cs");
             string tick = Body(panel, "void Tick()");
             int listen = tick.IndexOf("if (net != null && !chimeFailed) ListenForChat(net, mode == PanelDisplayMode.Expanded);", StringComparison.Ordinal);
             Check(listen >= 0 && listen < tick.IndexOf("if (mode == PanelDisplayMode.Hidden", StringComparison.Ordinal), "the chat's chime is gone, or is silent while the panel is hidden");
             string chat = Body(panel, "void ListenForChat(TimberNetBase net, bool open)");
-            Check(chat.Contains("bool chime = me >= 0 && ChatFormat.Chimes(log.Since(heardSequence), me, log.HistoryThrough);")
-                && chat.Contains("if (chime && !open) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);"), "the chat no longer plays its chime, or chimes while the panel is open");
+            Check(chat.Contains("bool chime = me >= 0 && ChatFormat.Chimes(log.Since(heardSequence), me, log.HistoryThrough, RemoteSounds.IsMuted);")
+                && chat.Contains("if (chime) sounds.Play(BeaverBuddies.Util.NoticeSounds.ChatSound);"), "the chat no longer plays its chime, chimes for a muted player, or is silent while the panel is open");
             string sounds = Source("BeaverBuddies", "Util", "NoticeSounds.cs");
             Check(sounds.Contains("\"Environment.Buildings.Speaker.Chime_01\"") && sounds.Contains("\"Environment.Buildings.Speaker.Chime_02\""),
                 "the chimes are no longer the Speaker's");
