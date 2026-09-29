@@ -1,3 +1,11 @@
+v1.4.0-rc31 (Timber Together)
+* Type the whole trade, like 101 Logs for 2 Gears. It's never refused; the game carries exactly that in rounds.
+* The Rounds box shows how many rounds the trade takes; offers and messages say only the whole trade.
+* The Global history graphs (F9, F10) show only your own colony.
+* The Trading Posts and colonies window (Y) matches the game's own windows, with readable text.
+* Both players need this version.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc30 (Timber Together)
 * The wellbeing window's faction goals, a good's stock chart and the district lists show only your own colony.
 * The other colony's marked trees are not highlighted when you mark trees.
