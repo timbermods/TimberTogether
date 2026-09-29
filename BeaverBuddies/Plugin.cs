@@ -213,6 +213,8 @@ namespace BeaverBuddies
             AutomationEvent.ApplyAutomationPatches(harmony);
             // Display only (a player's sounds, heard or not): never a reason to refuse co-op, so not in FailedPatches.
             BeaverBuddies.Activity.RemoteSounds.Install(harmony);
+            // Display only too: another colony's trees marked for cutting are not drawn.
+            Colonies.ColonyCuttingView.Install(harmony);
 
             // apply each advanced monomod patch manually.
             Install(nameof(GameSaverSavePatcher), GameSaverSavePatcher.Install);
