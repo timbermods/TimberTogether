@@ -5,10 +5,11 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc31
 
 **Trades typed whole and never refused, the Global history graphs your own colony's, and a design pass of the
-colonies window** (built against Timberborn 1.1.2.4). **Not played.**
+colonies window** (PR #80). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 548
+and RuntimeChecks 502 pass. **Not played.**
 
 - **A trade is typed whole and never refused for its amounts.** Kyler, after rc30: "No trade offer should be refused,
   the game should just take of those details without concerning the player." rc30 refused amounts over 100 that
