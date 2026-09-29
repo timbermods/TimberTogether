@@ -93,7 +93,7 @@ Steam ID, whoever hosts.
   and unlocks. Nobody else can change them, and your beavers work only for your colony.
 - **Build anywhere,** right up to a neighbor. The one rule: **your roads never join another colony's**, except
   through a Trading Post. **Ctrl+L** shows every colony's roads in its color.
-- **Your screen is your colony's:** the top bar, alerts, batch lists and working hours.
+- **Your screen is your colony's:** the top bar, alerts, status icons, batch lists and working hours.
 - **Shared by everyone:** the map (water, droughts, badwater, weather), speed, pause, pings, chat and saving.
 - **Up to four colonies.** More players help run the host's colony.
 - **Folktails and Iron Teeth together** (Mixed factions): each colony plays its own faction. Between factions, Trading
@@ -113,8 +113,9 @@ the colonies window (**Y**), or after its player misses the host's limit, **Hand
 Build a **Trading Post** (District Management; 10 logs, no science) between your road and another colony's, one
 half's door on each road. It's the only place two colonies' roads meet, and it starts trading once both reach it.
 
-1. **Offer.** Select your half. Choose what **You give** and **You get** (up to 100 of each a round; type more for the
-   whole trade and it's split into rounds) and how many **Rounds**, or tick **Repeat until cancelled**. A side at 0 is a gift. **Keep at least** holds back a reserve so
+1. **Offer.** Select your half. Choose what **You give** and **You get** and how many **Rounds** (up to 100 of each a round), or tick
+   **Repeat until cancelled**. Type more than 100 and that is the whole trade, split into rounds; **Rounds** is then ignored.
+   A side at 0 is a gift. **Keep at least** holds back a reserve so
    a long deal never empties your stock. Then **Make offer**.
 2. **They accept** on their half, or decline; a declined offer stays in your form, ready to adjust. The offer reaches
    them as a message that says the whole trade and stays until they answer or close it, with a chime. Clicking it

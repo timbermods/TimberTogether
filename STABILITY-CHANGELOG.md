@@ -5,10 +5,9 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc28
 
-**The panel in front of the alerts, achievements and status icons your own colony's, and the eye hides only construction** (built without
-the game's assemblies; StabilityTests only). **Not played.**
+**The panel in front of the alerts, achievements and status icons your own colony's, the eye hides only construction, and an amount over 100 is the whole trade** (PRs #71, #72, #73). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 536 and RuntimeChecks 464 pass. **Not played.** PR #72 was written without the game's assemblies, and RuntimeChecks found a mistake: `StatusIconCycler` has no `Update`, so the status-icon filter would never have installed. It now patches `IntervalUpdate`, its per-interval update; the icon is held in `Root`, `_statusIcon`, `_statusIconRenderer` and `_colliderTransform`, all children of the icon's own root, never the beaver or building. The achievement filter finds 34 methods in `Timberborn.Achievements`, `Timberborn.AchievementSystem` and `Timberborn.SteamAchievementSystem`, all the game's achievement tracking; none is simulation or save code.
 
 - **The connection panel is in front of the game's alerts, and the alerts are never moved.** From rc27 play: the
   alerts moved beside the panel (rc26) sat over the map in the middle of the screen. That move is gone. Reordering the
@@ -28,7 +27,7 @@ the game's assemblies; StabilityTests only). **Not played.**
   nothing is found the log says so. RuntimeChecks lists the methods found (`Rc28RuntimeChecks`) for review.
 - **Status icons show only over your own colony's beavers and buildings.** From rc28 play: the other colony's
   beavers showed their hunger and thirst icons. The alert list was already filtered; the icons are drawn by each
-  thing's `StatusIconCycler`. `StatusIconView` skips the cycler's `Update` for another colony's thing and switches off
+  thing's `StatusIconCycler`. `StatusIconView` skips the cycler's `IntervalUpdate` for another colony's thing and switches off
   the renderers it holds (its renderer, game object and transform fields, never the thing itself), switched on again if
   the thing becomes this colony's. Display only. RuntimeChecks prints the cycler's fields (`Rc29RuntimeChecks`).
 - **The eye button hides only construction.** It hid all of the other player's buildings; now only what is still
