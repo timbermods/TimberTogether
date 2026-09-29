@@ -274,9 +274,11 @@
     h += offerSide('get', 'You get', d.get, esc(COLONY[them]) + ' has ' + S.stock[them][d.get], d.getAmount);
     // rounds card (no say for a repeating offer, nor when an amount is the whole trade)
     var roundsOff = d.repeat || d.giveAmount > MAX_AMOUNT || d.getAmount > MAX_AMOUNT;
+    // A split trade's greyed box says how many rounds it is split into, as the game's does.
+    var judged = roundsOff && !d.repeat ? judge(d) : null, shownRounds = judged && judged.split ? judged.rounds : d.rounds;
     h += '<div class="tp-card"><div class="tp-head"><span class="tp-caption">Rounds</span><span class="tp-muted">up to ' + MAX_AMOUNT + ' of each per round</span></div>'
       + '<div class="tp-row"><button class="tp-btn tp-sq" type="button" data-rounds="-1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round fewer" title="-1 (Shift+click: -10)">&minus;</button>'
-      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + d.rounds + '" data-rounds-box' + (roundsOff ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
+      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + shownRounds + '" data-rounds-box' + (roundsOff ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
       + '<button class="tp-btn tp-sq" type="button" data-rounds="1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round more" title="+1 (Shift+click: +10)">+</button>'
       + '<label class="tp-check" style="margin-left:10px" title="A standing deal: round after round, until both colonies agree to end it."><input type="checkbox" data-repeat' + (d.repeat ? ' checked' : '') + '><span class="box"></span>Repeat until cancelled</label></div></div>';
     // summary
