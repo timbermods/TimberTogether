@@ -146,6 +146,8 @@ Rc22RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc27RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc28RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc29RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
+// 1.4.0-rc31: the trading posts window (Y) is drawn with the game UI's own classes.
+Rc31RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Console.WriteLine($"{total-failures}/{total} passed");
 return failures == 0 ? 0 : 1;
 

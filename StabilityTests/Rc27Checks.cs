@@ -16,6 +16,19 @@ static class Rc27Checks
         return File.ReadAllText(Path.Combine(new[] { root! }.Concat(parts).ToArray())).Replace("\r\n", "\n");
     }
 
+    static string Body(string text, string signature)
+    {
+        int start = text.IndexOf(signature, StringComparison.Ordinal);
+        Check(start >= 0, "not found: " + signature);
+        int open = text.IndexOf('{', start), depth = 0;
+        for (int i = open; i < text.Length; i++)
+        {
+            if (text[i] == '{') depth++;
+            else if (text[i] == '}' && --depth == 0) return text.Substring(start, i - start + 1);
+        }
+        throw new Exception("unbalanced braces after " + signature);
+    }
+
     public static IEnumerable<(string Name, Action Run)> Tests()
     {
         yield return ("rc27: another colony's cutting marks are hidden only from the game's interface, never from the simulation", () =>
@@ -207,6 +220,27 @@ static class Rc27Checks
             string source = Source("BeaverBuddies", "Colonies", "ColonyWellbeingRecords.cs");
             Check(source.Contains("int[] before = (int[])records.Clone();") && source.Contains("&& WellbeingRecords.Announces(before[slot])) Announce(records[slot]);"),
                 "the first record is announced");
+        });
+        yield return ("rc31: the trading posts window names only the game UI's classes it lists, and none of the entity panel's", () =>
+        {
+            string window = Source("BeaverBuddies", "Colonies", "TradeOverviewPanel.cs");
+            int start = window.IndexOf("public static readonly string[] ClassesUsed", StringComparison.Ordinal);
+            Check(start >= 0, "the window no longer lists its classes");
+            string listed = window.Substring(start, window.IndexOf("};", start, StringComparison.Ordinal) - start);
+            // Every class the window adds or builds a box of is listed (RuntimeChecks holds the list to the game's sheets).
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(window,
+                "(?:AddToClassList|Box)\\(\"([^\"]+)\"\\)"))
+                Check(listed.Contains("\"" + m.Groups[1].Value + "\""), "the window uses " + m.Groups[1].Value + " without listing it");
+            // The entity panel's sheet is not in a window: its classes (the red button, entity-panel__text's colour) draw nothing there.
+            foreach (string panelOnly in new[] { "NativeElements.RedButton(", "NativeElements.Caption(", "NativeElements.Section(", "entity-panel__", "entity-fragment__" })
+                Check(!window.Contains(panelOnly), "the window relies on the entity panel's style sheet: " + panelOnly);
+            // Text takes its size and colour from the game's classes, not colours set on it (only the warning and muted ones).
+            Check(!window.Contains("Color.white") && !window.Contains("style.fontSize"), "the window sets a text colour or size of its own");
+            // Outside an entity panel the mod's text and buttons still have the game's light grey.
+            string native = Body(Source("BeaverBuddies", "Util", "NativeElements.cs"), "public static Label Text(");
+            Check(native.Contains("label.AddToClassList(TextNormal);"), "the mod's text has no colour outside an entity panel");
+            Check(Body(Source("BeaverBuddies", "Util", "NativeElements.cs"), "private static Button TextButton(").Contains("button.AddToClassList(TextNormal);"),
+                "the mod's buttons have no text colour outside an entity panel");
         });
     }
 }
