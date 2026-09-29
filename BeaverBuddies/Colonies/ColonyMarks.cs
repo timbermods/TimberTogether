@@ -79,6 +79,9 @@ namespace BeaverBuddies.Colonies
         public int? CuttingOwner(Vector3Int tile) =>
             cutting.TryGetValue(tile, out int slot) && _treeCuttingArea.IsInCuttingArea(tile) ? slot : (int?)null;
 
+        /// <summary>The colony recorded for a cutting mark on this tile, without asking the game whether it still stands.</summary>
+        public int? RecordedCuttingOwner(Vector3Int tile) => cutting.TryGetValue(tile, out int slot) ? slot : (int?)null;
+
         /// <summary>Whether <paramref name="slot"/> may change a mark whose owner is <paramref name="owner"/>.</summary>
         public static bool MayChangeMark(int slot, int? owner) => owner == null || owner.Value == slot;
 

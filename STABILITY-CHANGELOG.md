@@ -5,6 +5,22 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**Another colony's trees marked for cutting are not drawn** (built without the game's assemblies; StabilityTests only).
+**Not played.**
+
+- From rc26 play: each player saw the other colony's cutting marks and their outline. The game keeps one cutting area
+  for the map and its interface draws all of it. `ColonyCuttingView` finds the game's interface methods that read the
+  area (in the Timberborn `...UI` assemblies that use Forestry, calling `TreeCuttingArea.IsInCuttingArea` or
+  `CuttingArea`) and, while one of them runs, the other colony's marks read as not marked. The simulation (the
+  lumberjacks) reads the whole area as ever, so nothing simulated changes. Nobody's marks stay drawn for everyone.
+- When whose colony a computer shows changes (a guest is seated after the save has loaded), the game's change event
+  is posted to redraw the marks, but only if nothing outside the interface assemblies listens to it; the log says which
+  listeners it found. Otherwise the marks are redrawn at the next change.
+- Display only: if nothing can be patched the log says so and every mark stays drawn; co-op is never refused for it.
+  StabilityTests: a source check (`Rc27Checks`). RuntimeChecks lists the interface methods found (`Rc27RuntimeChecks`).
+
 ## 1.4.0-rc26
 
 **The alerts move beside the connection panel, and the other colony's death alert stays out** (built without the game's assemblies; StabilityTests only). **Not
