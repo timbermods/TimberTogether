@@ -145,6 +145,7 @@ Rc15RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc22RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc27RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc28RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
+Rc29RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Console.WriteLine($"{total-failures}/{total} passed");
 return failures == 0 ? 0 : 1;
 

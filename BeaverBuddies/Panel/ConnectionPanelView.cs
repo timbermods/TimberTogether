@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using Timberborn.CoreUI;
 using Timberborn.Localization;
+using Timberborn.TooltipSystem;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -37,6 +38,9 @@ namespace BeaverBuddies.Panel
         bool chatDisabled;
 
         public VisualElement Root { get; }
+
+        /// <summary>The game's tooltips, for the buttons on players' rows; without it they have none.</summary>
+        public ITooltipRegistrar Tooltips { get; set; }
 
         /// <summary>The chat half, or null if it could not be built (the rest of the panel still works).</summary>
         public ChatView Chat { get; }
@@ -331,8 +335,8 @@ namespace BeaverBuddies.Panel
                 word.style.paddingLeft = 0; word.style.paddingRight = 0; word.style.marginLeft = 0; word.style.marginRight = 0;
                 button.Add(word);
             }
-            button.tooltip = string.Format(CultureInfo.InvariantCulture,
-                loc.T(row.Muted ? "BeaverBuddies.Panel.SoundOffTooltip" : "BeaverBuddies.Panel.SoundOnTooltip"), row.Name);
+            Tooltip(button, string.Format(CultureInfo.InvariantCulture,
+                loc.T(row.Muted ? "BeaverBuddies.Panel.SoundOffTooltip" : "BeaverBuddies.Panel.SoundOnTooltip"), row.Name));
             button.name = "BeaverBuddiesSoundButton";
             button.RegisterCallback<ClickEvent>(e => { SoundClicked?.Invoke(row); e.StopPropagation(); });
             return button;
@@ -361,10 +365,17 @@ namespace BeaverBuddies.Panel
                 word.style.paddingLeft = 0; word.style.paddingRight = 0; word.style.marginLeft = 0; word.style.marginRight = 0;
                 button.Add(word);
             }
-            button.tooltip = string.Format(CultureInfo.InvariantCulture,
-                loc.T(row.Hidden ? "BeaverBuddies.Panel.EyeOffTooltip" : "BeaverBuddies.Panel.EyeOnTooltip"), row.Name);
+            Tooltip(button, loc.T(row.Hidden ? "BeaverBuddies.Panel.EyeOffTooltip" : "BeaverBuddies.Panel.EyeOnTooltip"));
             button.RegisterCallback<ClickEvent>(e => { VisibilityClicked?.Invoke(row); e.StopPropagation(); });
             return button;
+        }
+
+        // The game's tooltip (shown on hover in the game), and the element's own for anything that reads it.
+        void Tooltip(VisualElement element, string text)
+        {
+            element.tooltip = text;
+            try { Tooltips?.Register(element, text); }
+            catch (Exception error) { Plugin.LogWarning("A panel button has no tooltip: " + error.Message); Tooltips = null; }
         }
 
         static VisualElement SoundSpacer()

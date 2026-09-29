@@ -217,6 +217,8 @@ namespace BeaverBuddies
             Colonies.ColonyCuttingView.Install(harmony);
             // And each player's achievements are their own colony's.
             Colonies.ColonyAchievements.Install(harmony);
+            // And the status icons over things are drawn only over your own colony's.
+            Colonies.StatusIconView.Install(harmony);
 
             // apply each advanced monomod patch manually.
             Install(nameof(GameSaverSavePatcher), GameSaverSavePatcher.Install);

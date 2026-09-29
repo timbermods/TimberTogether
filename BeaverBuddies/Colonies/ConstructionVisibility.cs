@@ -9,8 +9,8 @@ using UnityEngine;
 namespace BeaverBuddies.Colonies
 {
     /// <summary>
-    /// Another player's construction, shown or hidden on this computer (the eye button on the connection panel). Hiding
-    /// only switches off the drawing of a colony's buildings; they stay in the game, simulated as ever, so nothing
+    /// Another player's construction, shown or hidden on this computer (the eye button on the connection panel): what
+    /// they are still building, never their finished buildings. Hiding only switches off the drawing of those sites; they stay in the game, simulated as ever, so nothing
     /// differs between computers. Shown by default. Kept for the session, by colony slot.
     /// </summary>
     public class ConstructionVisibility : RegisteredSingleton, IUpdatableSingleton
@@ -73,7 +73,8 @@ namespace BeaverBuddies.Colonies
             {
                 EntityComponent entity = pair.Key;
                 int? owner = entity ? DistrictOwner.OwnerOf(entity) : null;
-                if (!entity || owner == null || !hiddenSlots.Contains(owner.Value) || TradingPosts.IsTradingPostBuilding(entity)) scratch.Add(entity);
+                if (!entity || owner == null || !hiddenSlots.Contains(owner.Value) || TradingPosts.IsTradingPostBuilding(entity) || IsFinished(entity))
+                    scratch.Add(entity);
             }
             foreach (EntityComponent entity in scratch) Release(entity);
 
@@ -81,7 +82,9 @@ namespace BeaverBuddies.Colonies
             int me = ColonySession.LocalSlot;
             foreach (EntityComponent entity in _entityRegistry.Entities)
             {
-                if (!entity || entity.GetComponent<BlockObject>() == null || TradingPosts.IsTradingPostBuilding(entity)) continue;
+                // Only what is still being built: a finished building stays drawn.
+                BlockObject blockObject = entity ? entity.GetComponent<BlockObject>() : null;
+                if (blockObject == null || blockObject.IsFinished || TradingPosts.IsTradingPostBuilding(entity)) continue;
                 int? owner = DistrictOwner.OwnerOf(entity);
                 if (owner == null || owner.Value == me || !hiddenSlots.Contains(owner.Value)) continue;
                 // Drawn parts the game switches on again (a finished building's new model) are caught on the next pass.
@@ -93,6 +96,12 @@ namespace BeaverBuddies.Colonies
                     renderers.Add(renderer);
                 }
             }
+        }
+
+        private static bool IsFinished(EntityComponent entity)
+        {
+            BlockObject blockObject = entity.GetComponent<BlockObject>();
+            return blockObject == null || blockObject.IsFinished;
         }
 
         private void Release(EntityComponent entity)

@@ -7,7 +7,7 @@ entry above the current one.
 
 ## Unreleased
 
-**The panel is drawn in front of the alerts, which stay put, and achievements are your own colony's** (built without
+**The panel in front of the alerts, achievements and status icons your own colony's, and the eye hides only construction** (built without
 the game's assemblies; StabilityTests only). **Not played.**
 
 - **The connection panel is in front of the game's alerts, and the alerts are never moved.** From rc27 play: the
@@ -26,7 +26,16 @@ the game's assemblies; StabilityTests only). **Not played.**
   component), or an `On…` handler of an achievement part on a building or beaver, is skipped when that thing is
   another colony's. Nobody's things count for everyone. Display only (Steam achievements are this computer's own); if
   nothing is found the log says so. RuntimeChecks lists the methods found (`Rc28RuntimeChecks`) for review.
-- StabilityTests: source checks for both (`PanelLayoutChecks`, `Rc27Checks`); `PanelLayout.AlertShift` is removed.
+- **Status icons show only over your own colony's beavers and buildings.** From rc28 play: the other colony's
+  beavers showed their hunger and thirst icons. The alert list was already filtered; the icons are drawn by each
+  thing's `StatusIconCycler`. `StatusIconView` skips the cycler's `Update` for another colony's thing and switches off
+  the renderers it holds (its renderer, game object and transform fields, never the thing itself), switched on again if
+  the thing becomes this colony's. Display only. RuntimeChecks prints the cycler's fields (`Rc29RuntimeChecks`).
+- **The eye button hides only construction.** It hid all of the other player's buildings; now only what is still
+  being built (unfinished), and a building that finishes is drawn again. Its tooltip is the game's own (the element's
+  own tooltip never shows in the game) and reads *Hide construction* / *Show construction*. The speaker's tooltip
+  goes through the game's tooltips too.
+- StabilityTests: source checks (`PanelLayoutChecks`, `Rc27Checks`); `PanelLayout.AlertShift` is removed.
 
 ## 1.4.0-rc27
 

@@ -9,6 +9,7 @@ using Timberborn.InputSystem;
 using Timberborn.Localization;
 using Timberborn.SingletonSystem;
 using Timberborn.TimeSystem;
+using Timberborn.TooltipSystem;
 using Timberborn.UILayoutSystem;
 using TimberNet;
 using UnityEngine;
@@ -36,6 +37,7 @@ namespace BeaverBuddies.Panel
         const string EyeOnIconPath = "UI/Images/BeaverBuddies/eye-on", EyeOffIconPath = "UI/Images/BeaverBuddies/eye-off";
         const string SoundOnIconPath = "UI/Images/BeaverBuddies/sound-on", SoundOffIconPath = "UI/Images/BeaverBuddies/sound-off";
 
+        readonly ITooltipRegistrar tooltips;
         readonly UILayout layout;
         readonly VisualElementInitializer initializer;
         readonly InputService input;
@@ -61,10 +63,10 @@ namespace BeaverBuddies.Panel
         double? tickRate;
 
         public ConnectionPanelService(UILayout layout, VisualElementInitializer initializer, InputService input, ILoc loc, SpeedManager speed,
-            BeaverBuddies.Util.NoticeSounds sounds, IAssetLoader assets)
+            BeaverBuddies.Util.NoticeSounds sounds, IAssetLoader assets, ITooltipRegistrar tooltips)
         {
             this.layout = layout; this.initializer = initializer; this.input = input; this.loc = loc; this.speed = speed;
-            this.sounds = sounds; this.assets = assets;
+            this.sounds = sounds; this.assets = assets; this.tooltips = tooltips;
         }
 
         /// <summary>The panel on screen (null before it is built or after it failed), for what must keep clear of it.</summary>
@@ -82,6 +84,8 @@ namespace BeaverBuddies.Panel
             try
             {
                 view = new ConnectionPanelView(loc, initializer);
+                // The game's own tooltips: a VisualElement's tooltip text is never shown in the game.
+                view.Tooltips = tooltips;
                 view.HeaderClicked += OnHeaderClicked;
                 view.FpsFloorClicked += OnFpsFloorClicked;
                 view.RowClicked += OnRowClicked;
