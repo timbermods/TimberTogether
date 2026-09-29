@@ -1,3 +1,11 @@
+v1.4.0-rc32 (Timber Together)
+* The Power Export Facility (Power tab) sends your spare power to another colony. Tick Send power to … on your half.
+* Power goes one way between two colonies; a colony can pass on what it gets. Pay for it at a Trading Post.
+* Two colonies' power never joins otherwise. Ctrl+P shows every colony's power.
+* H opens the Power window: where power goes, your networks and facilities, and every colony's power.
+* Both players need this version.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc31 (Timber Together)
 * Type the whole trade, like 101 Logs for 2 Gears. It's never refused; the game carries exactly that in rounds.
 * The Rounds box shows how many rounds the trade takes; offers and messages say only the whole trade.

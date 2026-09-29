@@ -5,6 +5,30 @@ fully before writing code. Anything marked **VERIFY** is a belief about Timberbo
 against the decompiled game: confirm it before building on it. Written against the rc31 source (the Trading Post form
 without rounds).
 
+## As built (1.4.0-rc32)
+
+What the build settled that the plan left open (the VERIFY items, checked against the decompiled game):
+
+- **Two linked buildings, not one.** A building has one power node, and a node sits in one network, so each half is its
+  own building (the game's `LinkedBuilding`, as a District Crossing's halves): laid down as a pair, built together,
+  removed together. Each half has its own node, worker and door.
+- **The node** is 1 hp in and 1 hp out, scaled every tick with the game's own `SetInputMultiplier` /
+  `SetOutputMultiplier` (VERIFY 1: output and input can change at runtime; the graph's totals follow through the
+  actuals' change events).
+- **The network join** is `MechanicalGraphManager.AddNode` (VERIFY 2); `MechanicalConnectorActivator` only draws
+  connectors. A split follows only the connections made there, so guarding the join is enough.
+- **Batteries** (VERIFY 3): the game's `BatteryService` charges with the graph's surplus and discharges its shortfall,
+  so a sending half's draw counts against its colony's surplus, and a receiving half's output towards its partner's.
+- **Connection** (VERIFY 4): one transput per half, on its left end at ground level (`Directions: Left`).
+- **Workers** (VERIFY 5, option B): not the crossing's workings (they would join roads). Each half is a one-worker
+  workshop whose worker works as a Power Wheel's walker does (`WorkWorkplaceBehavior`), in quarter-hour stretches, so
+  `Workshop.CurrentlyWorking` drops for a tick between them: a half counts as staffed for 5 ticks after its worker
+  last worked (VERIFY 6: off shift, paused or unassigned reads as unstaffed).
+- **Cost.** 20 of each a half on the game's cost line, as the Trading Post's 10 logs; the pair uses 40 of each.
+- **Look.** The District Crossing's model, as the Trading Post's.
+- **Keys** checked against the game's bindings: Ctrl+P is free (plain P is `ToggleBuildingPause`, no other modifiers),
+  H is free (only Ctrl+H, `ToggleGUI`, no other modifiers).
+
 ## 1. Goal
 
 Let one colony send spare power to another. Power only: the Power Export Facility trades nothing. Players who want to pay for

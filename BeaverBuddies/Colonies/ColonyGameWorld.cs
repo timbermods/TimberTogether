@@ -7,6 +7,7 @@ using Timberborn.Coordinates;
 using Timberborn.DistributionSystem;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
+using Timberborn.MechanicalSystem;
 using Timberborn.Navigation;
 using Timberborn.PathSystem;
 using UnityEngine;
@@ -19,17 +20,20 @@ namespace BeaverBuddies.Colonies
     /// or fills a cache the simulation reads (district roads are read from the game's instant map, the one its
     /// placement tools use), so the host can judge an action without changing anything.
     /// </summary>
-    public class ColonyGameWorld : IColonyWorld, IColonyRoadMap
+    public class ColonyGameWorld : IColonyWorld, IColonyRoadMap, IColonyPowerMap
     {
         private readonly EntityRegistry _entityRegistry;
         private readonly BuildingService _buildingService;
         private readonly IDistrictService _districtService;
         private readonly DistrictCenterRegistry _districtCenterRegistry;
         private readonly IBlockService _blockService;
+        private readonly TransputMap _transputMap;
 
         public ColonyGameWorld(EntityRegistry entityRegistry, BuildingService buildingService,
-            IDistrictService districtService, DistrictCenterRegistry districtCenterRegistry, IBlockService blockService)
+            IDistrictService districtService, DistrictCenterRegistry districtCenterRegistry, IBlockService blockService,
+            TransputMap transputMap)
         {
+            _transputMap = transputMap;
             _entityRegistry = entityRegistry;
             _buildingService = buildingService;
             _districtService = districtService;
@@ -54,6 +58,13 @@ namespace BeaverBuddies.Colonies
         /// </summary>
         public bool IsCrossingOf(int slot, string entityId)
         {
+            // A Power Export Facility between two colonies, the same way.
+            PowerExportHalf facility = Entity(entityId)?.GetComponent<PowerExportHalf>();
+            if (facility != null)
+            {
+                int a = PowerExports.ColonyOf(facility), b = PowerExports.ColonyOf(facility.Partner);
+                return a >= 0 && b >= 0 && a != b && (a == slot || b == slot);
+            }
             DistrictCrossing half = Entity(entityId)?.GetComponent<DistrictCrossing>();
             if (!TradingPosts.IsTradingPost(half)) return false;
             return DistrictOwner.OwnerOfDistrict(TradingPosts.DistrictOf(half)) == slot
@@ -64,6 +75,20 @@ namespace BeaverBuddies.Colonies
         public bool IsTradingPostTemplate(string templateName)
         {
             try { return TradingPosts.IsTradingPostTemplate(_buildingService.GetBuildingTemplate(templateName)); }
+            catch (Exception) { return false; }
+        }
+
+        /// <summary>
+        /// Whether a template is where two colonies meet: the Trading Post or the Power Export Facility, each two halves
+        /// placed together, judged together, and allowed of either faction.
+        /// </summary>
+        public bool IsMeetingTemplate(string templateName)
+        {
+            try
+            {
+                BuildingSpec building = _buildingService.GetBuildingTemplate(templateName);
+                return TradingPosts.IsTradingPostTemplate(building) || PowerExports.IsFacilityTemplate(building);
+            }
             catch (Exception) { return false; }
         }
 
@@ -121,10 +146,52 @@ namespace BeaverBuddies.Colonies
             if (spec == null) return ColonyRefusal.None;
             Placement placement = ToPlacement(colonyPlacement);
             List<ColonyCell> cells = spec.GetBlocks(placement).Select(block => Cell(block.Coordinates)).ToList();
-            ColonyRefusal refusal = RoadConflict(slot, cells, EntranceOf(spec, placement), TradingPosts.IsTradingPostTemplate(building),
+            bool facility = PowerExports.IsFacilityTemplate(building);
+            ColonyRefusal refusal = RoadConflict(slot, cells, EntranceOf(spec, placement), TradingPosts.IsTradingPostTemplate(building) || facility,
                 building.HasSpec<PathSpec>(), out detail);
+            if (refusal == ColonyRefusal.None && !facility)
+                refusal = ColonyPowerRule.Conflict(slot, TransputsOf(building.GetSpec<TransputProviderSpec>(), spec.GetBlocks(), placement), this, out detail);
             if (detail != null) detail = colonyPlacement.TemplateName + " " + detail;
             return refusal;
+        }
+
+        /// <summary>
+        /// A building's power connections where it would stand: each connection's cell and the cell it faces (as the game
+        /// works them out for a placed node: Transput.Coordinates and Target). None for a building without power.
+        /// </summary>
+        public static List<ColonyTransput> TransputsOf(TransputProviderSpec provider, Blocks blocks, Placement placement)
+        {
+            var result = new List<ColonyTransput>();
+            if (provider == null || provider.Transputs.IsDefaultOrEmpty) return result;
+            foreach (TransputSpec transput in provider.Transputs)
+            {
+                Vector3Int cell = blocks.Transform(transput.Coordinates, placement);
+                foreach (Direction3D direction in transput.Directions.GetEnumerator())
+                {
+                    Direction3D placed = placement.FlipMode.Transform(direction).RotateHorizontally(placement.Orientation);
+                    result.Add(new ColonyTransput(Cell(cell), Cell(cell + placed.ToOffset())));
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// The colony of the power connection on <paramref name="target"/> that faces back to <paramref name="cell"/>, built
+        /// or being built. Nobody's for a Power Export Facility's half (it joins any network) and for a building nobody owns.
+        /// </summary>
+        public int? PowerOwnerFacing(ColonyCell cell, ColonyCell target)
+        {
+            Vector3Int from = Tile(cell), at = Tile(target);
+            foreach (Transput transput in _transputMap.GetTransputsAtCoordinates(at))
+            {
+                if (transput.Target != from || transput.ParentNode == null) continue;
+                // A preview is nothing yet.
+                BlockObject blockObject = transput.ParentNode.GetComponent<BlockObject>();
+                if (blockObject && blockObject.IsPreview) continue;
+                int? owner = PowerExports.PowerOwnerOf(transput.ParentNode);
+                if (owner != null) return owner;
+            }
+            return null;
         }
 
         /// <summary>
@@ -185,7 +252,7 @@ namespace BeaverBuddies.Colonies
 
         /// <summary>
         /// The colony of a building, finished or not, whose entrance is this cell: its door faces the cell from beside.
-        /// A Trading Post's halves are left out: each half's entrance takes its own colony's road.
+        /// A Trading Post's halves are left out, and a Power Export Facility's: each half's entrance takes its own colony's road.
         /// </summary>
         public int? EntranceOwnerAt(ColonyCell cell)
         {
@@ -196,7 +263,8 @@ namespace BeaverBuddies.Colonies
                 {
                     if (!blockObject || blockObject.IsPreview || !blockObject.HasEntrance) continue;
                     if (blockObject.PositionedEntrance.Coordinates != tile) continue;
-                    if (TradingPosts.IsTradingPostBuilding(blockObject.GetComponent<EntityComponent>())) continue;
+                    EntityComponent entity = blockObject.GetComponent<EntityComponent>();
+                    if (TradingPosts.IsTradingPostBuilding(entity) || PowerExports.IsFacilityBuilding(entity)) continue;
                     int? owner = DistrictOwner.OwnerOf(blockObject);
                     if (owner != null) return owner;
                 }

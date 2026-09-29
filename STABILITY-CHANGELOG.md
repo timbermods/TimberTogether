@@ -5,6 +5,66 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## 1.4.0-rc32
+
+**The Power Export Facility: one colony sends its spare power to another; two colonies' power networks never join
+otherwise; Ctrl+P shows every colony's power, and H opens a Power window** (design/POWER-EXPORT-PLAN.md). Built
+against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 558 and RuntimeChecks 508 pass.
+**Not played.** Both players need this build.
+
+- **The building.** `Buildings/Power/MultiColonyPowerExport`, each faction's District Crossing model and block layout
+  as two linked halves (`LinkedBuildingSpec`, laid down as a pair, built together, removed together), in the Power
+  tab: 20 Gears, 20 Planks and 20 Logs a half (each half is built and paid for on its own, as a District Crossing's
+  and a Trading Post's are), and 200 science to unlock. None of the
+  crossing's workings: no `DistrictCrossingSpec`, no district obstacle, no walkway between the halves, so it never joins
+  two colonies' roads. Each half has one worker (`WorkplaceSpec` 1/1, `WorkshopSpec`, and the game's
+  `WorkWorkplaceBehavior`, as a Power Wheel's walker), a power node of 1 hp in and 1 hp out, and **one** power
+  connection, on its end: a half can never join two networks. Like the Trading Post, it is neutral (never stamped;
+  each half is its road's colony's), its doors take either colony's road, its halves are judged together
+  (`ColonyRulesService.JudgePairs`), either partner may remove it (`ColonyGameWorld.IsCrossingOf`), either faction's
+  may be placed in a mixed game, and it is offered only in separate colonies (`TradingPostToolDisabler`).
+- **Two colonies' power never joins, except through a facility.** It replaces "two colonies' shafts that touch make
+  one network". `ColonyPowerRule` (pure, checked headless like the road rule) refuses a mechanical building whose power
+  connection would face another colony's, built or being built, with *That would join another colony's power*: judged
+  by the host (`ColonyGameWorld.PlacementConflict`, from the template's `TransputProviderSpec` and the placement, as
+  the game places a node's transputs) and shown on the preview (`ColonyPlacementValidator`). A node's colony is its
+  district's, else its placer's; a facility half's is nobody's. And in separate colonies the game's network join
+  (`MechanicalGraphManager.AddNode`) is replaced by the same join with one check: two colonies' nodes are never
+  connected, so two placements at once can't join their networks either (`PowerNetworkSeparationPatcher`; RuntimeChecks
+  reads the game's method and fails if it stops connecting facing transputs and joining networks as the copy does).
+- **Sending power.** Each half has **Send power to …**, **Charge my batteries first** (on) and **Use my batteries for
+  …** (off), saved with the half and changed by `PowerExportSettingEvent`: judged by the host as a change to the half
+  (its colony or whoever looks after it), and checked again as it plays, on every computer. The link rules
+  (`PowerExportMath.Check`): power goes one way between two colonies (over every facility between them), a colony sends
+  to one colony and receives from one, and it never comes back round (A → B → C → A). The other colony hears when
+  power starts or stops coming.
+- **The flow, every tick on every computer** (`PowerExportService`). The links asked for, in the order of the halves'
+  ids, are let through by the same rules (`PowerExportMath.Admit`, first wins, so a link a road change made wrong is
+  dropped the same way everywhere). A facility carries its link while both halves are finished, each half's road and
+  network are its own colony's, and both workers are at work (a worker between two shifts of work counts for 5 ticks).
+  `PowerExportMath.Flow` runs along the chains from start to end: a network sends only what the next can use (its
+  consumers' shortfall, its batteries' room, and what it passes on in turn), and only what it spares after its own
+  consumers; with charging first its batteries fill before anything is sent; with its batteries used, what they can
+  give beyond its own shortfall goes too (and they don't charge first). Power a network gets is power it can pass on,
+  so B passes A's leftover to C. The sending half's node draws what crosses from its network and the receiving half's
+  gives it to its own (`MechanicalNode.SetInputMultiplier`/`SetOutputMultiplier` on a 1 hp node), so the game's own
+  batteries, efficiency and power panels count it. Each network's figures are read without the facilities' own share.
+  The daily colony check compares every half's settings and flow between computers (`power=[…]`).
+- **The facility's panel,** below the game's (the worker, and the half's network), built as the Trading Post's: whom
+  it links to, the power crossing now or why none does (a missing road, shaft or worker, the other's link first,
+  nothing to spare, nothing needed), the half's three check boxes (sending greyed, with the reason, where the rules
+  refuse it), what the other half is set to, **Power** (the window) and **Select your half**.
+- **The Power window (H,** or the square **Power** button at the top right, or **Power** on a facility): the game's
+  named box, as the colonies window. Where power goes between colonies (each chain on one line, with what crosses each
+  link); this player's colony's networks (made, used, spare, batteries, in and out, **Go to** its strongest generator);
+  its facilities with their check boxes; the other colonies' power. While it is open, the power view shows.
+- **The power view (Ctrl+P).** `ColonyPowerOverlay`, the road view's filled squares in the same colony colours, for
+  every shaft, gearbox, generator, battery and powered building, built or being built; a facility half takes its
+  network's colour. Shown by its key, while the Power window is open, and while a shaft, gearbox, generator, battery
+  or the facility is in hand, when the road view makes way for it. Display only.
+- New English strings; `TWO-COLONIES.md` (a Power Export Facilities section, the power rule), the README and the site.
+  The facility looks like a District Crossing, as the Trading Post does (known limit).
+
 ## 1.4.0-rc31
 
 **Trades typed whole and never refused, the Global history graphs your own colony's, and a design pass of the

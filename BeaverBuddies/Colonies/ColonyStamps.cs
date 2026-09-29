@@ -211,7 +211,8 @@ namespace BeaverBuddies.Colonies
             if (stamp == null) return null;
             BlockObject blockObject = entity.GetComponent<BlockObject>();
             if (blockObject == null || blockObject.IsPreview || !blockObject.Positioned) return null;
-            if (TradingPosts.IsTradingPostBuilding(entity)) return null;
+            // A Trading Post's or Power Export Facility's half is nobody's: each half is its road's colony's.
+            if (TradingPosts.IsTradingPostBuilding(entity) || PowerExports.IsFacilityBuilding(entity)) return null;
             return stamp;
         }
 

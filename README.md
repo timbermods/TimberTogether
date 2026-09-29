@@ -1,16 +1,17 @@
 # Timber Together
-***Tested for 12+ hours in a single multi colony game without any desyncs or issues. Every feature confirmed working in game besides mixed factions.***
+***Tested for 12+ hours in a single multi colony game without any desyncs or issues. Every feature confirmed working in game besides mixed factions and sharing power.***
 ***Build apart. Thrive together.***
 
 Co-op Timberborn where every player runs their own colony on one shared map: their own districts, beavers, stock,
-science and working hours. The colonies meet only at **Trading Posts**, where they barter. Co-op, not a race.
+science and working hours. The colonies meet only at **Trading Posts**, where they barter, and share power through a
+**Power Export Facility**. Co-op, not a race.
 
 ![Timberborn 1.1.2.4](https://img.shields.io/badge/Timberborn-1.1.2.4-2a4034?labelColor=172620&style=flat-square) ![Status: beta](https://img.shields.io/badge/status-beta-e0812f?labelColor=172620&style=flat-square) [![GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-2a4034?labelColor=172620&style=flat-square)](License.txt)
 
-[Install](#install) · [Host](#host-a-game) · [Join](#join-a-game) · [Your colony](#your-colony) · [Trading Posts](#trading-posts) · [Controls](#controls) · [Troubleshooting](#troubleshooting) · [Website](https://timbermods.github.io/TimberTogether/)
+[Install](#install) · [Host](#host-a-game) · [Join](#join-a-game) · [Your colony](#your-colony) · [Trading Posts](#trading-posts) · [Sharing power](#sharing-power) · [Controls](#controls) · [Troubleshooting](#troubleshooting) · [Website](https://timbermods.github.io/TimberTogether/)
 
 > [!WARNING]
-> **Beta: the release candidate for 1.4.0.** Automated checks cover everything here, and all but one feature has been played.
+> **Beta: the release candidate for 1.4.0.** Automated checks cover everything here, and all but two features have been played.
 > Play on a copy of your save and keep backups.
 > - **Played:** hosting, joining over Steam and founding a second colony; two colonies building side by side, in step;
 >   the Co-op Game room, from joining to Start; the **Separate colonies** checkbox and splitting a shared game; hosting
@@ -19,7 +20,7 @@ science and working hours. The colonies meet only at **Trading Posts**, where th
 >   automation, power, dynamite and tunnels, both Wonders, bots); looking after an away player's colony, and
 >   hand-overs; and the Stability Fork's Steam invites, connection panel, cursors and desync fixes, over hours of
 >   two-player play.
-> - **Not played yet:** Folktails and Iron Teeth together.
+> - **Not played yet:** Folktails and Iron Teeth together; sharing power through a Power Export Facility.
 
 Built on [BeaverBuddies](https://github.com/thomaswp/BeaverBuddies) by Thomas Price (thomaswp) and contributors,
 through the [BeaverBuddies Stability Fork](https://github.com/timbermods/BeaverBuddies-Stability-Fork)
@@ -93,6 +94,8 @@ Steam ID, whoever hosts.
   and unlocks. Nobody else can change them, and your beavers work only for your colony.
 - **Build anywhere,** right up to a neighbor. The one rule: **your roads never join another colony's**, except
   through a Trading Post. **Ctrl+L** shows every colony's roads in its color.
+- **Your power never joins another colony's,** except through a Power Export Facility. **Ctrl+P** shows every colony's
+  power in its color.
 - **Your screen is your colony's:** the top bar and its wellbeing window, alerts, status icons, batch lists and working hours.
 - **Shared by everyone:** the map (water, droughts, badwater, weather), speed, pause, pings, chat and saving.
 - **Up to four colonies.** More players help run the host's colony.
@@ -129,6 +132,19 @@ already brought then go back to the colony that brought them. One exchange runs 
 **Y** (or the **Trade** button, top right) lists your posts and every colony, with its food and water in days, its
 goods in stock, what it is **looking for**, and who looks after it. Set what your colony is looking for there.
 
+## Sharing power
+
+Build a **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs a half, 200 science) between two colonies, one half
+for each. Each half needs its colony's road at its door, a shaft at its end, and one worker.
+
+Select your half and tick **Send power to …**. Your spare power goes to them, only as much as they can use. **Charge
+my batteries first** fills yours before anything is sent; **Use my batteries for …** lets stored power go too. Power
+goes one way between two colonies, and a colony sends to one colony, which can pass it on. It crosses while both
+workers are at work. To pay for it, barter at a Trading Post.
+
+**H** (or the **Power** button, top right) shows where power goes, your networks and facilities, and every colony's
+power.
+
 ## One shared colony
 
 Untick **Separate colonies** on the New Game page and everyone builds one colony together, as in ordinary
@@ -142,7 +158,9 @@ so far, and each earns its own science from then on.
 |---|---|
 | **Ctrl+K** | Found your colony |
 | **Ctrl+L** | Show every colony's roads in its color |
+| **Ctrl+P** | Show every colony's power in its color |
 | **Y** | Trading Posts and colonies |
+| **H** | Power window |
 | **Enter** | Type in the chat |
 | **Home** | Back to your colony (click a name in the connection panel to go to that player) |
 | **Ctrl+Shift+J** | Write a diagnostics report |
@@ -179,6 +197,9 @@ More: [Steam invites](STEAM-INVITES.md), [the connection panel](CONNECTION-PANEL
 - **"That would join another colony's roads":** keep your roads a cell apart from theirs, or link them with a Trading
   Post.
 - **A Trading Post says *Not trading yet*:** each half needs a different colony's road at its door.
+- **"That would join another colony's power":** keep your shafts a cell apart from theirs, or link them with a Power
+  Export Facility.
+- **No power crosses a Power Export Facility:** select your half. Its panel says what's missing.
 - **Ctrl+K says this is one shared colony:** a player other than the host splits it with Esc → **Found your own
   colony**.
 

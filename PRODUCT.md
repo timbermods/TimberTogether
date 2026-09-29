@@ -69,6 +69,10 @@ on one map, links them only through Trading Post barter, and still offers ordina
   - **Away players keep their colony:** by default a colony is never handed over while its player is away. A friend
     can look after it (Y), and automatic hand-over after a set number of days away is opt-in, for groups where
     someone may not come back.
+  - **Sharing power** (not played yet): the **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs a
+    half, 200 science), two halves with a worker each, sends one colony's spare power to another (**Send power to …**, with
+    **Charge my batteries first** and **Use my batteries for …**). Power never joins between colonies otherwise;
+    Ctrl+P shows every colony's power and H opens the Power window. It trades nothing: payment is a Trading Post barter.
 - Inherited from the Stability Fork: Steam invites, the connection panel and chat, pings, player cursors, desync
   fixes.
 - Reporting: `%USERPROFILE%\AppData\LocalLow\Mechanistry\Timberborn\Player.log` from every player. In a
@@ -88,18 +92,19 @@ on one map, links them only through Trading Post barter, and still offers ordina
 5. **Every player has the same game version and the exact same download. Update together:** a different build
    cannot join (*Multiplayer build mismatch*).
 
-**Status:** beta, current version **1.4.0-rc31** (a release candidate, GitHub's Latest; its changes are not played yet). The site names the newest published release,
+**Status:** beta, current version **1.4.0-rc32** (a release candidate, GitHub's Latest; its changes are not played yet). The site names the newest published release,
 and `docs/assets/release.js` fills the version badges from GitHub. 1.4.0 has not been released yet. It is built for
 Timberborn **1.1.2.4**, and only the Steam version on Windows has been tested. It passes a large automated test
-suite, and every feature has been played except mixed factions (12+ hours in one game with no desync). Players should play
+suite, and every feature has been played except mixed factions and sharing power (12+ hours in one game with no desync). Players should play
 on a copy of their save and keep backups. Be honest about this without scaring people off.
 
 **Describe the mod as it is now, for a fresh game.** User-facing pages never say which version added or changed a
 feature ("since beta19", "rc2 made…"). They never mention earlier builds, older saves or save compatibility. The
 version history lives in the changelog only.
 
-**Terminology:** Trading Posts (never "District Crossings"). No land, borders or territory: the only rule between
-colonies is that their roads never join, except through a Trading Post.
+**Terminology:** Trading Posts (never "District Crossings"), the Power Export Facility. No land, borders or territory:
+the rules between colonies are that their roads never join, except through a Trading Post, and their power never
+joins, except through a Power Export Facility.
 
 **Stack and hosting:** static site in `docs/` (plain HTML, CSS and small vanilla JS; no build step), served by GitHub
 Pages from `main:/docs` at https://timbermods.github.io/TimberTogether/. It must stay fast, lightweight

@@ -14,8 +14,10 @@ namespace BeaverBuddies.Colonies
     {
         public bool IsEnabled(ITool tool) => ColonyModeService.IsSeparateColonies || !IsTradingPostTool(tool);
 
+        /// <summary>The Trading Post's tool, or the Power Export Facility's: both belong to separate colonies only.</summary>
         internal static bool IsTradingPostTool(ITool tool) =>
-            tool is BlockObjectTool blockObjectTool && blockObjectTool.Template?.HasSpec<MultiColonyTradingPostSpec>() == true;
+            tool is BlockObjectTool blockObjectTool && (blockObjectTool.Template?.HasSpec<MultiColonyTradingPostSpec>() == true
+                || blockObjectTool.Template?.HasSpec<MultiColonyPowerExportSpec>() == true);
     }
 
     /*

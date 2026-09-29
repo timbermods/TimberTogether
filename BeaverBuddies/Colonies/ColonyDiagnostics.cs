@@ -250,6 +250,7 @@ namespace BeaverBuddies.Colonies
                 + $"marks=[{ColonyMarks.Instance?.Fingerprint()}] science=[{ColonyScienceService.Instance?.Fingerprint()}] "
                 + $"hours=[{ColonyWorkingHours.Instance?.Fingerprint()}] away=[{ColonyLifecycle.Instance?.Fingerprint()}] "
                 + $"stewards=[{ColonyStewards.Instance?.Fingerprint()}] wishes=[{ColonyWishlist.Instance?.Fingerprint()}] "
+                + $"power=[{PowerExportService.Instance?.Fingerprint()}] "
                 + $"flags={flags} phases={phases} digest={ColonyDigest.Describe()}";
         }
 

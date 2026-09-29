@@ -12,6 +12,7 @@ using Timberborn.TemplateCollectionSystem;
 using Timberborn.TemplateInstantiation;
 using Timberborn.TimbermeshMaterials;
 using Timberborn.ToolSystem;
+using Timberborn.Workshops;
 
 namespace BeaverBuddies.Colonies
 {
@@ -27,6 +28,9 @@ namespace BeaverBuddies.Colonies
                 builder.AddDecorator<DistrictCenter, DistrictOwner>();
                 builder.AddDecorator<Building, ColonyStamp>();
                 builder.AddDecorator<DistrictCrossing, CrossingExchange>();
+                // A Power Export Facility half: its settings, and a worker who works at it as at a Power Wheel.
+                builder.AddDecorator<MultiColonyPowerExportSpec, PowerExportHalf>();
+                builder.AddDecorator<MultiColonyPowerExportSpec, WorkWorkplaceBehavior>();
                 // A beaver's faction in a mixed game (both factions' beavers share one template).
                 builder.AddDecorator<BeaverSpec, CharacterFaction>();
                 return builder.Build();
@@ -38,16 +42,19 @@ namespace BeaverBuddies.Colonies
         private class EntityPanelModuleProvider : IProvider<EntityPanelModule>
         {
             private readonly TradingPostFragment _tradingPostFragment;
+            private readonly PowerExportFragment _powerExportFragment;
 
-            public EntityPanelModuleProvider(TradingPostFragment tradingPostFragment)
+            public EntityPanelModuleProvider(TradingPostFragment tradingPostFragment, PowerExportFragment powerExportFragment)
             {
                 _tradingPostFragment = tradingPostFragment;
+                _powerExportFragment = powerExportFragment;
             }
 
             public EntityPanelModule Get()
             {
                 EntityPanelModule.Builder builder = new EntityPanelModule.Builder();
                 builder.AddBottomFragment(_tradingPostFragment);
+                builder.AddBottomFragment(_powerExportFragment);
                 return builder.Build();
             }
         }
@@ -62,6 +69,7 @@ namespace BeaverBuddies.Colonies
             containerDefinition.Bind<DistrictOwner>().AsTransient();
             containerDefinition.Bind<CrossingExchange>().AsTransient();
             containerDefinition.Bind<ColonyStamp>().AsTransient();
+            containerDefinition.Bind<PowerExportHalf>().AsTransient();
             containerDefinition.MultiBind<TemplateModule>().ToProvider<TemplateModuleProvider>().AsSingleton();
             containerDefinition.Bind<ColonyModeService>().AsSingleton();
             containerDefinition.Bind<ColonySlotService>().AsSingleton();
@@ -97,6 +105,11 @@ namespace BeaverBuddies.Colonies
             containerDefinition.Bind<ColonyNavigation>().AsSingleton();
             containerDefinition.Bind<TradeItems>().AsSingleton();
             containerDefinition.Bind<TradingPostFragment>().AsSingleton();
+            // The Power Export Facility: power moved every tick, its panel, the Power window (H) and the power view (Ctrl+P).
+            containerDefinition.Bind<PowerExportService>().AsSingleton();
+            containerDefinition.Bind<PowerExportFragment>().AsSingleton();
+            containerDefinition.Bind<PowerOverviewPanel>().AsSingleton();
+            containerDefinition.Bind<ColonyPowerOverlay>().AsSingleton();
             containerDefinition.MultiBind<EntityPanelModule>().ToProvider<EntityPanelModuleProvider>().AsSingleton();
             containerDefinition.MultiBind<IBlockObjectValidator>().To<ColonyPlacementValidator>().AsSingleton();
             containerDefinition.MultiBind<IToolDisabler>().To<TradingPostToolDisabler>().AsSingleton();
