@@ -41,6 +41,8 @@
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/ExchangeTerms.cs" Link="ExchangeTerms.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/TradeOfferForm.cs" Link="TradeOfferForm.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/ColonyRoadRule.cs" Link="ColonyRoadRule.cs" />
+    <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/ColonyPowerRule.cs" Link="ColonyPowerRule.cs" />
+    <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/PowerExportMath.cs" Link="PowerExportMath.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/IO/BlueprintDigest.cs" Link="BlueprintDigest.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/ColonyDigest.cs" Link="ColonyDigest.cs" />
     <Compile Include="$(SourceRoot)/BeaverBuddies/Colonies/ColonyProfiler.cs" Link="ColonyProfiler.cs" />

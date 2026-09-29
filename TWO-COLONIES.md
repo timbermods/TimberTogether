@@ -14,6 +14,7 @@ page is the full set of rules.
 - **Build, mark and plant anywhere**, right up to another colony's buildings and roads.
 - **Two colonies' roads never join**, except through a Trading Post. (A District Crossing links your own districts,
   as in the game.)
+- **Two colonies' power never joins**, except through a Power Export Facility.
 - **You change only your own colony** (or one you look after), whether or not its neighbors are playing.
 - **Your beavers work only for your colony.**
 - **Shared by everyone:** game speed and pause (menus and dialogs don't pause), pings, chat, saving, and the map: water, droughts, badwater and
@@ -213,6 +214,39 @@ see them there, under the header of a post you share, and in the goods grid when
 - Heavy goods take many trips: give busy posts more workers (up to 10).
 - Either of its two colonies may remove a post; no one else can. Its halves are placed as one.
 
+## Power Export Facilities
+
+The **Power Export Facility** is in the Power tab. It **costs 20 gears, 20 planks and 20 logs** (10 of each a half),
+needs **200 science** to unlock, and appears only in separate-colonies games. It's the only place two colonies' power meets.
+
+**Placing it.** Build it between two colonies, as a Trading Post: one half for each. Each half needs its colony's road
+at its door, a shaft at its end (where the power marker shows while placing), and **one worker**. Either colony may
+place it, and either of its two colonies may remove it.
+
+**Sending power.** Select your half and tick **Send power to …**. Your spare power goes to the other colony: what your
+own buildings don't use, and only as much as theirs can use (their buildings, then their batteries). They get a message.
+
+- **Charge my batteries first** (on at first): your batteries fill before anything is sent.
+- **Use my batteries for …** (off at first): your stored power can run their buildings too, after your own (it never
+  fills their batteries). While it's on, your batteries don't charge first.
+
+**One way, one to one.** Between two colonies, power goes one way: while one sends, the other can't. A colony sends to
+one colony and gets power from one colony. Power it gets is spare power it can pass on: if A sends to B, B can send to
+C. Power never comes back round: C can't then send to A.
+
+**Power moves only while both workers are at work.** Each colony keeps its own working hours, so power crosses in the
+hours both are on shift. The panel says why nothing crosses: a missing road, shaft or worker, or nothing to spare or
+needed.
+
+**Nothing is traded here.** To pay for power, barter at a Trading Post.
+
+**The Power window (H)** (also the **Power** button at the top right, or **Power** on a facility) lists:
+
+- where power goes between colonies, and how much crosses each link;
+- your colony's power networks: what each makes and uses, its batteries, and what comes in or goes out, with **Go to**;
+- your facilities, with their check boxes and **Go to**;
+- the other colonies' power.
+
 ## Looking after a colony
 
 Going away for a while? Ask a friend to look after your colony.
@@ -258,7 +292,7 @@ With **Separate science and unlocks** ticked:
 
 | Work | Whose |
 |---|---|
-| Building, demolishing | Only the owning colony (either partner can remove a Trading Post between them) |
+| Building, demolishing | Only the owning colony (either partner can remove a Trading Post or Power Export Facility between them) |
 | Cutting trees | Only trees your colony marked |
 | Planting | Only on your colony's planting marks |
 | Harvesting, gathering, scavenging | What grows on your marks, and wild things nobody marked (first come) |
@@ -279,7 +313,6 @@ A tile marked by one colony can't be marked or unmarked by another. Unmarking an
 - **Water:** one shared world. A dam upstream changes what flows downstream, and droughts and badwater reach
   everyone. Prefer maps with water near each start.
 - **Blasts** from dynamite and unstable cores destroy whatever they reach, any colony's.
-- **Power:** two colonies' shafts that touch make one network.
 - **Area effects:** decorations, monuments and Wonders help any beaver in range (in a mixed game, only their own
   faction's).
 
@@ -312,6 +345,15 @@ time with **Ctrl+L**.
 **Two placements at once** can still join two colonies' roads. Both players are warned (*Two districts' roads have
 been joined…*), and the game keeps running: remove the joining path or building soon.
 
+## The power rule
+
+Two colonies' power never joins, except through a Power Export Facility. A shaft, gearbox, generator, battery or
+powered building can't go where its power connection would meet another colony's: *That would join another colony's
+power*. Two placements at once can't join them either: their networks stay apart.
+
+**Seeing the power.** Every colony's power shows as bright squares in its color while you place a shaft, gearbox,
+generator, battery or Power Export Facility, while the Power window is open, and any time with **Ctrl+P**.
+
 ## Dev mode and testing alone
 
 **Dev mode** (Alt+Shift+Z) in co-op: only its instant unlock, *Finish now* and *Add 1000 Science* are shared. Its other
@@ -329,7 +371,8 @@ act as the next colony (1 → 2 → 3 → 4 → 1).
 - In a mixed game, both halves of a Trading Post show the placing colony's faction, and achievements follow the host's
   faction.
 - The room has no chat or map preview. Anyone who can reach the direct-IP port can join it; the host can remove them.
-- Trading needs a co-op session: host the game (even alone) to trade.
+- Trading needs a co-op session: host the game (even alone) to trade. So does sending power.
+- The Power Export Facility looks like a District Crossing: its halves use the crossing's model.
 - A post's reserve counts your stock in that half's district, not your whole colony's.
 - The days of food and water in the colonies window (Y) are an estimate from yesterday's use.
 - **Automation** runs on the game's ticks in co-op: up to a tick later than alone. A spring-return lever gives a

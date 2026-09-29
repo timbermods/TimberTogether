@@ -101,7 +101,8 @@ namespace BeaverBuddies.Colonies
             {
                 EntityComponent entity = pair.Key;
                 int? owner = entity ? DistrictOwner.OwnerOf(entity) : null;
-                if (!entity || owner == null || !hiddenSlots.Contains(owner.Value) || TradingPosts.IsTradingPostBuilding(entity) || IsFinished(entity))
+                if (!entity || owner == null || !hiddenSlots.Contains(owner.Value) || TradingPosts.IsTradingPostBuilding(entity)
+                    || PowerExports.IsFacilityBuilding(entity) || IsFinished(entity))
                     scratch.Add(entity);
             }
             foreach (EntityComponent entity in scratch) Release(entity);
@@ -124,7 +125,7 @@ namespace BeaverBuddies.Colonies
                 // Only what is still being built: a finished building stays drawn.
                 EntityComponent entity = blockObject ? blockObject.GetComponent<EntityComponent>() : null;
                 if (!entity) { unfinished.Remove(blockObject); continue; }
-                if (blockObject.IsFinished || TradingPosts.IsTradingPostBuilding(entity)) continue;
+                if (blockObject.IsFinished || TradingPosts.IsTradingPostBuilding(entity) || PowerExports.IsFacilityBuilding(entity)) continue;
                 int? owner = DistrictOwner.OwnerOf(entity);
                 if (owner == null || owner.Value == me || !hiddenSlots.Contains(owner.Value)) continue;
                 // Drawn parts the game switches on again (a finished building's new model) are caught on the next pass.

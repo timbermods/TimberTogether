@@ -1005,7 +1005,7 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>A row's board: the game's green sub-box, with the padding of the game's panel sections (entity-sub-panel: 8px 12px).</summary>
-        private static NineSliceVisualElement Board()
+        internal static NineSliceVisualElement Board()
         {
             NineSliceVisualElement board = NativeElements.Box("bg-sub-box--green");
             board.style.marginTop = 6;
@@ -1017,7 +1017,7 @@ namespace BeaverBuddies.Colonies
         /// A row's text, taking the room its buttons leave: its title (game-text-big, with a colony's name in bold in its
         /// colour) and its lines under it (game-text-small), both in the game's light grey.
         /// </summary>
-        private static VisualElement TitleAndDetail(out Label title, out Label detail)
+        internal static VisualElement TitleAndDetail(out Label title, out Label detail)
         {
             var text = new VisualElement();
             text.style.flexGrow = 1;
@@ -1059,7 +1059,7 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>A secondary line (who looks after a colony, "nothing yet"), in the mod's muted grey.</summary>
-        private static Label MutedLine(string text = "")
+        internal static Label MutedLine(string text = "")
         {
             Label label = NativeElements.GameText(text, NativeElements.TextSmall);
             label.style.color = NativeElements.Muted;
@@ -1067,7 +1067,7 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>A heading as the game's boxes write them (game-text-heading, bold).</summary>
-        private static Label Heading(string text = "")
+        internal static Label Heading(string text = "")
         {
             Label label = NativeElements.GameText(text, NativeElements.TextHeading);
             label.AddToClassList("text--bold");
@@ -1075,7 +1075,7 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>The window's button: the game's wooden button (button-game) in its small text (game-text-small), 24 px high.</summary>
-        private static Button SmallButton(string text, Action onClick)
+        internal static Button SmallButton(string text, Action onClick)
         {
             Button button = NativeElements.WithTextClass(NativeElements.WoodenButton(text, onClick), NativeElements.TextSmall);
             button.style.minHeight = 24;

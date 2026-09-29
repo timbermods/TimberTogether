@@ -73,8 +73,11 @@ internal static class TradingPostBuildingChecks
                 Expect(added["TemplateCollectionSpec"]!["CollectionId"]!.GetValue<string>() == id, "the collection's id");
                 var appended = added["TemplateCollectionSpec"]!["Blueprints#append"]!.AsArray().Select(n => n!.GetValue<string>()).ToList();
                 string blueprint = $"{Folder}/MultiColonyTradingPost.{faction}.blueprint";
-                Expect(appended.SequenceEqual(new[] { blueprint }), "it appends exactly the Trading Post");
-                Expect(File.Exists(Path.Combine(modDirectory, (blueprint + ".json").Replace('/', Path.DirectorySeparatorChar))), "the appended file is built");
+                // The Trading Post, then the Power Export Facility (PowerExportBuildingChecks).
+                string facility = $"Buildings/Power/MultiColonyPowerExport/MultiColonyPowerExport.{faction}.blueprint";
+                Expect(appended.SequenceEqual(new[] { blueprint, facility }), "it appends exactly the Trading Post and the Power Export Facility");
+                foreach (string file in appended)
+                    Expect(File.Exists(Path.Combine(modDirectory, (file + ".json").Replace('/', Path.DirectorySeparatorChar))), "the appended file is built: " + file);
                 var listed = game["TemplateCollectionSpec"]!["Blueprints"]!.AsArray().Select(n => n!.GetValue<string>());
                 Expect(listed.Contains($"Buildings/DistrictManagement/DistrictCrossing/DistrictCrossing.{faction}.blueprint"),
                     "the game still has the District Crossing on this toolbar");

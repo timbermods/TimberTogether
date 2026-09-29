@@ -63,8 +63,13 @@ namespace BeaverBuddies.Colonies
             // The cell outside the door, where its road must be (the game's "doorstep" is the building's own cell).
             Vector3Int? entrance = blockObject.HasEntrance ? blockObject.PositionedEntrance.Coordinates : (Vector3Int?)null;
             var cells = blockObject.PositionedBlocks.GetAllCoordinates().Select(ColonyGameWorld.Cell).ToList();
-            ColonyRefusal refusal = world.RoadConflict(slot, cells, entrance, tradingPost: TradingPosts.IsTradingPostBuilding(blockObject),
+            bool facility = PowerExports.IsFacilityBuilding(blockObject);
+            ColonyRefusal refusal = world.RoadConflict(slot, cells, entrance, tradingPost: TradingPosts.IsTradingPostBuilding(blockObject) || facility,
                 pathLike: blockObject.HasComponent<PathSpec>(), out string detail);
+            // Its power connections, where the preview stands (a Power Export Facility's half joins any network).
+            if (refusal == ColonyRefusal.None && !facility)
+                refusal = ColonyPowerRule.Conflict(slot, ColonyGameWorld.TransputsOf(blockObject.GetComponent<Timberborn.MechanicalSystem.TransputProviderSpec>(),
+                    blockObject.Blocks, blockObject.Placement), world, out detail);
             return refusal == ColonyRefusal.None ? ColonyVerdict.Allow : ColonyVerdict.Refuse(refusal, detail);
         }
     }

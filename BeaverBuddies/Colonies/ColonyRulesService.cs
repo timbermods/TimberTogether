@@ -28,9 +28,9 @@ namespace BeaverBuddies.Colonies
 
         public ColonyRulesService(EntityRegistry entityRegistry, QuickNotificationService quickNotificationService,
             BuildingService buildingService, IDistrictService districtService, DistrictCenterRegistry districtCenterRegistry,
-            DevModeManager devModeManager, IBlockService blockService)
+            DevModeManager devModeManager, IBlockService blockService, Timberborn.MechanicalSystem.TransputMap transputMap)
         {
-            world = new ColonyGameWorld(entityRegistry, buildingService, districtService, districtCenterRegistry, blockService);
+            world = new ColonyGameWorld(entityRegistry, buildingService, districtService, districtCenterRegistry, blockService, transputMap);
             _quickNotificationService = quickNotificationService;
             _devModeManager = devModeManager;
         }
@@ -290,7 +290,8 @@ namespace BeaverBuddies.Colonies
             {
                 var service = SingletonManager.GetSingleton<ColonyRulesService>();
                 string templateFaction = BeaverBuddies.Factions.FactionCatalog.Instance?.FactionOfTemplate(placed.prefabName);
-                bool tradingPost = service != null && service.world.IsTradingPostTemplate(placed.prefabName);
+                // A Trading Post or Power Export Facility of either faction: each is two colonies' meeting point.
+                bool tradingPost = service != null && service.world.IsMeetingTemplate(placed.prefabName);
                 if (!BeaverBuddies.Factions.FactionRules.MayPlace(true, templateFaction,
                     BeaverBuddies.Factions.ColonyFactionService.FactionOfSlot(replayEvent.slot), tradingPost))
                 {
@@ -321,7 +322,8 @@ namespace BeaverBuddies.Colonies
                 var halves = new List<BuildingPlacedEvent>();
                 foreach (ReplayEvent e in events)
                 {
-                    if (e is BuildingPlacedEvent placed && service.world.IsTradingPostTemplate(placed.prefabName)) halves.Add(placed);
+                    // A Trading Post's, or a Power Export Facility's: both are two linked halves.
+                    if (e is BuildingPlacedEvent placed && service.world.IsMeetingTemplate(placed.prefabName)) halves.Add(placed);
                 }
                 var paired = new HashSet<BuildingPlacedEvent>();
                 for (int i = 0; i < halves.Count; i++)
@@ -465,6 +467,7 @@ namespace BeaverBuddies.Colonies
             ColonyRefusal.FoundingConflict => "BeaverBuddies.Colony.Refused.FoundingConflict",
             ColonyRefusal.NotEnoughScience => "BeaverBuddies.Colony.Refused.NotEnoughScience",
             ColonyRefusal.TouchesOtherColony => "BeaverBuddies.Colony.Refused.TouchesOtherColony",
+            ColonyRefusal.TouchesOtherPower => "BeaverBuddies.Colony.Refused.TouchesOtherPower",
             ColonyRefusal.DevModeOff => "BeaverBuddies.Colony.Refused.DevModeOff",
             ColonyRefusal.HostRefused => "BeaverBuddies.Colony.Refused.HostRefused",
             ColonyRefusal.FactionUnavailable => "BeaverBuddies.Colony.Refused.FactionUnavailable",

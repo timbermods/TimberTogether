@@ -111,6 +111,7 @@ ColonyRuntimeChecks.Run(assembly, Test);
 PerformanceRuntimeChecks.Run(assembly, Test);
 PlacementRandomChecks.Run(assembly, Test);
 TradingPostBuildingChecks.Run(assembly, Path.GetDirectoryName(modPath)!, Path.GetFullPath(args[1]), Test);
+PowerExportBuildingChecks.Run(assembly, Path.GetDirectoryName(modPath)!, Path.GetFullPath(args[1]), Test);
 BindingChecks.Run(assembly, Path.GetFullPath(args[1]), args.Skip(2).Select(Path.GetFullPath), Test);
 DesyncCheckChecks.Run(assembly, Test);
 DesyncDialogChecks.Run(assembly, Test);

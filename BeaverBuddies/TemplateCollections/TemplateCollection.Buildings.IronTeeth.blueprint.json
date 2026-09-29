@@ -2,7 +2,8 @@
   "TemplateCollectionSpec": {
     "CollectionId": "Buildings.IronTeeth",
     "Blueprints#append": [
-      "Buildings/DistrictManagement/MultiColonyTradingPost/MultiColonyTradingPost.IronTeeth.blueprint"
+      "Buildings/DistrictManagement/MultiColonyTradingPost/MultiColonyTradingPost.IronTeeth.blueprint",
+      "Buildings/Power/MultiColonyPowerExport/MultiColonyPowerExport.IronTeeth.blueprint"
     ]
   }
 }

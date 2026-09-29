@@ -1,0 +1,15 @@
+{
+  "KeyBindingSpec": {
+    "Id": "BeaverBuddies.KeyBind.ToggleColonyPower",
+    "GroupId": "KeyBindingGroup.BeaverBuddies",
+    "LocKey": "BeaverBuddies.KeyBindings.ToggleColonyPower",
+    "Order": 10,
+    "AllowOtherModifiers": false,
+    "DevModeOnly": false
+  },
+  "PrimaryInputBindingSpec": {
+    "Path": "/Keyboard/p",
+    "InputModifiers": "Ctrl",
+    "Unchangeable": false
+  }
+}

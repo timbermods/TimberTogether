@@ -166,6 +166,8 @@ namespace BeaverBuddies.Colonies
         FactionSwitchNotAllowed,
         /// <summary>A mixed-factions game: another faction's building (each colony builds its own faction's).</summary>
         OtherFactionBuilding,
+        /// <summary>The building's power connection would join another colony's power network.</summary>
+        TouchesOtherPower,
     }
 
     public readonly struct ColonyVerdict
