@@ -227,8 +227,8 @@ place it, and either of its two colonies may remove it.
 own buildings don't use, and only as much as theirs can use (their buildings, then their batteries). They get a message.
 
 - **Charge my batteries first** (on at first): your batteries fill before anything is sent.
-- **Use my batteries for …** (off at first): your stored power can go too, after your own buildings. While it's on,
-  your batteries don't charge first.
+- **Use my batteries for …** (off at first): your stored power can run their buildings too, after your own (it never
+  fills their batteries). While it's on, your batteries don't charge first.
 
 **One way, one to one.** Between two colonies, power goes one way: while one sends, the other can't. A colony sends to
 one colony and gets power from one colony. Power it gets is spare power it can pass on: if A sends to B, B can send to

@@ -30,7 +30,8 @@ against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 
   the game places a node's transputs) and shown on the preview (`ColonyPlacementValidator`). A node's colony is its
   district's, else its placer's; a facility half's is nobody's. And in separate colonies the game's network join
   (`MechanicalGraphManager.AddNode`) is replaced by the same join with one check: two colonies' nodes are never
-  connected, so two placements at once can't join their networks either (`PowerNetworkSeparationPatcher`; RuntimeChecks
+  connected, and a node nobody owns joins one colony's only, so two placements at once can't join their networks
+  either (`PowerNetworkSeparationPatcher`; RuntimeChecks
   reads the game's method and fails if it stops connecting facing transputs and joining networks as the copy does).
 - **Sending power.** Each half has **Send power to …**, **Charge my batteries first** (on) and **Use my batteries for
   …** (off), saved with the half and changed by `PowerExportSettingEvent`: judged by the host as a change to the half
@@ -45,7 +46,8 @@ against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 
   `PowerExportMath.Flow` runs along the chains from start to end: a network sends only what the next can use (its
   consumers' shortfall, its batteries' room, and what it passes on in turn), and only what it spares after its own
   consumers; with charging first its batteries fill before anything is sent; with its batteries used, what they can
-  give beyond its own shortfall goes too (and they don't charge first). Power a network gets is power it can pass on,
+  give beyond its own shortfall goes too (and they don't charge first), but only for the buildings down the chain,
+  never into another colony's batteries. A paused half moves nothing at once. Power a network gets is power it can pass on,
   so B passes A's leftover to C. The sending half's node draws what crosses from its network and the receiving half's
   gives it to its own (`MechanicalNode.SetInputMultiplier`/`SetOutputMultiplier` on a 1 hp node), so the game's own
   batteries, efficiency and power panels count it. Each network's figures are read without the facilities' own share.

@@ -137,44 +137,53 @@ namespace BeaverBuddies.Colonies
                 valid[e] = edges[e].from >= 0 && edges[e].to >= 0 && edges[e].from < n && edges[e].to < n && edges[e].from < edges[e].to;
 
             // What each network can use, from the end of the chains back: its shortfall, its batteries' room, and what
-            // the networks it feeds can use.
+            // the networks it feeds can use. And what its buildings need (the same without any batteries' room): stored
+            // power is sent only for that, never from one colony's batteries into another's.
             var want = new long[n];
+            var need = new long[n];
             for (int i = n - 1; i >= 0; i--)
             {
                 Network net = networks[i];
                 long use = Math.Max(0, net.Demand - net.Supply) + Math.Max(0, net.BatteryRoom);
+                long short_ = Math.Max(0, net.Demand - net.Supply);
                 for (int e = 0; e < edges.Count; e++)
                 {
-                    if (valid[e] && edges[e].from == i) use += want[edges[e].to];
+                    if (!valid[e] || edges[e].from != i) continue;
+                    use += want[edges[e].to];
+                    short_ += need[edges[e].to];
                 }
                 want[i] = Math.Min(use, int.MaxValue);
+                need[i] = Math.Min(short_, int.MaxValue);
             }
 
             // What each network has, from the start of the chains on, given out to the networks it feeds in order. Two
             // networks feeding one (a colony's two networks, each at its own facility) share what it can use.
             var incoming = new long[n];
             var wantLeft = (long[])want.Clone();
+            var needLeft = (long[])need.Clone();
             for (int i = 0; i < n; i++)
             {
                 Network net = networks[i];
                 long live = net.Supply + incoming[i] - (long)net.Demand;
-                long available;
-                if (net.UseBatteries)
-                    // Its batteries give what they can beyond its own shortfall; its batteries charge only from what is left.
-                    available = Math.Max(0, live) + Math.Max(0, net.BatteryPower - Math.Max(0, -live));
-                else if (net.ChargeFirst)
-                    available = Math.Max(0, live - Math.Max(0, net.BatteryRoom));
-                else
-                    available = Math.Max(0, live);
+                // Spare power now: with "use my batteries" the other colony comes before this one's batteries (they don't
+                // charge first); else with "charge first" its batteries fill before anything is sent.
+                long spare = net.UseBatteries || !net.ChargeFirst ? Math.Max(0, live) : Math.Max(0, live - Math.Max(0, net.BatteryRoom));
+                // Stored power, with "use my batteries": what its batteries give beyond its own shortfall.
+                long stored = net.UseBatteries ? Math.Max(0, net.BatteryPower - Math.Max(0, -live)) : 0;
                 for (int e = 0; e < edges.Count; e++)
                 {
                     if (!valid[e] || edges[e].from != i) continue;
-                    long give = Math.Min(available, wantLeft[edges[e].to]);
+                    int to = edges[e].to;
+                    long fromSpare = Math.Min(spare, wantLeft[to]);
+                    long fromStore = Math.Min(stored, Math.Min(Math.Max(0, needLeft[to] - fromSpare), wantLeft[to] - fromSpare));
+                    long give = fromSpare + fromStore;
                     if (give <= 0) continue;
                     flows[e] = (int)give;
-                    available -= give;
-                    wantLeft[edges[e].to] -= give;
-                    incoming[edges[e].to] += give;
+                    spare -= fromSpare;
+                    stored -= fromStore;
+                    wantLeft[to] -= give;
+                    needLeft[to] = Math.Max(0, needLeft[to] - give);
+                    incoming[to] += give;
                 }
             }
             return flows;

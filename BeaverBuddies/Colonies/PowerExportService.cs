@@ -218,7 +218,7 @@ namespace BeaverBuddies.Colonies
                 if (flow <= 0)
                 {
                     PowerExportMath.Network from = nets[edges[e].from];
-                    bool spare = from.Supply + (long)from.BatteryPower > from.Demand;
+                    bool spare = from.Supply + (from.UseBatteries ? (long)from.BatteryPower : 0) > from.Demand;
                     sender.Status = receiver.Status = spare ? PowerExportStatus.PartnerNeedsNone : PowerExportStatus.NothingToSpare;
                 }
                 else receiver.Status = PowerExportStatus.Receiving;
@@ -252,7 +252,9 @@ namespace BeaverBuddies.Colonies
             if (na < 0 || nb < 0) return PowerExportStatus.NoPower;
             if (na != a || nb != b) return PowerExportStatus.Mismatched;
             if (half.Node.Graph == null || partner.Node.Graph == null) return PowerExportStatus.NoPower;
-            if (!Staffed(half) || !Staffed(partner)) return PowerExportStatus.NoWorker;
+            // A paused (or otherwise blocked) half moves nothing at once: its node counts nothing in its network, so the
+            // other half must not give or take either (the workers' grace would otherwise make power from nothing).
+            if (!half.Node.Active || !partner.Node.Active || !Staffed(half) || !Staffed(partner)) return PowerExportStatus.NoWorker;
             // Only the half whose colony sends carries the link; its partner's status follows once the flow is known.
             PowerExportHalf sender = mineSends ? half : partner;
             if (!admitted.Contains((colony[sender], colony[sender.Partner]))) return PowerExportStatus.LinkRefused;

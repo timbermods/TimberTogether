@@ -85,6 +85,13 @@ static class PowerExportChecks
             Check(PowerExportMath.Flow(new[] { Net(100, 100, battery: 80, useBatteries: true), Net(0, 150) }, new[] { (0, 1) })[0] == 80, "stored power was not sent");
             Check(PowerExportMath.Flow(new[] { Net(50, 100, battery: 80, useBatteries: true), Net(0, 150) }, new[] { (0, 1) })[0] == 30, "A's own buildings lost power to the batteries' sending");
             Check(PowerExportMath.Flow(new[] { Net(300, 100, battery: 500, useBatteries: true), Net(0, 150) }, new[] { (0, 1) })[0] == 150, "more than was needed was sent");
+            // Stored power feeds the other colony's buildings, never its batteries; spare power still fills them.
+            Check(PowerExportMath.Flow(new[] { Net(100, 100, battery: 500, useBatteries: true), Net(0, 0, room: 1000) }, new[] { (0, 1) })[0] == 0, "one colony's batteries were emptied into another's");
+            Check(PowerExportMath.Flow(new[] { Net(160, 100, battery: 500, useBatteries: true), Net(0, 40, room: 1000) }, new[] { (0, 1) })[0] == 60, "spare power did not fill their batteries");
+            Check(PowerExportMath.Flow(new[] { Net(100, 100, battery: 500, useBatteries: true), Net(0, 30), Net(0, 50, room: 1000) }, new[] { (0, 1), (1, 2) })[0] == 80,
+                "stored power did not reach the buildings down the chain");
+            // With both on, the other colony comes before these batteries (the panel says so).
+            Check(PowerExportMath.Flow(new[] { Net(300, 100, room: 50, useBatteries: true), Net(0, 150) }, new[] { (0, 1) })[0] == 150, "both boxes on: the batteries charged first");
         });
 
         yield return ("rc32: B passes A's leftover power on to C, and never makes power", () =>
@@ -182,7 +189,10 @@ static class PowerExportChecks
         {
             string export = Source("BeaverBuddies", "Colonies", "PowerExport.cs");
             Check(export.Contains("[HarmonyPatch(typeof(MechanicalGraphManager), nameof(MechanicalGraphManager.AddNode))]"), "the network join is not guarded");
-            Check(export.Contains("if (!ColonyPowerRule.MayJoin(mine, PowerExports.PowerOwnerOf(facing.ParentNode))) continue;"), "two colonies' nodes connect");
+            Check(export.Contains("if (!ColonyPowerRule.MayJoin(mine, theirs)) continue;"), "two colonies' nodes connect");
+            Check(export.Contains("if (mine == null && theirs != null) mine = theirs;"), "a node nobody owns can bridge two colonies' power");
+            Check(Source("BeaverBuddies", "Colonies", "PowerExportService.cs").Contains("if (!half.Node.Active || !partner.Node.Active || !Staffed(half) || !Staffed(partner))"),
+                "a paused half still moves power");
             Check(export.Contains("if (!ColonyModeService.IsSeparateColonies) return true;"), "a shared game's power is changed");
             Check(export.Contains("DistrictOwner.OwnerOf(node, useConstructionDistrict: false)"), "the simulation asks the construction district");
             string configurator = Source("BeaverBuddies", "Colonies", "ColonyConfigurator.cs");

@@ -271,7 +271,11 @@ namespace BeaverBuddies.Colonies
                 if (facing == null || !facing.IsFinished) continue;
                 MechanicalGraph graph = facing.ParentNode.Graph;
                 if (graph == null) continue;
-                if (!ColonyPowerRule.MayJoin(mine, PowerExports.PowerOwnerOf(facing.ParentNode))) continue;
+                int? theirs = PowerExports.PowerOwnerOf(facing.ParentNode);
+                if (!ColonyPowerRule.MayJoin(mine, theirs)) continue;
+                // A node nobody owns (a facility half, a building nobody placed) joins one colony's power only: the first
+                // it meets, in the order of its connections (the same on every computer).
+                if (mine == null && theirs != null) mine = theirs;
                 current.Connect(facing);
                 facing.Connect(current);
                 graphs.Add(graph);
