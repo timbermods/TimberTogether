@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Timberborn.BlockSystem;
 using Timberborn.Forestry;
+using Timberborn.ForestryUI;
 using Timberborn.SingletonSystem;
+using Timberborn.Yielding;
 using UnityEngine;
 
 namespace BeaverBuddies.Colonies
@@ -14,9 +17,11 @@ namespace BeaverBuddies.Colonies
     /// Each player sees only their own colony's trees marked for cutting (and marks of nobody's). The game keeps one
     /// cutting area for the whole map, and its interface draws all of it: the other colony's marked trees and the
     /// outline of its area. Here, while the game's interface reads the cutting area (a method of a Timberborn "...UI"
-    /// assembly that asks TreeCuttingArea directly), the other colony's marks read as not marked. Everything else,
-    /// the lumberjacks and every other part of the simulation, reads the whole area as ever, so nothing simulated
-    /// changes and each computer may draw something different.
+    /// assembly that asks TreeCuttingArea directly), the other colony's marks read as not marked, and their trees as
+    /// not in the area. Everything else, the lumberjacks and every other part of the simulation, reads the whole area
+    /// as ever, so nothing simulated changes and each computer may draw something different. One reader is left as the
+    /// game's: the marking tool's preview, which draws only unmarked tiles as markable, so the other colony's marks
+    /// read as marked there and are not drawn (unfiltered, they would look markable, and marking them is refused).
     /// </summary>
     public static class ColonyCuttingView
     {
@@ -24,7 +29,11 @@ namespace BeaverBuddies.Colonies
         private static int reading;
         private static bool logged;
 
-        private static readonly string[] Reads = { nameof(TreeCuttingArea.IsInCuttingArea), "get_" + nameof(TreeCuttingArea.CuttingArea) };
+        private static readonly string[] Reads = { nameof(TreeCuttingArea.IsInCuttingArea), "get_" + nameof(TreeCuttingArea.CuttingArea),
+            "get_" + nameof(TreeCuttingArea.YieldersInArea) };
+
+        // The marking tool's preview: it draws what is NOT marked, so it must see the other colony's marks as marked.
+        private const string MarkingPreview = nameof(TreeCuttingAreaSelectionTool) + ".PreviewCallback";
 
         /// <summary>
         /// Patches the two ways to read the area and every interface method that uses them. Display only: if something
@@ -40,6 +49,14 @@ namespace BeaverBuddies.Colonies
                 string listPostfix = ListPostfixFor(getter.ReturnType);
                 if (listPostfix != null) harmony.Patch(getter, postfix: new HarmonyMethod(typeof(ColonyCuttingView), listPostfix));
                 else Plugin.LogWarning("Another colony's cutting marks: the whole area is read as " + getter.ReturnType.Name + ", which is not filtered");
+                MethodInfo trees = AccessTools.PropertyGetter(typeof(TreeCuttingArea), nameof(TreeCuttingArea.YieldersInArea));
+                if (trees != null && trees.ReturnType == typeof(IEnumerable<Yielder>))
+                    harmony.Patch(trees, postfix: new HarmonyMethod(typeof(ColonyCuttingView), nameof(HideTrees)));
+                else Plugin.LogWarning("Another colony's cutting marks: the trees in the area are not read as expected, so theirs stay highlighted");
+                // A tree that grows on a marked tile is highlighted as it appears, while the cutting tool is open.
+                MethodInfo added = AccessTools.Method(typeof(TreeCuttingAreaVisualizer), nameof(TreeCuttingAreaVisualizer.OnTreeAddedToCuttingArea));
+                if (added != null) harmony.Patch(added, prefix: new HarmonyMethod(typeof(ColonyCuttingView), nameof(SkipOtherTree)));
+                else Plugin.LogWarning("Another colony's cutting marks: a new tree on their marks is highlighted (TreeCuttingAreaVisualizer.OnTreeAddedToCuttingArea is gone)");
 
                 var patched = new List<string>();
                 foreach (MethodInfo reader in Readers())
@@ -66,8 +83,9 @@ namespace BeaverBuddies.Colonies
 
         /// <summary>
         /// The game's interface methods that read the cutting area directly: every method with a body, in a loaded
-        /// Timberborn assembly whose name ends in "UI" and that uses Timberborn.Forestry, that calls IsInCuttingArea or
-        /// the CuttingArea getter. Compiler-made methods (lambdas, iterators) are included, as their own types.
+        /// Timberborn assembly whose name ends in "UI" and that uses Timberborn.Forestry, that calls IsInCuttingArea, the
+        /// CuttingArea getter or the YieldersInArea getter; never the marking tool's preview. Compiler-made methods
+        /// (lambdas, iterators) are included, as their own types.
         /// </summary>
         internal static List<MethodInfo> Readers()
         {
@@ -88,6 +106,7 @@ namespace BeaverBuddies.Colonies
                         | BindingFlags.Static | BindingFlags.DeclaredOnly))
                     {
                         if (method.IsAbstract || method.ContainsGenericParameters || method.GetMethodBody() == null) continue;
+                        if (type.Name + "." + method.Name == MarkingPreview) continue;
                         if (CallsTheArea(method)) readers.Add(method);
                     }
                 }
@@ -202,75 +221,66 @@ namespace BeaverBuddies.Colonies
         {
             if (__result != null && Filtering(out int slot)) __result = Mine(__result, slot);
         }
+
+        // A tree is another colony's mark when the tile it stands on is.
+        private static bool HidesTree(Timberborn.BaseComponentSystem.BaseComponent tree, int slot)
+        {
+            BlockObject blockObject = tree ? tree.GetComponent<BlockObject>() : null;
+            return blockObject != null && Hides(blockObject.Coordinates, slot);
+        }
+
+        private static void HideTrees(ref IEnumerable<Yielder> __result)
+        {
+            if (__result != null && Filtering(out int slot)) __result = __result.Where(tree => !HidesTree(tree, slot)).ToList();
+        }
+
+        // Harmony: false skips the highlight of a new tree on another colony's mark. It runs as the game adds the tree,
+        // in its tick: it must never throw.
+        private static bool SkipOtherTree(TreeAddedToCuttingAreaEvent __0)
+        {
+            try
+            {
+                return __0 == null || !ColonyViewService.ActiveThisFrame(out int slot) || !HidesTree(__0.TreeComponent, slot);
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+        }
     }
 
     /// <summary>
     /// Draws the marks again when whose colony this computer shows changes: a guest is seated only after the save has
-    /// loaded, when the interface has already drawn every mark. The game redraws its marks when the cutting area
-    /// changes (the event TreeCuttingArea posts); that event is posted here too, but only if nothing but the game's
-    /// interface listens to it, so nothing simulated can notice. Otherwise the marks are redrawn at the next change.
+    /// loaded, when the interface has already drawn every mark (and again on a reconnect, or when a player looks after
+    /// another colony). The game redraws its marks when the cutting area changes; the event it posts then is heard by
+    /// the simulation too (the lumberjacks' flags), so it is never posted here. Instead the game's own drawer of the
+    /// area is told to draw again: at once if the cutting tool is open, else when it next opens. That only reads the
+    /// area and draws it, on this computer.
     /// </summary>
     public class ColonyCuttingViewRefresher : RegisteredSingleton, IUpdatableSingleton
     {
-        private readonly EventBus _eventBus;
+        private readonly TreeCuttingAreaVisualizer _treeCuttingAreaVisualizer;
         private int shownFor = -1;
-        private Type changed;
-        private bool looked, usable;
+        private bool failed;
 
-        public ColonyCuttingViewRefresher(EventBus eventBus) => _eventBus = eventBus;
+        public ColonyCuttingViewRefresher(TreeCuttingAreaVisualizer treeCuttingAreaVisualizer) => _treeCuttingAreaVisualizer = treeCuttingAreaVisualizer;
 
         public void UpdateSingleton()
         {
             int view = ColonyViewService.Active ? ColonySession.LocalSlot : -1;
-            if (view == shownFor) return;
+            if (view == shownFor || failed) return;
             shownFor = view;
             try
             {
-                if (!looked) { looked = true; usable = FindEvent(); }
-                if (usable) _eventBus.Post(Activator.CreateInstance(changed));
+                // The game's own: draws the area now if the tool is open, else marks it to be drawn as it opens.
+                _treeCuttingAreaVisualizer.UpdateOrMarkForUpdate();
+                Plugin.Log($"[Colony] Trees marked for cutting are drawn again for {(view < 0 ? "every colony" : "colony " + (view + 1))}");
             }
             catch (Exception error)
             {
-                usable = false;
+                failed = true;
                 Plugin.LogWarning("[Colony] Could not redraw the trees marked for cutting: " + error.Message);
             }
-        }
-
-        private bool FindEvent()
-        {
-            foreach (string method in new[] { nameof(TreeCuttingArea.AddCoordinates), nameof(TreeCuttingArea.RemoveCoordinates) })
-            {
-                foreach (KeyValuePair<OpCode, object> instruction in ColonyCuttingView.Instructions(AccessTools.Method(typeof(TreeCuttingArea), method)))
-                    if (instruction.Key == OpCodes.Newobj && instruction.Value is ConstructorInfo ctor
-                        && ctor.DeclaringType.Name.EndsWith("Event", StringComparison.Ordinal) && ctor.GetParameters().Length == 0)
-                    {
-                        changed = ctor.DeclaringType;
-                        break;
-                    }
-                if (changed != null) break;
-            }
-            if (changed == null)
-            {
-                Plugin.Log("[Colony] Trees marked for cutting are redrawn at the next change: the game's change event was not found");
-                return false;
-            }
-            var listeners = new List<string>();
-            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                string name = assembly.GetName().Name ?? "";
-                if (!name.StartsWith("Timberborn.", StringComparison.Ordinal) && assembly != typeof(Plugin).Assembly) continue;
-                foreach (Type type in AccessTools.GetTypesFromAssembly(assembly))
-                    foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-                    {
-                        ParameterInfo[] parameters = method.GetParameters();
-                        if (parameters.Length == 1 && parameters[0].ParameterType == changed)
-                            listeners.Add(name + ":" + type.Name + "." + method.Name);
-                    }
-            }
-            bool safe = listeners.All(l => l.Split(':')[0].EndsWith("UI", StringComparison.Ordinal));
-            Plugin.Log($"[Colony] {changed.Name} is heard by {(listeners.Count == 0 ? "nothing" : string.Join(", ", listeners))}: "
-                + (safe ? "it is posted to redraw the trees marked for cutting" : "not posted, the marks are redrawn at the next change"));
-            return safe && listeners.Count > 0;
         }
     }
 }
