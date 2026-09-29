@@ -8,6 +8,7 @@ using Timberborn.BatchControl;
 using Timberborn.CoreUI;
 using Timberborn.EntitySystem;
 using Timberborn.GameDistricts;
+using Timberborn.NeedSystem;
 using Timberborn.NotificationSystem;
 using Timberborn.NotificationSystemUI;
 using Timberborn.Population;
@@ -24,8 +25,8 @@ namespace BeaverBuddies.Colonies
 {
     /// <summary>
     /// What each player sees: their own colony, never both added together. Timberborn's interface shows the whole
-    /// settlement whenever no district is selected (the top bar's goods, population, wellbeing, the batch control
-    /// window's lists, the alert panel, the notification journal); in a separate-colonies session "the whole
+    /// settlement whenever no district is selected (the top bar's goods, population, wellbeing, the wellbeing window,
+    /// the batch control window's lists, the alert panel, the notification journal); in a separate-colonies session "the whole
     /// settlement" becomes "your colony". Display only: everything here reads the game and changes nothing that is
     /// simulated, so each computer may show something different without any risk to the shared game.
     /// </summary>
@@ -266,6 +267,51 @@ namespace BeaverBuddies.Colonies
             if (wellbeing == null) return;
             __instance._wellbeingCount.text = wellbeing.Value.ToString();
             __instance._wellbeingButton.EnableInClassList(BasicStatisticsPanel.NegativeWellbeingClass, wellbeing.Value < 0);
+        }
+    }
+
+    // ---- the wellbeing window (opened from the top bar's wellbeing) ----
+
+    // With no district selected, the window counts each need over every beaver on the map: the other colony's Agora
+    // showed progress in this player's window. Count this player's districts' beavers instead, each district as the
+    // game counts a selected one. Only the window asks for this count (RuntimeChecks: nothing simulated calls it).
+    [HarmonyPatch(typeof(WellbeingService), nameof(WellbeingService.GlobalAppliedNeeds))]
+    static class ColonyViewAppliedNeedsPatcher
+    {
+        static bool Prefix(Dictionary<string, int> appliedNeeds)
+        {
+            if (!ColonyViewService.Active) return true;
+            foreach (DistrictCenter districtCenter in ColonyViewService.Instance.OwnDistricts())
+                WellbeingService.AppliedNeeds(districtCenter.DistrictPopulation.GetEnabledCharacters<NeedManager>(), appliedNeeds);
+            return false;
+        }
+    }
+
+    // The beavers each need's count is out of. PopulationService.GlobalPopulationData is also read by the simulation
+    // (automation sensors), so the window's own getter is patched, as the population panel's is.
+    [HarmonyPatch(typeof(PopulationWellbeingBox), nameof(PopulationWellbeingBox.ContextualPopulationData), MethodType.Getter)]
+    static class ColonyViewWellbeingBoxPopulationPatcher
+    {
+        static bool Prefix(PopulationWellbeingBox __instance, ref PopulationData __result)
+        {
+            if (!ColonyViewService.Active || __instance._districtContextService.SelectedDistrict) return true;
+            __result = ColonyViewService.Instance.ColonyPopulationData();
+            return false;
+        }
+    }
+
+    // The window's average. WellbeingService.AverageGlobalWellbeing is also read by the simulation (faction goals,
+    // population graphs), so the window's own update is adjusted, as the top bar's is. With no beavers of their own a
+    // player sees 0, as the game shows a district with none.
+    [HarmonyPatch(typeof(PopulationWellbeingBox), nameof(PopulationWellbeingBox.UpdateAverageWellbeing))]
+    static class ColonyViewWellbeingBoxAveragePatcher
+    {
+        static void Postfix(PopulationWellbeingBox __instance)
+        {
+            if (!ColonyViewService.Active || __instance._districtContextService.SelectedDistrict) return;
+            int wellbeing = ColonyViewService.Instance.ColonyWellbeing() ?? 0;
+            __instance._averageWellbeing.text = wellbeing.ToString();
+            __instance._averageWellbeing.EnableInClassList(PopulationWellbeingBox.NegativeWellbeingClass, wellbeing < 0);
         }
     }
 

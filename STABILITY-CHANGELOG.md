@@ -5,6 +5,24 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**The wellbeing window shows your own colony** (built against Timberborn 1.1.2.4). **Not played.**
+
+- **The wellbeing window counts only your own colony's beavers.** From rc28 play: the host's wellbeing window showed
+  progress for an Agora need although only the other colony had an Agora. The top bar's number was already the
+  colony's, but the window it opens, with no district selected, counted every beaver on the map. Found in the game's
+  assemblies (`Timberborn.WellbeingUI`, `PopulationUI`, `NeedApplicationUI`, `BonusSystemUI`, `MortalSystemUI`,
+  `WorkSystemUI` and the batch control lists): the window, `PopulationWellbeingBox`, is the one place left. Its three
+  global figures are now the colony's: each need's count (`WellbeingService.GlobalAppliedNeeds`, which only the window
+  calls, now counts this player's districts' beavers as the game counts a selected district), the beavers each count
+  is out of (the window's `ContextualPopulationData`, as the population panel's) and the average
+  (`UpdateAverageWellbeing`, each district's average weighted by its beavers, as the top bar's). `AverageGlobalWellbeing`
+  and `GlobalPopulationData` are left alone: the simulation also reads them (faction goals, population graphs,
+  automation sensors). A selected district still shows the game's figures. The faction-unlock progress in the same
+  window stays map-wide, since the game unlocks by the whole map. Display only. RuntimeChecks checks that nothing but
+  the window calls `GlobalAppliedNeeds` and lists the four patched methods.
+
 ## 1.4.0-rc28
 
 **The panel in front of the alerts, achievements and status icons your own colony's, the eye hides only construction, and an amount over 100 is the whole trade** (PRs #71, #72, #73). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 536 and RuntimeChecks 464 pass. **Not played.** PR #72 was written without the game's assemblies, and RuntimeChecks found a mistake: `StatusIconCycler` has no `Update`, so the status-icon filter would never have installed. It now patches `IntervalUpdate`, its per-interval update; the icon is held in `Root`, `_statusIcon`, `_statusIconRenderer` and `_colliderTransform`, all children of the icon's own root, never the beaver or building. The achievement filter finds 34 methods in `Timberborn.Achievements`, `Timberborn.AchievementSystem` and `Timberborn.SteamAchievementSystem`, all the game's achievement tracking; none is simulation or save code.

@@ -325,6 +325,11 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.Population.PopulationDataCollector", "Timberborn.Population", "CollectData"),
             ("Timberborn.WellbeingUI.BasicStatisticsPanel", "Timberborn.WellbeingUI", "UpdateWellbeing"),
             ("Timberborn.Wellbeing.WellbeingService", "Timberborn.Wellbeing", "GetAverageDistrictWellbeing"),
+            // The wellbeing window: each need's count, the beavers it is out of, and the average.
+            ("Timberborn.Wellbeing.WellbeingService", "Timberborn.Wellbeing", "GlobalAppliedNeeds"),
+            ("Timberborn.Wellbeing.WellbeingService", "Timberborn.Wellbeing", "AppliedNeeds"),
+            ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "get_ContextualPopulationData"),
+            ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "UpdateAverageWellbeing"),
             ("Timberborn.BatchControl.BatchControlRowGroup", "Timberborn.BatchControl", "UpdateVisibleRows"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "Show"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "UpdateDropdown"),
