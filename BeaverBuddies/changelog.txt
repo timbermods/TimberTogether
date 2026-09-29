@@ -1,3 +1,12 @@
+v1.4.0-rc30 (Timber Together)
+* The wellbeing window's faction goals, a good's stock chart and the district lists show only your own colony.
+* The other colony's marked trees are not highlighted when you mark trees.
+* The connection panel is drawn under the game's menus, windows and dialogs, and its tooltips show.
+* More than 100 in a trade splits into equal rounds that carry exactly what you typed; amounts that can't are refused.
+* A construction site finished while hidden shows as the finished building.
+* Leaving a game saves at the end of the current tick.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc29 (Timber Together)
 * The wellbeing window shows only your own colony's beavers.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.

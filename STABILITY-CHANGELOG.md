@@ -5,10 +5,11 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc30
 
 **The faction goal's progress is your own colony's, and an audit of rc16 to rc29 against the game's assemblies**
-(built against Timberborn 1.1.2.4). **Not played.** Most of rc16 to rc29 was written without the game's assemblies.
+(PRs #77, #78). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 546 and
+RuntimeChecks 483 pass. **Not played.** Most of rc16 to rc29 was written without the game's assemblies.
 Each change was reviewed against the decompiled game and the game's own UXML/USS
 (`StreamingAssets/Modding/UI.zip`); no desync was found, and the fixes below are display-only unless they say
 otherwise.
