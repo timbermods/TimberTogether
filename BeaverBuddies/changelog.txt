@@ -1,3 +1,7 @@
+v1.4.0-rc27 (Timber Together)
+* You no longer see the other colony's trees marked for cutting.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc26 (Timber Together)
 * The game's alerts sit beside the connection panel instead of under it.
 * The other colony's "Beaver died tragically" alert no longer shows after you join.

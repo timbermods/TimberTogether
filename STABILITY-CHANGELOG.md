@@ -5,10 +5,17 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc27
 
-**Another colony's trees marked for cutting are not drawn** (built without the game's assemblies; StabilityTests only).
-**Not played.**
+**Another colony's trees marked for cutting are not drawn** (PR #69). Built against Timberborn 1.1.2.4: both
+configurations with 0 warnings; StabilityTests 535 and RuntimeChecks 462 pass. **Not played.** Released as Latest on
+GitHub (a full release), at Kyler's request. Built against the game, `ColonyCuttingView` found no interface method that
+reads the cutting area: Harmony's `PatchProcessor.ReadMethodBody` cannot run in RuntimeChecks' .NET host (MonoMod's emit
+helpers are refused). It now reads the IL itself (`ColonyCuttingView.Instructions`, also used to find the game's change
+event), and finds `TreeCuttingAreaSelectionTool.PreviewCallback`, `TreeCuttingAreaUnselectionTool.PreviewCallback` and
+`TreeCuttingAreaVisualizer.GetCuttingArea`; `TreeCuttingArea.CuttingArea` is an `IEnumerable<Vector3Int>`, which is
+filtered. Not covered: the game also outlines each marked tree from `TreeCuttingArea.YieldersInArea` and the tree-added
+event, which no patch reads yet.
 
 - From rc26 play: each player saw the other colony's cutting marks and their outline. The game keeps one cutting area
   for the map and its interface draws all of it. `ColonyCuttingView` finds the game's interface methods that read the

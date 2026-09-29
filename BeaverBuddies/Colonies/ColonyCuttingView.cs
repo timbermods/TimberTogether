@@ -95,11 +95,53 @@ namespace BeaverBuddies.Colonies
             return readers;
         }
 
+        private static readonly Dictionary<short, OpCode> OpCodesByValue = typeof(OpCodes).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(field => (OpCode)field.GetValue(null)).ToDictionary(code => code.Value);
+
+        /// <summary>
+        /// A method's instructions with each method or constructor operand resolved, read from its IL. Harmony's own
+        /// reader needs MonoMod's runtime emit helpers, which the .NET host RuntimeChecks runs in does not allow.
+        /// </summary>
+        internal static List<KeyValuePair<OpCode, object>> Instructions(MethodBase method)
+        {
+            var found = new List<KeyValuePair<OpCode, object>>();
+            byte[] il = method.GetMethodBody()?.GetILAsByteArray();
+            if (il == null) return found;
+            Type[] typeArguments = method.DeclaringType != null && method.DeclaringType.IsGenericType ? method.DeclaringType.GetGenericArguments() : null;
+            Type[] methodArguments = method.IsGenericMethod ? method.GetGenericArguments() : null;
+            int at = 0;
+            while (at < il.Length)
+            {
+                short value = il[at++];
+                if (value == 0xFE) value = (short)(0xFE00 | il[at++]);
+                if (!OpCodesByValue.TryGetValue(value, out OpCode code)) break;
+                object operand = null;
+                int size;
+                switch (code.OperandType)
+                {
+                    case OperandType.InlineNone: size = 0; break;
+                    case OperandType.ShortInlineBrTarget: case OperandType.ShortInlineI: case OperandType.ShortInlineVar: size = 1; break;
+                    case OperandType.InlineVar: size = 2; break;
+                    case OperandType.InlineI8: case OperandType.InlineR: size = 8; break;
+                    case OperandType.InlineSwitch: size = 4 + 4 * BitConverter.ToInt32(il, at); break;
+                    default: size = 4; break;
+                }
+                if (code.OperandType == OperandType.InlineMethod || code.OperandType == OperandType.InlineTok)
+                {
+                    try { operand = method.Module.ResolveMember(BitConverter.ToInt32(il, at), typeArguments, methodArguments); }
+                    catch (Exception) { }
+                }
+                at += size;
+                found.Add(new KeyValuePair<OpCode, object>(code, operand));
+            }
+            return found;
+        }
+
         private static bool CallsTheArea(MethodInfo method)
         {
             try
             {
-                foreach (KeyValuePair<OpCode, object> instruction in PatchProcessor.ReadMethodBody(method))
+                foreach (KeyValuePair<OpCode, object> instruction in ColonyCuttingView.Instructions(method))
                     if (instruction.Value is MethodInfo called && called.DeclaringType == typeof(TreeCuttingArea) && Reads.Contains(called.Name))
                         return true;
             }
@@ -198,7 +240,7 @@ namespace BeaverBuddies.Colonies
         {
             foreach (string method in new[] { nameof(TreeCuttingArea.AddCoordinates), nameof(TreeCuttingArea.RemoveCoordinates) })
             {
-                foreach (KeyValuePair<OpCode, object> instruction in PatchProcessor.ReadMethodBody(AccessTools.Method(typeof(TreeCuttingArea), method)))
+                foreach (KeyValuePair<OpCode, object> instruction in ColonyCuttingView.Instructions(AccessTools.Method(typeof(TreeCuttingArea), method)))
                     if (instruction.Key == OpCodes.Newobj && instruction.Value is ConstructorInfo ctor
                         && ctor.DeclaringType.Name.EndsWith("Event", StringComparison.Ordinal) && ctor.GetParameters().Length == 0)
                     {
