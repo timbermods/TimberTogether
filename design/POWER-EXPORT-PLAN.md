@@ -23,6 +23,9 @@ Decisions (Kyler):
 7. **One direction per pair.** Between two colonies it is A → B or B → A, never both.
 8. **Native UI**, as close to the game's as possible. The Trading Post panel is the model.
 9. **Name:** Power Export Facility (exactly). Internal ids stay short: `MultiColonyPowerExport`, `PowerExportMath`.
+10. **One worker on each side.** Each half is staffed by its own colony's beaver (or bot).
+11. **Ctrl+P shows every colony's power networks**, the way Ctrl+L shows roads (Ctrl+L stays exactly as it is).
+12. **A Power window**, like the Trading Posts and colonies window (Y).
 
 ## 2. The rule
 
@@ -54,7 +57,14 @@ Decisions (Kyler):
 - **Toolbar:** Power tab, after the batteries. Blueprints `MultiColonyPowerExport.Folktails` / `.IronTeeth` beside
   the Trading Post's, and a spec type with a mod-unique name (`MultiColonyPowerExportSpec`, for the reason given in
   `TradingPostSpec.cs`). In a mixed game both halves show the placer's faction, as the Trading Post does.
-- No workers.
+- **One worker per half**, from that half's own colony. So each half needs two connections from its colony: a road
+  to its entrance (for the worker) and power at its transput. The two halves' entrances are on opposite sides and are
+  nobody's, as the Trading Post's are; the facility never joins the two colonies' roads.
+- **A half's road and power must be the same colony.** Otherwise the facility is inert, with the status *This half's
+  road and power belong to different colonies*.
+- **Power moves only while both halves are staffed**: a worker at work on each side, as vanilla workplaces run (a
+  power wheel only turns with its beaver on it). Each colony keeps its own working hours, so power flows in the hours
+  both colonies' workers are on shift. The status line says which side is unstaffed.
 - Hidden in a one-shared-colony game (a disabler like `TradingPostToolDisabler`).
 
 ## 4. Direction
@@ -99,7 +109,49 @@ Two settings on the sender's half:
   order both ways, battery drain on/off, relaying, never more than the receiver can use, direction lock, 1-to-1, cycle
   refusal.
 
-## 6. UI
+## 6. Seeing the power networks (Ctrl+P)
+
+A `ColonyPowerOverlay`, a copy of `ColonyRoadOverlay` for power. Ctrl+L and the road overlay stay exactly as they are.
+
+- **Ctrl+P toggles it at any time.** New key binding `BeaverBuddies.KeyBind.ToggleColonyPower`, path `/Keyboard/p`,
+  modifiers `Ctrl`, loc key `BeaverBuddies.KeyBindings.ToggleColonyPower` = *Show colonies' power*, next to the roads
+  binding in the Timber Together key group (rebindable, like every binding). Checked against the game: plain P is
+  `ToggleBuildingPause` with `AllowOtherModifiers: false`, and no game or mod binding uses Ctrl+P.
+- **Draws every colony's power network**, yours and everyone else's: every tile of a shaft, gearbox, generator,
+  battery or mechanical building, built or being built, as the same filled square the road overlay uses, in a
+  strong version of its colony's colour. A Power Export Facility shows each half in its side's colour.
+- **Also shown while a power piece is in hand** (shafts, gearboxes, generators, batteries, the Power Export Facility),
+  just as roads show while a building tool is in hand. Every other building tool keeps showing roads.
+- Display only: reads placed buildings and their owners, never the simulation. Rebuilt into a mesh when something
+  changes, not every frame, with the same redraw and refresh intervals as the road overlay.
+- `TWO-COLONIES.md` gets a *Seeing the power networks* line beside *Seeing the roads*.
+
+## 7. The Power window (H)
+
+A `PowerOverviewPanel`, built as `TradeOverviewPanel` is: the game's framed box with a title badge and close button,
+dragged by its title or frame, closed with its close button or Esc, never pausing the game. Display and buttons only:
+every button sends the same action as the facility's own panel.
+
+- **Opens and closes with H** (binding `BeaverBuddies.KeyBind.PowerOverview`, path `/Keyboard/h`, modifiers `None`,
+  *Power window*, rebindable; checked against the game: H's only binding is Ctrl+H `ToggleGUI`, with
+  `AllowOtherModifiers: false`, and no Timber Together binding uses H), and a square **Power** button at the top right beside
+  the Trade button, drawn like the game's own top-right buttons.
+- **While it is open, the Ctrl+P power view is shown** and goes back to what it was when the window closes.
+- **The chain** at the top, one line: *Player 1 → Player 2 → Player 3*, each name in its colony's colour, with the hp
+  on each arrow. *No power is being sent* when there is none.
+- **Your power**, one row per network of your colony: generated, used and spare (hp), batteries stored/capacity,
+  and a **Go there** button that selects its largest generator. What comes in or goes out through a facility shows on
+  the network it joins.
+- **Power Export Facilities**, one row per facility with a half on your colony's network: the partner's faction icon
+  and name, direction and hp now, a status line (the facility panel's), the three checkboxes for your half, and **Go
+  there**. Greyed with the reason when your toggle can't be turned on (direction lock, 1-to-1, cycle).
+- **Colonies**, one row per other colony: generated, used, spare and batteries, from the same figures (every computer
+  holds every colony's state; only the display is filtered). Useful to see who could spare power before asking, and
+  to settle payment at a Trading Post.
+- Figures refresh on the overview panel's interval, and rows are rebuilt only when what they show changes (the rc30
+  lesson: no lost clicks, no flashing tooltips).
+
+## 8. UI (the facility panel)
 
 Native, built like `TradingPostFragment` from `NativeElements` and the game's tooltip registrar.
 
@@ -107,7 +159,8 @@ Native, built like `TradingPostFragment` from `NativeElements` and the game's to
 - **Body** (`scroll--green-decorated`):
   - **Flow:** *Player 1 → Player 2* and the amount in the game's power style (*140 hp*). Status lines: *Not
     sending*, *Player 2 needs no power*, *Nothing to spare*, *Connect both halves to power*, *Both sides are your
-    colony*.
+    colony*, *No worker on Player 2's side*.
+  - **Workers:** the game's own workplace panel on each half (worker slot, hours), as the Trading Post keeps it.
   - **Your half:** `CheckBox` **Send power to Player 2**; under it, greyed while not sending, **Charge my batteries
     first** and **Use my batteries for Player 2**.
   - **Partner's half:** the same lines, read-only and muted.
@@ -118,19 +171,23 @@ Native, built like `TradingPostFragment` from `NativeElements` and the game's to
   No questions to answer: nothing is traded.
 - No ledger or counter.
 
-## 7. VERIFY before building
+## 9. VERIFY before building
 
 1. `MechanicalNode` input/output changeable at runtime, and how the graph re-reads it.
 2. Where `MechanicalGraph` connects transputs (the safety-net hook), and whether `ClusterMechanicalConnectorActivator`
    connects nodes another way.
 3. Battery charge/discharge order within a tick (for both battery settings).
 4. Shaft transput layout, for the footprint and which faces connect.
+5. The workers. Option A: build on the District Crossing's workings, as the Trading Post does, which already staffs
+   each half from its own district (`DistrictCrossingWorkplaceBehavior`); check that the crossing's road link between
+   the halves is acceptable here, or can be cut. Option B: a workplace per half. Pick after reading both.
+6. That a staffed-but-off-shift half reads as unstaffed (the worker is at home), matching vanilla power buildings.
 
-## 8. Docs to update when built
+## 10. Docs to update when built
 
 - `TWO-COLONIES.md`: the Power line under shared things becomes the rule; a Power Export Facility section after Trading Posts.
 - README / site: a colony rule and a `#play` card, per CLAUDE.md's writing rules. Player text says **Power Export Facility**.
 
-## 9. Out of scope
+## 11. Out of scope
 
 Payment, prices or a ledger at the Power Export Facility; fans (one colony sending to two); cycles; a throughput cap.
