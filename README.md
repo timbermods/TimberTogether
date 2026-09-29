@@ -93,7 +93,7 @@ Steam ID, whoever hosts.
   and unlocks. Nobody else can change them, and your beavers work only for your colony.
 - **Build anywhere,** right up to a neighbor. The one rule: **your roads never join another colony's**, except
   through a Trading Post. **Ctrl+L** shows every colony's roads in its color.
-- **Your screen is your colony's:** the top bar, alerts, status icons, batch lists and working hours.
+- **Your screen is your colony's:** the top bar and its wellbeing window, alerts, status icons, batch lists and working hours.
 - **Shared by everyone:** the map (water, droughts, badwater, weather), speed, pause, pings, chat and saving.
 - **Up to four colonies.** More players help run the host's colony.
 - **Folktails and Iron Teeth together** (Mixed factions): each colony plays its own faction. Between factions, Trading

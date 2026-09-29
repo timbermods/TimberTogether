@@ -5,9 +5,9 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
-## Unreleased
+## 1.4.0-rc29
 
-**The wellbeing window shows your own colony** (built against Timberborn 1.1.2.4). **Not played.**
+**The wellbeing window shows your own colony** (PR #75). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 537 and RuntimeChecks 469 pass. **Not played.**
 
 - **The wellbeing window counts only your own colony's beavers.** From rc28 play: the host's wellbeing window showed
   progress for an Agora need although only the other colony had an Agora. The top bar's number was already the

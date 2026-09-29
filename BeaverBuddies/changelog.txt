@@ -1,3 +1,7 @@
+v1.4.0-rc29 (Timber Together)
+* The wellbeing window shows only your own colony's beavers.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc28 (Timber Together)
 * The connection panel is drawn in front of the game's alerts; the alerts stay put.
 * Achievements count only your own colony's buildings and beavers.
