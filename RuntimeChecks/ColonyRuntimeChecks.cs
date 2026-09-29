@@ -330,6 +330,7 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.Wellbeing.WellbeingService", "Timberborn.Wellbeing", "AppliedNeeds"),
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "get_ContextualPopulationData"),
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "UpdateAverageWellbeing"),
+            ("Timberborn.WellbeingUI.GoalRowFactory", "Timberborn.WellbeingUI", "UpdateProgress"),
             ("Timberborn.BatchControl.BatchControlRowGroup", "Timberborn.BatchControl", "UpdateVisibleRows"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "Show"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "UpdateDropdown"),

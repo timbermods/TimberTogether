@@ -7,6 +7,7 @@ using Timberborn.BaseComponentSystem;
 using Timberborn.BatchControl;
 using Timberborn.CoreUI;
 using Timberborn.EntitySystem;
+using Timberborn.FactionSystem;
 using Timberborn.GameDistricts;
 using Timberborn.NeedSystem;
 using Timberborn.NotificationSystem;
@@ -312,6 +313,24 @@ namespace BeaverBuddies.Colonies
             int wellbeing = ColonyViewService.Instance.ColonyWellbeing() ?? 0;
             __instance._averageWellbeing.text = wellbeing.ToString();
             __instance._averageWellbeing.EnableInClassList(PopulationWellbeingBox.NegativeWellbeingClass, wellbeing < 0);
+        }
+    }
+
+    // The window's faction goals ("Progress: 12 / 15") show the whole map's average. Show this player's colony's
+    // instead, like every other figure they see. Display only: the game still unlocks by the whole map
+    // (FactionGoalsUnlocker reads AverageGlobalWellbeing, which is left alone).
+    [HarmonyPatch(typeof(GoalRowFactory), nameof(GoalRowFactory.UpdateProgress),
+        new[] { typeof(FactionSpec), typeof(UnlockableFactionSpec), typeof(VisualElement) })]
+    static class ColonyViewGoalProgressPatcher
+    {
+        static void Postfix(GoalRowFactory __instance, FactionSpec factionSpec, UnlockableFactionSpec unlockableFactionSpec, VisualElement goalRowElement)
+        {
+            if (!ColonyViewService.Active) return;
+            // Only the row the game shows a number on: a locked faction this one leads to.
+            if (!__instance._factionUnlockingService.IsLocked(factionSpec)
+                || __instance._factionService.Current.Id != unlockableFactionSpec.PrerequisiteFaction) return;
+            int wellbeing = ColonyViewService.Instance.ColonyWellbeing() ?? 0;
+            __instance.UpdateProgress($"{wellbeing} / {unlockableFactionSpec.AverageWellbeingToUnlock}", goalRowElement);
         }
     }
 
