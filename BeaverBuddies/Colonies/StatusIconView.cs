@@ -39,15 +39,15 @@ namespace BeaverBuddies.Colonies
             try
             {
                 Type cycler = AccessTools.TypeByName(CyclerName);
-                MethodInfo update = cycler == null ? null : AccessTools.DeclaredMethod(cycler, "Update");
+                MethodInfo update = cycler == null ? null : AccessTools.DeclaredMethod(cycler, "IntervalUpdate");
                 if (update == null)
                 {
-                    Plugin.LogWarning("Status icons: " + (cycler == null ? CyclerName + " is gone" : "StatusIconCycler.Update is gone") + "; the other colony's icons stay drawn");
+                    Plugin.LogWarning("Status icons: " + (cycler == null ? CyclerName + " is gone" : "StatusIconCycler.IntervalUpdate is gone") + "; the other colony's icons stay drawn");
                     return;
                 }
                 iconFields = IconFields(cycler).ToArray();
                 harmony.Patch(update, prefix: new HarmonyMethod(typeof(StatusIconView), nameof(SkipOtherColony)));
-                Plugin.Log("Status icons show only over your own colony (StatusIconCycler.Update; icon held in "
+                Plugin.Log("Status icons show only over your own colony (StatusIconCycler.IntervalUpdate; icon held in "
                     + (iconFields.Length == 0 ? "no field" : string.Join(", ", iconFields.Select(f => f.Name + ":" + f.FieldType.Name))) + ")");
             }
             catch (Exception error)
@@ -61,7 +61,7 @@ namespace BeaverBuddies.Colonies
             cycler.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
                 .Where(f => typeof(Renderer).IsAssignableFrom(f.FieldType) || f.FieldType == typeof(GameObject) || f.FieldType == typeof(Transform));
 
-        // Harmony: false skips the cycler's update (another colony's thing: no icon is picked or shown).
+        // Harmony: false skips the cycler's interval update (another colony's thing: no icon is picked or shown).
         private static bool SkipOtherColony(object __instance)
         {
             if (failed || !(__instance is BaseComponent component)) return true;

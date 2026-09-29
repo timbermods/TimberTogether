@@ -1,3 +1,11 @@
+v1.4.0-rc28 (Timber Together)
+* The connection panel is drawn in front of the game's alerts; the alerts stay put.
+* Achievements count only your own colony's buildings and beavers.
+* Status icons (hungry, thirsty…) show only over your own colony.
+* The eye button hides only what the other player is still building.
+* An amount over 100 in a trade is the whole trade; the Rounds box is then ignored.
+* Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
+
 v1.4.0-rc27 (Timber Together)
 * You no longer see the other colony's trees marked for cutting.
 * Full details for every version: STABILITY-CHANGELOG.md in the mod folder.
