@@ -208,5 +208,42 @@ static class Rc27Checks
             Check(source.Contains("int[] before = (int[])records.Clone();") && source.Contains("&& WellbeingRecords.Announces(before[slot])) Announce(records[slot]);"),
                 "the first record is announced");
         });
+        yield return ("rc31: the Global history graphs (F9, F10) show your colony, built for the display and never saved", () =>
+        {
+            string history = Source("BeaverBuddies", "Colonies", "ColonyHistoryView.cs");
+            // The graphs are handed the colony's history in place of the whole map's, only while one colony is shown.
+            Check(history.Contains("[HarmonyPatch(typeof(PopulationStatisticsGraphFactory), nameof(PopulationStatisticsGraphFactory.Create), new[] { typeof(PopulationSampleHistory) })]")
+                && history.Contains("ColonyHistoryView.Instance?.SwapPopulation(ref populationSampleHistory);"), "the population graphs are the whole map's");
+            Check(history.Contains("[HarmonyPatch(typeof(GoodStatisticsGroupFactory), nameof(GoodStatisticsGroupFactory.Create))]")
+                && history.Contains("ColonyHistoryView.Instance?.SwapGoods(ref goodSamplingRegistry);"), "the goods charts are the whole map's");
+            Check(System.Text.RegularExpressions.Regex.Matches(history, @"if \(!ColonyViewService\.Active\) return;\n            ColonyHistoryView\.Instance\?\.Swap").Count == 2,
+                "the graphs are swapped alone or in a shared game");
+            // Only the whole map's history is swapped: a district's graphs stay the game's.
+            Check(history.Contains("if (global == null || !ReferenceEquals(history, global)) return;")
+                && history.Contains("if (global == null || !ReferenceEquals(registry, global)) return;"), "a district's graphs could be swapped");
+            // The game's registries are only read: nothing is added to them, and the colony's lists are this view's own.
+            Check(!history.Contains(".AddSample(") && !history.Contains(".Add(sample") && !history.Contains(".PopulationSampleHistory =")
+                && !history.Contains(".GoodSamplingRegistry ="), "a game registry could be written");
+            Check(history.Contains("PopulationSampleHistory.CreateFromSave(populationSamples)") && history.Contains("GoodSampleHistory.CreateFromSave(all.GoodId, samples)"),
+                "the colony's history is not a list of its own");
+            // Summed day by day from the latest; wellbeing weighted by beavers, as the top bar's.
+            Check(history.Contains("if (back >= samples.Count) continue;") && history.Contains("if (back < district.Count) sum += district[district.Count - 1 - back];")
+                && history.Contains("wellbeing += (long)sample.Wellbeing * count;"), "the colony's days are not lined up, or wellbeing is not weighted by beavers");
+            // Rebuilt only for a new day or a change of districts, and only when a graph of the colony's asks.
+            Check(history.Contains("if (!populationBuilt.Changed(days.Count, active, own)) return;") && history.Contains("if (!goodsBuilt.Changed(samples, active, own)) return;")
+                && history.Contains("ReferenceEquals(history, populationHistory)) RefreshPopulation();") && history.Contains("goodsHistories.Contains(history)) RefreshGoods();"),
+                "the colony's histories are rebuilt on every redraw");
+            Check(Source("BeaverBuddies", "Colonies", "ColonyConfigurator.cs").Contains("containerDefinition.Bind<ColonyHistoryView>().AsSingleton();"), "the history view is not bound");
+            string checks = Source("RuntimeChecks", "ColonyRuntimeChecks.cs");
+            foreach (string method in new[] { "PopulationStatisticsGraphFactory\", \"Timberborn.PopulationStatisticsBatchControl\", \"Create\"),",
+                "PopulationStatisticsGraph\", \"Timberborn.PopulationStatisticsBatchControl\", \"UpdateItem\"),",
+                "GoodStatisticsGroupFactory\", \"Timberborn.GoodStatisticsBatchControl\", \"Create\"),",
+                "GoodSampleHistoryElement\", \"Timberborn.GoodStatisticsUI\", \"Update\"),", "\"_populationSampleHistory\"),", "\"_goodSampleHistory\"),",
+                "\"populationSampleHistory\", \"Timberborn.PopulationStatisticsSampling.PopulationSampleHistory\"),",
+                "\"goodSamplingRegistry\", \"Timberborn.GoodsSampling.GoodSamplingRegistry\")," })
+                Check(checks.Contains(method), "RuntimeChecks does not list " + method);
+            string rules = System.Text.RegularExpressions.Regex.Replace(Source("TWO-COLONIES.md"), @"\s+", " ");
+            Check(!rules.Contains("*Global* history graphs") && rules.Contains("Faction unlocks still cover the whole map."), "TWO-COLONIES.md says the Global graphs are the whole map's");
+        });
     }
 }

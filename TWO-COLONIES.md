@@ -285,12 +285,12 @@ A tile marked by one colony can't be marked or unmarked by another. Unmarking an
 ## What you see
 
 In co-op, your interface shows **your own colony**: the top bar (goods, population, housing, workplaces, wellbeing,
-science, and a good's 10-day stock chart) and the wellbeing window it opens, the batch control lists and district
-lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the trees marked
-for cutting. Each colony has its own wellbeing high score, and only its player hears of a new one. Achievements count
-your own colony's buildings and beavers, except those whose progress is kept in the save, which count every colony.
-You can open another colony's buildings; your figures stay yours. The *Global* history graphs (F9, F10) and faction
-unlocks still cover the whole map.
+science, and a good's 10-day stock chart) and the wellbeing window it opens, the batch control lists, history graphs
+and district lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the
+trees marked for cutting. Each colony has its own wellbeing high score, and only its player hears of a new one.
+Achievements count your own colony's buildings and beavers, except those whose progress is kept in the save, which
+count every colony. You can open another colony's buildings; your figures stay yours. Faction unlocks still cover the
+whole map.
 
 ## The road rule
 

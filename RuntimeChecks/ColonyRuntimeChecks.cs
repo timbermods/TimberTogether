@@ -335,6 +335,21 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.StockpilesUI.GoodStockpilesTooltipFactory", "Timberborn.StockpilesUI", "GetGoodSamplingRegistry"),
             ("Timberborn.GoodsSampling.GoodSamplingRegistry", "Timberborn.GoodsSampling", "CreateFromSave"),
             ("Timberborn.GoodsSampling.GoodSampleHistory", "Timberborn.GoodsSampling", "CreateFromSave"),
+            // The batch control window's whole-map history graphs, drawn for this player's colony (ColonyHistoryView):
+            // the graphs are handed the colony's history instead of the saved global one, which is only read.
+            ("Timberborn.PopulationStatisticsBatchControl.PopulationStatisticsGraphFactory", "Timberborn.PopulationStatisticsBatchControl", "Create"),
+            ("Timberborn.PopulationStatisticsBatchControl.PopulationStatisticsGraph", "Timberborn.PopulationStatisticsBatchControl", "UpdateItem"),
+            ("Timberborn.PopulationStatisticsSampling.GlobalPopulationSamplesRegistry", "Timberborn.PopulationStatisticsSampling", "get_PopulationSampleHistory"),
+            ("Timberborn.PopulationStatisticsSampling.DistrictPopulationSamplesRegistry", "Timberborn.PopulationStatisticsSampling", "get_PopulationSampleHistory"),
+            ("Timberborn.PopulationStatisticsSampling.PopulationSampleHistory", "Timberborn.PopulationStatisticsSampling", "CreateFromSave"),
+            ("Timberborn.PopulationStatisticsSampling.PopulationSampleHistory", "Timberborn.PopulationStatisticsSampling", "get_PopulationSamples"),
+            ("Timberborn.PopulationStatisticsSampling.PopulationSample", "Timberborn.PopulationStatisticsSampling", "SetWellbeing"),
+            ("Timberborn.PopulationStatisticsSampling.PopulationSample", "Timberborn.PopulationStatisticsSampling", "op_Addition"),
+            ("Timberborn.GoodStatisticsBatchControl.GoodStatisticsGroupFactory", "Timberborn.GoodStatisticsBatchControl", "Create"),
+            ("Timberborn.GoodStatisticsUI.GoodSampleHistoryElement", "Timberborn.GoodStatisticsUI", "Update"),
+            ("Timberborn.GoodsSampling.GlobalGoodSamplingRegistry", "Timberborn.GoodsSampling", "get_GoodSamplingRegistry"),
+            ("Timberborn.GoodsSampling.DistrictGoodSamplingRegistry", "Timberborn.GoodsSampling", "get_GoodSamplingRegistry"),
+            ("Timberborn.GoodsSampling.GoodSample", "Timberborn.GoodsSampling", "op_Addition"),
             ("Timberborn.BatchControl.DistrictDropdownProvider", "Timberborn.BatchControl", "UpdateDistrictsList"),
             ("Timberborn.GameDistrictsMigrationBatchControl.ManualMigrationDistrictDropdownProvider", "Timberborn.GameDistrictsMigrationBatchControl", "UpdateDistrictsList"),
             // Cutting marks: the trees in the area, a new tree's highlight, the redraw, and the marking preview left alone.
@@ -494,6 +509,10 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.DistributionSystem.DistrictDistributableGoodProvider", "Timberborn.DistributionSystem", "_importCache"),
             ("Timberborn.DistributionSystem.DistrictDistributableGoodProvider", "Timberborn.DistributionSystem", "_exportCache"),
             ("Timberborn.Population.PopulationService", "Timberborn.Population", "_populationDataCollector"),
+            // The history graphs (ColonyHistoryView): which history a graph or chart draws, and a district's goods.
+            ("Timberborn.PopulationStatisticsBatchControl.PopulationStatisticsGraph", "Timberborn.PopulationStatisticsBatchControl", "_populationSampleHistory"),
+            ("Timberborn.GoodStatisticsUI.GoodSampleHistoryElement", "Timberborn.GoodStatisticsUI", "_goodSampleHistory"),
+            ("Timberborn.GoodsSampling.GoodSamplingRegistry", "Timberborn.GoodsSampling", "_goodSampleHistoryMap"),
             ("Timberborn.ConstructionSitesUI.ConstructionSiteDebugFragment", "Timberborn.ConstructionSitesUI", "_constructionSite"),
             // The journal is listed again, through the colony filter, once this player is seated (ColonyJournal).
             ("Timberborn.NotificationSystemUI.NotificationPanel", "Timberborn.NotificationSystemUI", "_notifications"),
@@ -508,6 +527,37 @@ internal static class ColonyRuntimeChecks
                 if (type.GetField(field, all) == null) throw new Exception("missing; the colony code reading it would fail");
             });
         }
+
+        // ColonyHistoryView swaps the history argument by its name, and recognises the whole map's by the object the
+        // game's global row reads: both must still be so, or the patch would not apply or would never swap.
+        test("Colony: the history graphs are still built from the global registries, through the arguments the view swaps", () =>
+        {
+            foreach (var (typeName, assemblyName, method, parameter, parameterType) in new[]
+            {
+                ("Timberborn.PopulationStatisticsBatchControl.PopulationStatisticsGraphFactory", "Timberborn.PopulationStatisticsBatchControl", "Create",
+                    "populationSampleHistory", "Timberborn.PopulationStatisticsSampling.PopulationSampleHistory"),
+                ("Timberborn.GoodStatisticsBatchControl.GoodStatisticsGroupFactory", "Timberborn.GoodStatisticsBatchControl", "Create",
+                    "goodSamplingRegistry", "Timberborn.GoodsSampling.GoodSamplingRegistry"),
+            })
+            {
+                Type type = Assembly.Load(assemblyName).GetType(typeName, true)!;
+                if (!type.GetMethods(all).Any(m => m.Name == method && m.GetParameters().Any(p => p.Name == parameter && p.ParameterType.FullName == parameterType)))
+                    throw new Exception($"{type.Name}.{method} no longer takes {parameter}");
+            }
+            foreach (var (typeName, assemblyName, registry, getter) in new[]
+            {
+                ("Timberborn.PopulationStatisticsBatchControl.PopulationStatisticsRowItemFactory", "Timberborn.PopulationStatisticsBatchControl",
+                    "Timberborn.PopulationStatisticsSampling.GlobalPopulationSamplesRegistry", "get_PopulationSampleHistory"),
+                ("Timberborn.GoodStatisticsBatchControl.GoodStatisticsRowItemFactory", "Timberborn.GoodStatisticsBatchControl",
+                    "Timberborn.GoodsSampling.GlobalGoodSamplingRegistry", "get_GoodSamplingRegistry"),
+            })
+            {
+                Type type = Assembly.Load(assemblyName).GetType(typeName, true)!;
+                MethodInfo createGlobal = type.GetMethod("CreateGlobal", all) ?? throw new Exception(type.Name + ".CreateGlobal is gone");
+                if (!IlScan.Names(IlScan.Members(createGlobal), registry, getter))
+                    throw new Exception($"{type.Name}.CreateGlobal no longer draws {registry.Split('.').Last()}'s history");
+            }
+        });
 
         test("Colony: the game still marks crossing halves and backs them onto each other", () =>
         {
