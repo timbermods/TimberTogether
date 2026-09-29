@@ -31,6 +31,19 @@ colonies window** (built against Timberborn 1.1.2.4). **Not played.**
   and hands it to the graphs (`GoodStatisticsGroupFactory.Create`, `PopulationStatisticsGraphFactory.Create`). The
   game's saved global registries are only read. A deleted district's days drop out, as its history goes with it.
   Faction unlocks are now the only map-wide figure a player sees.
+- **The Trading Posts and colonies window (Y) looks like the game's own windows.** It was written without the
+  game's files. Checked against the game's UXML and USS (`StreamingAssets/Modding/UI.zip`): the window hangs in the
+  interface's `Absolute-items`, where only `GameUI.uxml`'s style sheets reach, so two entity-panel classes it relied on
+  drew nothing: `entity-panel__text` (every label and button text fell back to the theme's dark default; this was the
+  dark text seen in play) and `entity-fragment__button--red` (the Clear button had no red). It now uses only classes
+  those sheets define, matched to the game's well-being window and batch control rows: the named box's frame,
+  capsule title and close button, `game-scroll-view`, the green row boards, `game-text-small/normal/big/heading` and
+  `text--yellow` for counts and captions, and wooden `button-game` buttons. Text is the game's light grey; the box is
+  540 wide with the game's own 45 px padding; rows use the entity panel's 8/12 px padding; a colony's buttons sit in a
+  wrapping row under its text instead of a column squeezing it; food and water keep their icon and amount together;
+  another colony's wishes are plain tiles instead of buttons that did nothing. `NativeElements` text and buttons also
+  carry `game-text-normal`, which fixes the same dark text on a trade message's button and in the goods grid opened
+  from the window. RuntimeChecks reads UI.zip and fails if the window names a class those sheets don't define.
 
 ## 1.4.0-rc30
 
