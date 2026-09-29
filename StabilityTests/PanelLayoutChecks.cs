@@ -67,33 +67,22 @@ static class PanelLayoutChecks
             var tooWide = values.Where(v => v.Text.Length > 20).Select(v => $"{v.Key} = \"{v.Text}\"").ToList();
             Check(tooWide.Count == 0, "pacing text too long: " + string.Join("; ", tooWide));
         });
-        yield return ("The game's alerts move beside the panel only where their rows meet it", () =>
-        {
-            // The panel from the top left down to 620; the alerts' rows from 560 to 860, 5 to 350 across.
-            Equal(400f + PanelLayout.AlertGap - 5f, PanelLayout.AlertShift(10, 10, 400, 620, 5, 560, 350, 860));
-            // Rows that end above the panel's bottom but start below its top still meet it.
-            Equal(400f + PanelLayout.AlertGap - 5f,
-                PanelLayout.AlertShift(10, 10, 400, 620, 5, 300, 350, 500));
-            // Fewer alerts, all below the panel: nothing moves. Nor with the panel on the other side of the screen.
-            Equal(0f, PanelLayout.AlertShift(10, 10, 400, 620, 5, 640, 350, 860));
-            Equal(0f, PanelLayout.AlertShift(1500, 10, 1900, 620, 5, 560, 350, 860));
-            // Anything not laid out yet moves nothing.
-            Equal(0f, PanelLayout.AlertShift(10, 10, 400, 620, float.NaN, 560, 350, 860));
-            Equal(0f, PanelLayout.AlertShift(10, 10, 400, 620, 5, 560, 5, 860));
-            Equal(0f, PanelLayout.AlertShift(10, 10, 10, 10, 5, 560, 350, 860));
-        });
-        yield return ("The panel on screen keeps the alerts beside it, and puts them back when hidden or moved", () =>
+        yield return ("The panel on screen is drawn in front of the alerts, which are never moved, and goes back when hidden or moved", () =>
         {
             string root = AppContext.BaseDirectory;
             while (root != null && !File.Exists(Path.Combine(root, "BeaverBuddies.sln"))) root = Path.GetDirectoryName(root)!;
             string lift = File.ReadAllText(Path.Combine(root!, "BeaverBuddies", "Panel", "CornerLift.cs"));
-            int start = lift.IndexOf("public void Lift(", StringComparison.Ordinal);
-            // Before anything that may give up on the drawing order.
-            Check(start >= 0 && lift.IndexOf("KeepAlertsClear(panel);", start, StringComparison.Ordinal)
-                < lift.IndexOf("return", start, StringComparison.Ordinal), "the alerts are not moved beside the panel every frame");
+            Check(!lift.Contains("translate"), "the alerts are moved");
+            // Its own layer, the last thing in what holds both corners, with a slot keeping its place in the corner.
+            Check(lift.Contains("VisualElement host = CommonAncestor(corner, alerts);") && lift.Contains("host.Add(layer);")
+                && lift.Contains("layer.BringToFront();"), "the panel is not drawn after the alerts' corner");
+            Check(lift.Contains("corner.Insert(corner.IndexOf(panel), slot);"), "the corner is laid out without the panel's room");
+            Check(lift.Contains("pickingMode = PickingMode.Ignore"), "the layer takes the pointer from the game");
             int restore = lift.IndexOf("public void Restore()", StringComparison.Ordinal);
-            Check(restore >= 0 && lift.IndexOf("Unshift();", restore, StringComparison.Ordinal) > restore, "hiding the panel leaves the alerts moved");
-            Check(lift.Contains("style.translate = StyleKeyword.Null"), "the alerts are not put back where the game lays them out");
+            Check(restore >= 0 && lift.IndexOf("slot.parent.Insert(slot.parent.IndexOf(slot), panel);", restore, StringComparison.Ordinal) > restore,
+                "hiding or moving the panel leaves it out of its corner");
+            string view = File.ReadAllText(Path.Combine(root!, "BeaverBuddies", "Panel", "ConnectionPanelView.cs"));
+            Check(view.Contains("VisualElement self = lift.Anchor ?? Root;"), "the width is measured from the layer, not the corner");
         });
     }
 }

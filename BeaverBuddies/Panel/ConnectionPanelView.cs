@@ -188,15 +188,17 @@ namespace BeaverBuddies.Panel
         /// </summary>
         public float? MeasureMatchedWidth()
         {
-            VisualElement parent = Root.parent;
+            // While the panel is drawn in front, its slot is what stands in the corner.
+            VisualElement self = lift.Anchor ?? Root;
+            VisualElement parent = self.parent;
             if (parent == null) return null;
             float? population = null;
             var above = new List<float>();
-            int mine = parent.IndexOf(Root);
+            int mine = parent.IndexOf(self);
             for (int i = 0; i < parent.childCount; i++)
             {
                 VisualElement sibling = parent[i];
-                if (sibling == Root || sibling.resolvedStyle.display == DisplayStyle.None) continue;
+                if (sibling == self || sibling.resolvedStyle.display == DisplayStyle.None) continue;
                 float width = sibling.layout.width;
                 if (population == null && (sibling.name == "Counters" || sibling.ClassListContains("population-panel"))) population = width;
                 if (i < mine) above.Insert(0, width);
@@ -211,7 +213,7 @@ namespace BeaverBuddies.Panel
                 for (int i = 0; i < parent.childCount; i++)
                 {
                     VisualElement sibling = parent[i];
-                    if (sibling == Root || sibling.resolvedStyle.display == DisplayStyle.None) continue;
+                    if (sibling == self || sibling.resolvedStyle.display == DisplayStyle.None) continue;
                     seen += (seen.Length > 0 ? ", " : "") + sibling.name + " " + sibling.layout.width.ToString("0.#", CultureInfo.InvariantCulture);
                 }
                 Plugin.Log("Connection panel width follows the panel above it: " + chosen.Value.ToString("0.#", CultureInfo.InvariantCulture) + " (panels in this corner: " + seen + ")");

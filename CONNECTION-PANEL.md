@@ -56,7 +56,7 @@ a speed to carry on. Menus, dialogs and panels don't pause a co-op game.
 ## Showing and hiding
 
 - **Click the title** to collapse or expand it. Collapsed, it shows **N new** for unread chat messages.
-- Trade messages and the game's alerts move aside so they don't cover it.
+- Trade messages move aside so they don't cover it. The panel is drawn in front of the game's alerts.
 - In Timber Together's settings (**Mods** → the settings button beside it): **Connection panel** is Expanded,
   Collapsed or Hidden, and **Connection panel position** is top left (default), top right, bottom left or bottom
   right.
@@ -101,7 +101,6 @@ computer still sets the real pace: the **Tick rate** line says what's achieved.
 - With your **Player activity indicators** off, other players show as *Player N* (the host as *Host*).
 - Chat is text only: no private messages, no emoji picker, no editing.
 - Ping is measured about once a second. The panel doesn't show packet loss or bandwidth.
-- When the game's alerts would reach the panel, they move to its right.
 - The panel lists who is connected. A colony whose player is away shows in the colonies window (Y) instead.
 
 How ping is measured and why the panel can't affect the game: [DEVELOPING.md](DEVELOPING.md#connection-panel-chat-and-player-cursors).

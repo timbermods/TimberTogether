@@ -144,6 +144,7 @@ Rc15RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 // 1.4.0-rc22: the per-player mute finds the game's sounds to skip.
 Rc22RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Rc27RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
+Rc28RuntimeChecks.Run(assembly, Path.GetFullPath(args[1]), Test);
 Console.WriteLine($"{total-failures}/{total} passed");
 return failures == 0 ? 0 : 1;
 
