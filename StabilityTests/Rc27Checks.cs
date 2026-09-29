@@ -47,5 +47,19 @@ static class Rc27Checks
             Check(plugin.Contains("Colonies.ColonyAchievements.Install(harmony);") && !plugin.Contains("Install(nameof(ColonyAchievements)"),
                 "achievements are not kept apart, or refuse co-op when they can't be");
         });
+        yield return ("rc29: status icons only over your own colony; the eye hides only construction and has the game's tooltip", () =>
+        {
+            string icons = Source("BeaverBuddies", "Colonies", "StatusIconView.cs");
+            Check(icons.Contains("ColonyViewService.ActiveThisFrame(out _) && !ColonyViewService.IsOwn(component)"), "icons are judged alone or by the wrong colony");
+            Check(icons.Contains("heldObject == self || self.transform.IsChildOf(heldObject.transform)"), "the icon hider could hide the thing itself");
+            Check(Source("BeaverBuddies", "Plugin.cs").Contains("Colonies.StatusIconView.Install(harmony);"), "the icon filter is not installed");
+            string construction = Source("BeaverBuddies", "Colonies", "ConstructionVisibility.cs");
+            Check(construction.Contains("blockObject.IsFinished ||") && construction.Contains("|| IsFinished(entity))"), "the eye hides finished buildings");
+            string view = Source("BeaverBuddies", "Panel", "ConnectionPanelView.cs");
+            Check(view.Contains("Tooltips?.Register(element, text);"), "the panel's buttons have no tooltip in the game");
+            string csv = Source("BeaverBuddies", "Localizations", "enUS_BeaverBuddie.csv");
+            Check(csv.Contains("BeaverBuddies.Panel.EyeOnTooltip,\"Hide construction\"") && csv.Contains("BeaverBuddies.Panel.EyeOffTooltip,\"Show construction\""),
+                "the eye's tooltip is not Hide construction / Show construction");
+        });
     }
 }
