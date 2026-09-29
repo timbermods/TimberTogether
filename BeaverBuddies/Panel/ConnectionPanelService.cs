@@ -57,6 +57,9 @@ namespace BeaverBuddies.Panel
         // Whether myPlayerId has been read from the connection yet (a guest is told its number a moment after joining).
         bool myPlayerIdKnown;
         float lastChatSend;
+        // The interface root watched for Enter in a text box, and the frame it was last pressed in one.
+        UnityEngine.UIElements.VisualElement watchedRoot;
+        int textBoxEnterFrame = -10;
         PanelCorner placedIn = (PanelCorner)(-1);
         PanelDisplayMode lastVisibleMode = PanelDisplayMode.Expanded;
         float nextRefresh, nextTickSample, waitingSince = -1;
@@ -83,9 +86,8 @@ namespace BeaverBuddies.Panel
         {
             try
             {
-                view = new ConnectionPanelView(loc, initializer);
                 // The game's own tooltips: a VisualElement's tooltip text is never shown in the game.
-                view.Tooltips = tooltips;
+                view = new ConnectionPanelView(loc, initializer, tooltips, layout);
                 view.HeaderClicked += OnHeaderClicked;
                 view.FpsFloorClicked += OnFpsFloorClicked;
                 view.RowClicked += OnRowClicked;
@@ -116,6 +118,8 @@ namespace BeaverBuddies.Panel
             try { view?.Chat?.ReleaseFocus(); } catch (Exception) { }
             try { view?.SetLifted(false); } catch (Exception) { }
             try { view?.Root.RemoveFromHierarchy(); } catch (Exception) { }
+            try { watchedRoot?.UnregisterCallback<UnityEngine.UIElements.KeyDownEvent>(OnAnyKeyDown, UnityEngine.UIElements.TrickleDown.TrickleDown); } catch (Exception) { }
+            watchedRoot = null;
             try { input.RemoveInputProcessor(this); } catch (Exception) { }
             placedIn = (PanelCorner)(-1);
         }
@@ -149,11 +153,36 @@ namespace BeaverBuddies.Panel
             if (view.Chat == null || chatFailed || CurrentNetwork() == null) return;
             // Enter (the key by default) also sends and leaves the chat: that press is not a new one to open it.
             if (view.Chat.IsFocused || view.Chat.KeyJustHandled) return;
+            // Nor is the Enter that left another text box (a Trading Post's number, say).
+            if (Time.frameCount - textBoxEnterFrame <= 2) return;
             // Asking for the chat shows it, whatever state the panel was in.
             if (Settings.ConnectionPanelDisplayMode != PanelDisplayMode.Expanded)
                 Settings.SetConnectionPanelDisplayMode(PanelDisplayMode.Expanded);
             view.Chat.RequestFocus();
             nextRefresh = 0;
+        }
+
+        // Watches the whole interface the panel is in (the entity panel's text boxes too), once it is on screen.
+        void WatchEnter()
+        {
+            var root = view.Root.panel?.visualTree;
+            if (root == null || root == watchedRoot) return;
+            watchedRoot?.UnregisterCallback<UnityEngine.UIElements.KeyDownEvent>(OnAnyKeyDown, UnityEngine.UIElements.TrickleDown.TrickleDown);
+            root.RegisterCallback<UnityEngine.UIElements.KeyDownEvent>(OnAnyKeyDown, UnityEngine.UIElements.TrickleDown.TrickleDown);
+            watchedRoot = root;
+        }
+
+        // Seen before the text box handles it (Enter there leaves the box), so the same press never opens the chat. Only
+        // the game's kinds of text box count: a button keeps focus after a click, and Enter must still open the chat then.
+        void OnAnyKeyDown(UnityEngine.UIElements.KeyDownEvent e)
+        {
+            if (e.keyCode != KeyCode.Return && e.keyCode != KeyCode.KeypadEnter) return;
+            for (var up = e.target as UnityEngine.UIElements.VisualElement; up != null; up = up.parent)
+                if (up is UnityEngine.UIElements.TextField || up is UnityEngine.UIElements.IntegerField || up is UnityEngine.UIElements.FloatField)
+                {
+                    textBoxEnterFrame = Time.frameCount;
+                    return;
+                }
         }
 
         // Only the host is shown this choice, and only the host's value is ever used.
@@ -232,6 +261,7 @@ namespace BeaverBuddies.Panel
                 return;
             }
             PlaceIfNeeded();
+            WatchEnter();
             // Whenever it is on screen, open or collapsed, the panel is drawn in front of the game's alerts, which
             // otherwise cover its chat from the bottom of the screen (a no-op once it is in front).
             view.SetLifted(true);

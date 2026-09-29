@@ -4,6 +4,7 @@ using System.Globalization;
 using Timberborn.CoreUI;
 using Timberborn.Localization;
 using Timberborn.TooltipSystem;
+using Timberborn.UILayoutSystem;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -29,9 +30,14 @@ namespace BeaverBuddies.Panel
         readonly ILoc loc;
         readonly VisualElement topSection, header, headerDot, body, statusDot, rows, facts, chatArea;
         readonly Label title, role, chevron, statusText, unreadBadge, pausedTag;
-        readonly CornerLift lift = new CornerLift();
+        readonly CornerLift lift;
         // The sound button's two pictures (a file of this mod each); without them it writes a word instead.
         Sprite soundOn, soundOff, eyeOn, eyeOff;
+        // What the rows and facts show, so they are built again only when that changes and otherwise updated in place:
+        // a rebuild takes the game's tooltip off the pointer, and loses a click made across it.
+        string rowsShown;
+        readonly List<Label> pings = new List<Label>();
+        readonly List<(string Key, Label Value)> factLines = new List<(string, Label)>();
         int shownUnread;
         float appliedWidth = -1;
         float? loggedWidth;
@@ -39,8 +45,8 @@ namespace BeaverBuddies.Panel
 
         public VisualElement Root { get; }
 
-        /// <summary>The game's tooltips, for the buttons on players' rows; without it they have none.</summary>
-        public ITooltipRegistrar Tooltips { get; set; }
+        // The game's tooltips (a VisualElement's tooltip text is never shown in the game); without it there are none.
+        ITooltipRegistrar Tooltips;
 
         /// <summary>The chat half, or null if it could not be built (the rest of the panel still works).</summary>
         public ChatView Chat { get; }
@@ -63,9 +69,11 @@ namespace BeaverBuddies.Panel
         /// <summary>Raised when the eye button on another player's row is clicked: see their construction, or not.</summary>
         public event Action<PanelRow> VisibilityClicked;
 
-        public ConnectionPanelView(ILoc loc, VisualElementInitializer initializer)
+        public ConnectionPanelView(ILoc loc, VisualElementInitializer initializer, ITooltipRegistrar tooltips, UILayout layout)
         {
             this.loc = loc;
+            Tooltips = tooltips;
+            lift = new CornerLift(layout);
             Root = new VisualElement { name = "BeaverBuddiesConnectionPanel" };
             var s = Root.style;
             s.minWidth = 210; s.maxWidth = 300;
@@ -99,6 +107,7 @@ namespace BeaverBuddies.Panel
             pausedTag.style.whiteSpace = WhiteSpace.NoWrap; pausedTag.style.overflow = Overflow.Hidden;
             pausedTag.style.textOverflow = TextOverflow.Ellipsis;
             pausedTag.style.display = DisplayStyle.None;
+            Tooltip(pausedTag, () => pausedTag.text);
             header.Add(headerDot); header.Add(title); header.Add(unreadBadge); header.Add(pausedTag); header.Add(role); header.Add(chevron);
             header.RegisterCallback<ClickEvent>(_ => HeaderClicked?.Invoke());
             // Everything that was the panel before chat is the top section.
@@ -124,7 +133,7 @@ namespace BeaverBuddies.Panel
             chatArea.style.height = PanelLayout.ChatHeight;
             try
             {
-                Chat = new ChatView(loc, initializer);
+                Chat = new ChatView(loc, initializer, tooltips);
                 chatArea.Add(Chat.Root);
             }
             catch (Exception error)
@@ -265,7 +274,6 @@ namespace BeaverBuddies.Panel
             role.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             chevron.text = expanded ? "-" : "+";
             pausedTag.text = model.PausedText ?? "";
-            pausedTag.tooltip = model.PausedText ?? "";
             pausedTag.style.display = model.PausedText != null ? DisplayStyle.Flex : DisplayStyle.None;
             body.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             if (!expanded) Chat?.ReleaseFocus();
@@ -276,19 +284,61 @@ namespace BeaverBuddies.Panel
             statusText.text = model.StatusText;
             statusText.style.color = model.Status == StatusKind.InSync ? Ink : StatusColor(model.Status, headline);
 
-            rows.Clear();
-            foreach (var row in model.Rows) rows.Add(PlayerRow(row));
+            ShowRows(model.Rows);
 
-            facts.Clear();
-            if (model.JoiningText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelJoining", model.JoiningText));
-            facts.Add(Fact("BeaverBuddies.Panel.LabelTickRate", model.TickRateText));
-            facts.Add(Fact("BeaverBuddies.Panel.LabelSpeed", model.SpeedText));
-            if (model.BehindText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelBehind", model.BehindText));
-            if (model.GuestsBehindText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelGuestsBehind", model.GuestsBehindText));
-            if (model.PacingText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelPacing", model.PacingText));
-            if (model.GuestFpsText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelGuestFps", model.GuestFpsText));
-            if (model.FpsFloorText != null) facts.Add(Choice("BeaverBuddies.Panel.LabelFpsFloor", model.FpsFloorText, () => FpsFloorClicked?.Invoke()));
-            if (model.LinkText != null) facts.Add(Fact("BeaverBuddies.Panel.LabelLink", model.LinkText));
+            var shown = new List<(string Key, string Value)>();
+            if (model.JoiningText != null) shown.Add(("BeaverBuddies.Panel.LabelJoining", model.JoiningText));
+            shown.Add(("BeaverBuddies.Panel.LabelTickRate", model.TickRateText));
+            shown.Add(("BeaverBuddies.Panel.LabelSpeed", model.SpeedText));
+            if (model.BehindText != null) shown.Add(("BeaverBuddies.Panel.LabelBehind", model.BehindText));
+            if (model.GuestsBehindText != null) shown.Add(("BeaverBuddies.Panel.LabelGuestsBehind", model.GuestsBehindText));
+            if (model.PacingText != null) shown.Add(("BeaverBuddies.Panel.LabelPacing", model.PacingText));
+            if (model.GuestFpsText != null) shown.Add(("BeaverBuddies.Panel.LabelGuestFps", model.GuestFpsText));
+            if (model.FpsFloorText != null) shown.Add((FpsFloorKey, model.FpsFloorText + "  >"));
+            if (model.LinkText != null) shown.Add(("BeaverBuddies.Panel.LabelLink", model.LinkText));
+            ShowFacts(shown);
+        }
+
+        const string FpsFloorKey = "BeaverBuddies.Panel.LabelFpsFloor";
+
+        // The rows are built again only when a player, a name or a button changes; a ping is written in place.
+        void ShowRows(List<PanelRow> shown)
+        {
+            var signature = new System.Text.StringBuilder();
+            foreach (var row in shown)
+                signature.Append(row.Id).Append('|').Append(row.Name).Append('|').Append(row.IsYou).Append(row.Muted)
+                    .Append(row.HasColony).Append(row.Hidden).Append('\n');
+            if (signature.ToString() != rowsShown)
+            {
+                rowsShown = signature.ToString();
+                rows.Clear(); pings.Clear();
+                foreach (var row in shown) rows.Add(PlayerRow(row));
+            }
+            for (int i = 0; i < shown.Count && i < pings.Count; i++)
+            {
+                Label ping = pings[i];
+                if (ping.text != shown[i].PingText) ping.text = shown[i].PingText;
+                ping.style.color = PingColor(shown[i].Quality);
+            }
+        }
+
+        // The facts are built again only when which facts are shown changes; their values are written in place.
+        void ShowFacts(List<(string Key, string Value)> shown)
+        {
+            bool same = shown.Count == factLines.Count;
+            for (int i = 0; same && i < shown.Count; i++) same = shown[i].Key == factLines[i].Key;
+            if (!same)
+            {
+                facts.Clear(); factLines.Clear();
+                foreach (var (key, _) in shown)
+                {
+                    Label value;
+                    facts.Add(key == FpsFloorKey ? Choice(key, out value, () => FpsFloorClicked?.Invoke()) : Fact(key, out value));
+                    factLines.Add((key, value));
+                }
+            }
+            for (int i = 0; i < shown.Count; i++)
+                if (factLines[i].Value.text != shown[i].Value) factLines[i].Value.text = shown[i].Value;
         }
 
         VisualElement PlayerRow(PanelRow row)
@@ -297,6 +347,7 @@ namespace BeaverBuddies.Panel
             var line = Horizontal(); line.style.alignItems = Align.Center; line.style.marginTop = 3;
             var name = Text(row.Name, 13, Ink, bold: row.IsYou); name.style.flexGrow = 1; name.style.flexShrink = 1;
             var ping = Text(row.PingText, 13, PingColor(row.Quality), bold: row.IsYou);
+            pings.Add(ping);
             ping.style.marginLeft = 10; ping.style.minWidth = 52; ping.style.unityTextAlign = TextAnchor.MiddleRight;
             line.Add(name); line.Add(ping);
             // Another player's row ends with a button that mutes the sounds of their actions; your own keeps its
@@ -305,7 +356,7 @@ namespace BeaverBuddies.Panel
             // Beside it, the eye: their construction drawn here, or not. Only a player with a colony has one.
             line.Add(row.IsYou || !row.HasColony ? SoundSpacer() : EyeButton(row));
             // A click takes the camera to that player (your own row: back to your colony).
-            line.tooltip = string.Format(CultureInfo.InvariantCulture, loc.T(row.IsYou ? "BeaverBuddies.Panel.RowYouTooltip" : "BeaverBuddies.Panel.RowTooltip"), row.Name);
+            Tooltip(line, string.Format(CultureInfo.InvariantCulture, loc.T(row.IsYou ? "BeaverBuddies.Panel.RowYouTooltip" : "BeaverBuddies.Panel.RowTooltip"), row.Name));
             line.RegisterCallback<ClickEvent>(e => { RowClicked?.Invoke(row); e.StopPropagation(); });
             return line;
         }
@@ -378,6 +429,13 @@ namespace BeaverBuddies.Panel
             catch (Exception error) { Plugin.LogWarning("A panel button has no tooltip: " + error.Message); Tooltips = null; }
         }
 
+        // A tooltip whose text changes: read again while it is shown, and not shown while it is empty.
+        void Tooltip(VisualElement element, Func<string> text)
+        {
+            try { Tooltips?.RegisterUpdatable(element, text); }
+            catch (Exception error) { Plugin.LogWarning("A panel line has no tooltip: " + error.Message); Tooltips = null; }
+        }
+
         static VisualElement SoundSpacer()
         {
             var spacer = new VisualElement();
@@ -386,22 +444,23 @@ namespace BeaverBuddies.Panel
         }
 
         // A fact the player can change: the value is underlined by a rule and clicking the line picks the next choice.
-        VisualElement Choice(string labelKey, string value, Action clicked)
+        VisualElement Choice(string labelKey, out Label value, Action clicked)
         {
-            var line = Fact(labelKey, value + "  >");
-            line.tooltip = loc.T(labelKey + ".Tooltip");
+            var line = Fact(labelKey, out value);
+            Tooltip(line, loc.T(labelKey + ".Tooltip"));
             Border(line, 1, Rule, 3);
             line.style.paddingLeft = 3; line.style.paddingRight = 3; line.style.marginLeft = -4;
             line.RegisterCallback<ClickEvent>(e => { clicked(); e.StopPropagation(); });
             return line;
         }
 
-        VisualElement Fact(string labelKey, string value)
+        // A label and its value, which is written by the caller.
+        VisualElement Fact(string labelKey, out Label value)
         {
             var line = Horizontal(); line.style.marginTop = 2;
             var label = Text(loc.T(labelKey), 12, Muted); label.style.width = 92;
-            var text = Text(value, 12, Ink); text.style.flexGrow = 1; text.style.flexShrink = 1;
-            line.Add(label); line.Add(text);
+            value = Text("", 12, Ink); value.style.flexGrow = 1; value.style.flexShrink = 1;
+            line.Add(label); line.Add(value);
             return line;
         }
 

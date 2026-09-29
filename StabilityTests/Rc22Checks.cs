@@ -65,7 +65,7 @@ static class Rc22Checks
             foreach (string rule in new[] { "pausedTag.style.flexBasis = 0;", "pausedTag.style.minWidth = 0;", "pausedTag.style.whiteSpace = WhiteSpace.NoWrap;",
                 "pausedTag.style.textOverflow = TextOverflow.Ellipsis;", "pausedTag.style.overflow = Overflow.Hidden;" })
                 Check(view.Contains(rule), "the paused tag lost " + rule);
-            Check(view.Contains("pausedTag.tooltip = model.PausedText ?? \"\";"), "the full paused line is no longer the tooltip");
+            Check(view.Contains("Tooltip(pausedTag, () => pausedTag.text);"), "the full paused line is no longer the tooltip");
         });
 
         yield return ("rc22: the colonies window opens with Y by default, a key the player can change, and the texts say Y", () =>
