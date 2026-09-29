@@ -7,7 +7,63 @@ entry above the current one.
 
 ## Unreleased
 
-**The faction goal's progress is your own colony's** (built against Timberborn 1.1.2.4). **Not played.**
+**The faction goal's progress is your own colony's, and an audit of rc16 to rc29 against the game's assemblies**
+(built against Timberborn 1.1.2.4). **Not played.** Most of rc16 to rc29 was written without the game's assemblies.
+Each change was reviewed against the decompiled game and the game's own UXML/USS
+(`StreamingAssets/Modding/UI.zip`); no desync was found, and the fixes below are display-only unless they say
+otherwise.
+
+**Connection panel and chat**
+- **The panel is drawn under the game's windows, menus and dialogs.** From rc26 its layer was the last thing in the
+  game's interface, after `Panels` and `Absolute-items`, so it covered the Esc menu, dialogs, the overlay, the
+  selected building's panel and the Batch Control window, and stayed clickable over them. It now sits just before
+  `Absolute-items`: still in front of the alerts, under everything the game draws over the corners. It hides with its
+  corner (the Batch Control window hides the left corners), and its slot is registered in `UILayout._elementOrder`, so
+  another mod adding a panel to that corner doesn't fail.
+- **The rows and facts are rebuilt only when what they show changes**, not every 0.5 s: the speaker and eye buttons'
+  tooltips no longer flash off, and a click is no longer lost to a rebuild.
+- **Every tooltip shows.** The paused tag (its full text), the row, the frame rate floor, the unseen badge and the
+  boost row set `VisualElement.tooltip`, which the game's interface never shows; they go through the game's tooltip
+  registrar now.
+- **Enter that leaves another text box (a Trading Post amount, the boost box) no longer also opens the chat.**
+- A sentence break is no longer put inside a name ("Dr. Beaver").
+
+**What you see**
+- **A construction site finished while hidden no longer shows its scaffold over the building:** showing it again lets
+  the game redraw the model (`UpdateModelVisibility`). Hidden sites are tracked from the game's unfinished-state events
+  instead of a walk over every entity each half-second.
+- **Achievements whose progress is kept in the save count every colony again.** rc28 said none of its filtered
+  handlers was save code; seven were (`BuildEveryStructure`, `ProducePlanksInDay`, `ReachPopulationWithoutDwellings`,
+  `ExplodeDynamiteInSingleDay`, `BadtideStreak`, `TreePlantingCounter`, `WorkAllDayForWeek`), so each computer's save
+  held different progress. They are no longer filtered; RuntimeChecks fails if one ever is.
+- **The other colony's marked trees are no longer highlighted** while the cutting tool is open, and the marking tool no
+  longer offers them as markable. The marks are redrawn when the colony you see changes (the refresher never posted).
+- **With no beavers of your own, the top bar's wellbeing is blank** (with the game's bot or skull icon), not the other
+  colony's average.
+- **Status icons:** the other colony's icons no longer leave an invisible hover target, and a new one doesn't flash
+  before it is hidden.
+- **A colony's first wellbeing record is kept but not announced** (it rose from 0).
+- **A good's 10-day stock chart in the top bar's tooltip shows your colony**, and the batch control and migration
+  district lists list only your districts.
+
+**Trading Posts**
+- **More than 100 splits into equal rounds that carry exactly what was typed.** 250 for 50 is 5 rounds of 50 for 10.
+  Before, each round was rounded to the nearest ratio with at least 1 a side, so 500 Logs for 1 Beaver became 5 beavers.
+  Amounts no equal rounds carry are refused with a message. A repeating offer typed over 100 says what each round is,
+  and the greyed Rounds box shows the split's rounds. The site's Trading Post demo splits the same way.
+- **The running reserve box commits to the post it was typed at.** Leaving it by opening another post sent the typed
+  reserve to that post; clicking the map dropped it.
+- Terms left for the form (a declined offer, a ledger row) go only into their own post's form.
+- **When an exchange ends, or a request to end it is withdrawn, the other colony's message asking them to answer
+  closes.** A steward's **Run this colony** message closes when the stewardship ends, and a message whose post was taken
+  down closes on a click.
+
+**Saving and sound**
+- **The exit save finishes the current tick first.** The Esc menu no longer pauses (rc18), so leaving mid-tick saved
+  half a tick with the parallel tick unfinished. The game now finishes the tick for the exit save, as it does alone.
+- Muting a player's sounds leaves alone the sound calls that call back when they end (speakers, music).
+- RuntimeChecks asserts what it only printed: the wellbeing high-score event is heard only by the wellbeing interface,
+  and muting still covers both `PlaySound2D` and `PlaySound3D`.
 
 - **The wellbeing window's faction goals show your own colony's wellbeing.** Kyler, after rc29: everything a player
   sees should be their own colony's. rc29 left the goal row's "Progress: x / y" map-wide, because the game unlocks a

@@ -331,6 +331,22 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "get_ContextualPopulationData"),
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "UpdateAverageWellbeing"),
             ("Timberborn.WellbeingUI.GoalRowFactory", "Timberborn.WellbeingUI", "UpdateProgress"),
+            // The goods tooltip's stock chart, and the district lists of the batch control and manual migration windows.
+            ("Timberborn.StockpilesUI.GoodStockpilesTooltipFactory", "Timberborn.StockpilesUI", "GetGoodSamplingRegistry"),
+            ("Timberborn.GoodsSampling.GoodSamplingRegistry", "Timberborn.GoodsSampling", "CreateFromSave"),
+            ("Timberborn.GoodsSampling.GoodSampleHistory", "Timberborn.GoodsSampling", "CreateFromSave"),
+            ("Timberborn.BatchControl.DistrictDropdownProvider", "Timberborn.BatchControl", "UpdateDistrictsList"),
+            ("Timberborn.GameDistrictsMigrationBatchControl.ManualMigrationDistrictDropdownProvider", "Timberborn.GameDistrictsMigrationBatchControl", "UpdateDistrictsList"),
+            // Cutting marks: the trees in the area, a new tree's highlight, the redraw, and the marking preview left alone.
+            ("Timberborn.Forestry.TreeCuttingArea", "Timberborn.Forestry", "get_YieldersInArea"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaVisualizer", "Timberborn.ForestryUI", "OnTreeAddedToCuttingArea"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaVisualizer", "Timberborn.ForestryUI", "UpdateOrMarkForUpdate"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaSelectionTool", "Timberborn.ForestryUI", "PreviewCallback"),
+            // Status icons shown as a status comes on; another colony's construction redrawn by the game as it is shown.
+            ("Timberborn.StatusSystem.StatusIconCycler", "Timberborn.StatusSystem", "UpdateIcon"),
+            ("Timberborn.BlockObjectModelSystem.IBlockObjectModel", "Timberborn.BlockObjectModelSystem", "UpdateModelVisibility"),
+            ("Timberborn.BlockSystem.EnteredUnfinishedStateEvent", "Timberborn.BlockSystem", "get_BlockObject"),
+            ("Timberborn.BlockSystem.ExitedUnfinishedStateEvent", "Timberborn.BlockSystem", "get_BlockObject"),
             ("Timberborn.BatchControl.BatchControlRowGroup", "Timberborn.BatchControl", "UpdateVisibleRows"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "Show"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "UpdateDropdown"),
@@ -847,6 +863,9 @@ internal static class ColonyRuntimeChecks
                 .Select(m => m.DeclaringType!.FullName + "." + m.Name).OrderBy(n => n).ToList();
             if (handlers.Count == 0) throw new Exception("nothing in the game listens to NewWellbeingHighscoreEvent any more");
             Console.WriteLine("      NewWellbeingHighscoreEvent is heard by: " + string.Join(", ", handlers));
+            // Skipping the event on one computer is safe only while the interface alone hears it.
+            if (handlers.Any(h => !h.StartsWith("Timberborn.WellbeingUI.", StringComparison.Ordinal)))
+                throw new Exception("NewWellbeingHighscoreEvent is now heard outside the wellbeing interface: " + string.Join(", ", handlers));
             var patcher = mod.GetType("BeaverBuddies.Colonies.ColonyWellbeingHighscorePatcher", true)!;
             if (patcher.GetMethod("TargetMethod", all)!.Invoke(null, null) is not MethodInfo target || target != post)
                 throw new Exception("the high-score patch no longer targets EventBus.Post(object)");

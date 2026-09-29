@@ -67,24 +67,21 @@
     var rounds = d.repeat ? 1 : d.rounds, wasSplit = false;
     if (whole) {
       var s = split(give, get, 1, d.repeat);
-      if (!s) return { verdict: 'badAmount' };
+      if (!s) return { verdict: Math.ceil(Math.max(give, get) / MAX_AMOUNT) > MAX_ROUNDS ? 'badAmount' : 'uneven' };
       give = s.give; get = s.get; rounds = s.rounds; wasSplit = true;
     }
     var v = give > 0 && get > 0 ? 'exchange' : give > 0 ? 'gift' : 'request';
     return { verdict: v, give: give, get: get, rounds: rounds, split: wasSplit };
   }
-  // TradeOfferForm.Split: the whole over the fewest rounds that carry it, each side the
-  // nearest whole number to the same ratio and never 0 for a side that gives. A repeating offer keeps one round a time.
+  // TradeOfferForm.Split: the whole over the fewest equal rounds that carry exactly it (250 for 50 is 5 rounds of
+  // 50 for 10); null when no number of rounds up to MAX_ROUNDS divides both. A repeating offer keeps one round a time.
   function split(give, get, rounds, repeat) {
     if (repeat) rounds = 1;
     var wholeGive = Math.max(0, give) * Math.max(1, rounds), wholeGet = Math.max(0, get) * Math.max(1, rounds);
-    var needed = Math.max(1, Math.ceil(Math.max(wholeGive, wholeGet) / MAX_AMOUNT));
-    if (!repeat && needed > MAX_ROUNDS) return null;
-    return { give: share(wholeGive, needed), get: share(wholeGet, needed), rounds: repeat ? 1 : needed };
-  }
-  function share(whole, rounds) {
-    if (whole <= 0) return 0;
-    return Math.max(1, Math.min(MAX_AMOUNT, Math.round(whole / rounds)));
+    for (var n = Math.max(1, Math.ceil(Math.max(wholeGive, wholeGet) / MAX_AMOUNT)); n <= MAX_ROUNDS; n++) {
+      if (wholeGive % n === 0 && wholeGet % n === 0) return { give: wholeGive / n, get: wholeGet / n, rounds: repeat ? 1 : n };
+    }
+    return null;
   }
   function isOffer(v) { return v === 'exchange' || v === 'gift' || v === 'request'; }
   function step(item, shift) { return item === BEAVERS ? (shift ? 10 : 1) : (shift ? 1 : 10); }
@@ -277,9 +274,11 @@
     h += offerSide('get', 'You get', d.get, esc(COLONY[them]) + ' has ' + S.stock[them][d.get], d.getAmount);
     // rounds card (no say for a repeating offer, nor when an amount is the whole trade)
     var roundsOff = d.repeat || d.giveAmount > MAX_AMOUNT || d.getAmount > MAX_AMOUNT;
+    // A split trade's greyed box says how many rounds it is split into, as the game's does.
+    var judged = roundsOff && !d.repeat ? judge(d) : null, shownRounds = judged && judged.split ? judged.rounds : d.rounds;
     h += '<div class="tp-card"><div class="tp-head"><span class="tp-caption">Rounds</span><span class="tp-muted">up to ' + MAX_AMOUNT + ' of each per round</span></div>'
       + '<div class="tp-row"><button class="tp-btn tp-sq" type="button" data-rounds="-1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round fewer" title="-1 (Shift+click: -10)">&minus;</button>'
-      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + d.rounds + '" data-rounds-box' + (roundsOff ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
+      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + shownRounds + '" data-rounds-box' + (roundsOff ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
       + '<button class="tp-btn tp-sq" type="button" data-rounds="1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round more" title="+1 (Shift+click: +10)">+</button>'
       + '<label class="tp-check" style="margin-left:10px" title="A standing deal: round after round, until both colonies agree to end it."><input type="checkbox" data-repeat' + (d.repeat ? ' checked' : '') + '><span class="box"></span>Repeat until cancelled</label></div></div>';
     // summary
@@ -288,6 +287,7 @@
       case 'exchange': text = esc(COLONY[them]) + ' gets ' + amountOf(j.give, d.give) + ', and you get ' + amountOf(j.get, d.get) + '.'; break;
       case 'gift': text = 'A gift: ' + esc(COLONY[them]) + ' gets ' + amountOf(j.give, d.give) + ', and you ask nothing back.'; break;
       case 'request': text = 'A request: you ask ' + esc(COLONY[them]) + ' for ' + amountOf(j.get, d.get) + ', and give nothing.'; break;
+      case 'uneven': text = "These amounts don't split into equal rounds of up to " + MAX_AMOUNT + ' each. Change one amount a little.'; break;
       case 'badAmount': text = 'Each side gives a whole number, up to ' + MAX_TYPED.toLocaleString('en-US') + ' in all over at most ' + MAX_ROUNDS + ' rounds.'; break;
       case 'badRounds': text = 'Rounds go from 1 to ' + MAX_ROUNDS + '.'; break;
       case 'nothing': text = 'Set an amount above 0 on at least one side.'; break;

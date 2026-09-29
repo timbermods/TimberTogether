@@ -1,4 +1,5 @@
 using System;
+using Timberborn.UILayoutSystem;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -10,19 +11,29 @@ namespace BeaverBuddies.Panel
     /// </summary>
     /// <remarks>
     /// Changing the order of the game's corner containers did not work in play (1.4.0-rc24, rc25): they are laid out
-    /// together, so they can't change places. Instead the panel is drawn from a layer of its own, the last thing in the
-    /// part of the interface that holds both its corner and the alerts' corner ("Bottom-left"), so it is drawn after both.
-    /// An empty slot the panel's size keeps its place in its corner, so the corner is laid out exactly as before, and the
-    /// panel is placed over that slot each frame. The layer ignores the pointer; only the panel receives it. The layer
-    /// carries the style sheets and font the panel had from the containers it left, so it looks the same.
+    /// together, so they can't change places. Instead the panel is drawn from a layer of its own, in the part of the
+    /// interface that holds both its corner and the alerts' corner ("Bottom-left"), just before "Absolute-items". So it
+    /// is drawn after the corners, and still under what the game draws over them: the entity panel and its messages
+    /// ("Absolute-items"), then the windows, menus and dialogs ("Panels"). The layer is hidden while its corner is (the
+    /// Batch Control window hides the left corners). An empty slot the panel's size keeps its place in its corner, so
+    /// the corner is laid out exactly as before, and the panel is placed over that slot each frame. The layer ignores
+    /// the pointer; only the panel receives it. The layer carries the style sheets and font the panel had from the
+    /// containers it left, so it looks the same.
     /// </remarks>
     internal sealed class CornerLift
     {
-        VisualElement slot, layer, floated;
+        // What the game draws over the corners; the layer stays just before it.
+        const string FrontName = "Absolute-items";
+
+        readonly UILayout layout;
+        VisualElement slot, layer, floated, front;
         // The panel's own margins while it floats (the slot takes them), to give back.
         StyleLength marginTop, marginBottom, marginLeft, marginRight;
         float nextSearch;
         bool loggedMissing, logged, failed;
+
+        /// <param name="layout">The game's corners, which must know the slot's place among their panels.</param>
+        public CornerLift(UILayout layout) { this.layout = layout; }
 
         public bool IsLifted => slot != null;
 
@@ -64,6 +75,18 @@ namespace BeaverBuddies.Panel
             }
             VisualElement host = CommonAncestor(corner, alerts);
             if (host == null) return false;
+            // Drawn after the alerts' corner and before what the game draws over the corners, or not lifted at all.
+            VisualElement found = host.Q<VisualElement>(FrontName);
+            if (found == null || found.parent != host || host.IndexOf(found) < host.IndexOf(ChildHolding(host, alerts)))
+            {
+                if (!loggedMissing)
+                {
+                    loggedMissing = true;
+                    Plugin.Log($"Chat: the panel is not drawn in front ('{FrontName}' is not after 'Bottom-left' in '{host.name}'); it sits in {Chain(corner)}.");
+                }
+                return false;
+            }
+            front = found;
 
             layer = new VisualElement { name = "BeaverBuddiesFrontLayer", pickingMode = PickingMode.Ignore };
             var l = layer.style;
@@ -73,7 +96,7 @@ namespace BeaverBuddies.Panel
             for (VisualElement e = corner; e != null && e != host; e = e.parent)
                 for (int i = 0; i < e.styleSheets.count; i++) layer.styleSheets.Add(e.styleSheets[i]);
             l.unityFontDefinition = corner.resolvedStyle.unityFontDefinition;
-            host.Add(layer);
+            host.Insert(host.IndexOf(front), layer);
 
             IResolvedStyle resolved = panel.resolvedStyle;
             slot = new VisualElement { name = "BeaverBuddiesConnectionPanelSlot", pickingMode = PickingMode.Ignore };
@@ -84,6 +107,9 @@ namespace BeaverBuddies.Panel
             s.alignSelf = panel.style.alignSelf;
             s.width = panel.layout.width; s.height = panel.layout.height;
             corner.Insert(corner.IndexOf(panel), slot);
+            // The game places a panel added later to this corner by the order of those already in it (another mod's
+            // would otherwise fail on the slot); the slot takes the panel's.
+            if (layout != null && layout._elementOrder.TryGetValue(panel, out int order)) layout._elementOrder[slot] = order;
 
             var p = panel.style;
             marginTop = p.marginTop; marginBottom = p.marginBottom; marginLeft = p.marginLeft; marginRight = p.marginRight;
@@ -102,10 +128,14 @@ namespace BeaverBuddies.Panel
         void Follow(VisualElement panel)
         {
             // Moved by something else since: forget the slot and the layer, leave the panel where it is.
-            if (panel.parent != layer || slot.parent == null || layer.parent == null) { Drop(); return; }
+            if (panel.parent != layer || slot.parent == null || layer.parent == null || front.parent != layer.parent) { Drop(); return; }
             VisualElement host = layer.parent;
-            // Something added to the host after the layer would be drawn over the panel.
-            if (host.IndexOf(layer) != host.childCount - 1) layer.BringToFront();
+            // Something added to the host between the layer and what is drawn over the corners would be drawn over the panel.
+            if (host.IndexOf(layer) != host.IndexOf(front) - 1) layer.PlaceBehind(front);
+            // The panel goes with its corner when the game hides it.
+            bool shown = Displayed(slot, host);
+            if ((layer.style.display == DisplayStyle.None) == shown) layer.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!shown) return;
             Rect size = panel.layout;
             if (!float.IsNaN(size.width) && !float.IsNaN(size.height))
             {
@@ -136,9 +166,26 @@ namespace BeaverBuddies.Panel
 
         void Drop()
         {
+            if (slot != null) layout?._elementOrder.Remove(slot);
             slot?.RemoveFromHierarchy();
             layer?.RemoveFromHierarchy();
-            slot = null; layer = null; floated = null;
+            slot = null; layer = null; floated = null; front = null;
+        }
+
+        // Hidden by the game: the element or one of its containers up to the host (the game hides a corner by its style).
+        static bool Displayed(VisualElement element, VisualElement host)
+        {
+            for (VisualElement e = element; e != null && e != host; e = e.parent)
+                if (e.style.display == DisplayStyle.None || e.resolvedStyle.display == DisplayStyle.None) return false;
+            return true;
+        }
+
+        // The host's child that holds the element (or is it).
+        static VisualElement ChildHolding(VisualElement host, VisualElement element)
+        {
+            VisualElement e = element;
+            while (e != null && e.parent != host) e = e.parent;
+            return e;
         }
 
         static VisualElement CommonAncestor(VisualElement a, VisualElement b)

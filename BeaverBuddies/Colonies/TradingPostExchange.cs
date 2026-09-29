@@ -895,6 +895,8 @@ namespace BeaverBuddies.Colonies
             bool theyAsked = theirs.CancelAsked;
             mine.AskCancel(false);
             theirs.AskCancel(false);
+            // A request to end withdrawn: the other colony's message asking them to answer it goes.
+            NothingToAnswer(partner);
             int me = OwnerOf(half), them = theirs.Colony;
             Plugin.Log($"[Colony] Slot {me} keeps exchange {serial} going");
             string key = theyAsked ? "BeaverBuddies.Colony.Trade.Notice.CancelRefused" : "BeaverBuddies.Colony.Trade.Notice.CancelWithdrawn";
@@ -948,6 +950,9 @@ namespace BeaverBuddies.Colonies
                 + $"{mine?.Held ?? 0}/{mine?.Total ?? 0} {mine?.GoodId} and {theirs?.Held ?? 0}/{theirs?.Total ?? 0} {theirs?.GoodId} were waiting");
             Release(half, mine);
             Release(partner, theirs);
+            // Nothing is left to answer at either half: an offer or a request to end it, shown to either colony.
+            NothingToAnswer(half);
+            NothingToAnswer(partner);
         }
 
         private static void Release(DistrictCrossing half, CrossingExchange side)
@@ -1124,6 +1129,22 @@ namespace BeaverBuddies.Colonies
             catch (Exception error)
             {
                 Plugin.LogWarning("[Colony] Could not show an exchange notice: " + error.Message);
+            }
+        }
+
+        /// <summary>
+        /// Nothing waits for an answer at <paramref name="half"/> any more (its exchange ended, or the request to end it
+        /// was withdrawn): the message asking this computer's player to answer there is closed. Display only.
+        /// </summary>
+        private static void NothingToAnswer(DistrictCrossing half)
+        {
+            try
+            {
+                if (half) TradeNotices.Instance?.Answered(half);
+            }
+            catch (Exception error)
+            {
+                Plugin.LogWarning("[Colony] Could not close an exchange notice: " + error.Message);
             }
         }
 

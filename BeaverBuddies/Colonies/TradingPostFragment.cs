@@ -132,6 +132,8 @@ namespace BeaverBuddies.Colonies
         private string prefillGive, prefillGet;
         private int prefillGiveAmount, prefillGetAmount, prefillRounds, prefillKeep;
         private bool prefillRepeat;
+        // The post whose form the terms are for: another post's form never takes them.
+        private DistrictCrossing prefillHalf;
 
         private DistrictCrossing crossing;
         private float nextRefresh;
@@ -143,6 +145,9 @@ namespace BeaverBuddies.Colonies
 
         // The exchange as last shown: Accept and Cancel act on exactly this, never on something that changed since.
         private int shownSerial;
+        // The post and exchange the running reserve box was entered at, until it is left.
+        private DistrictCrossing keepEditHalf;
+        private int keepEditSerial;
         private string shownGiveGood, shownGetGood;
         private int shownGiveAmount, shownGetAmount, shownRounds;
         private bool shownRepeat;
@@ -516,7 +521,19 @@ namespace BeaverBuddies.Colonies
             activeKeepBox = NativeElements.InputBox(maxLength: 4, width: 52);
             activeKeepBox.value = "0";
             _tooltipRegistrar.Register(activeKeepBox, () => string.Format(T("BeaverBuddies.Colony.Trade.KeepBoxTooltip"), ExchangeTerms.MaxKeep));
-            activeKeepBox.RegisterCallback<FocusOutEvent>(_ => CommitActiveKeep());
+            // The box commits to the post it was typed at: leaving it by opening another post (a message, Go to) sends
+            // the FocusOut after that post is shown, and clicking the map sends it after the panel is cleared.
+            activeKeepBox.RegisterCallback<FocusInEvent>(_ =>
+            {
+                keepEditHalf = MyHalf();
+                keepEditSerial = shownSerial;
+            });
+            activeKeepBox.RegisterCallback<FocusOutEvent>(_ =>
+            {
+                DistrictCrossing half = keepEditHalf;
+                keepEditHalf = null;
+                if (half) CommitActiveKeep(half, keepEditSerial);
+            });
             activeKeepBox.RegisterCallback<KeyDownEvent>(e =>
             {
                 if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) activeKeepBox.Blur();
@@ -955,7 +972,11 @@ namespace BeaverBuddies.Colonies
         private void RefreshCompose(DistrictCrossing mine, DistrictCrossing theirs, int me, int them, CrossingExchange ax)
         {
             // Terms left for the form (a declined offer, a ledger row, the last exchange) go in before anything else.
-            if (prefillPending) ApplyPrefill();
+            if (prefillPending)
+            {
+                if (prefillHalf == mine) ApplyPrefill();
+                else prefillPending = false;
+            }
             // A new form starts on goods (what each colony has most of), never on science or beavers; in a mixed-factions
             // game only on what may cross each way (a prefill of anything else is dropped here too).
             Func<string, bool> giveOk = GiveAllowed(), getOk = GetAllowed();
@@ -1005,6 +1026,7 @@ namespace BeaverBuddies.Colonies
             prefillRounds = rounds;
             prefillRepeat = repeat;
             prefillKeep = keep;
+            prefillHalf = MyHalf();
             prefillPending = true;
             nextRefresh = 0;
             Refresh();
@@ -1053,6 +1075,8 @@ namespace BeaverBuddies.Colonies
             roundsBox.SetEnabled(roundsUsed);
             roundsLess.SetEnabled(roundsUsed);
             roundsMore.SetEnabled(roundsUsed);
+            // The greyed box says how many rounds the whole trade is split into, not a number it ignores.
+            if (split && !repeat) roundsBox.SetValueWithoutNotify(rounds.ToString(CultureInfo.InvariantCulture));
             // A reserve matters over more than one round, and only when this side gives something.
             bool keepShown = give > 0 && (repeat || rounds > 1);
             NativeElements.Show(keepCard, keepShown);
@@ -1079,6 +1103,9 @@ namespace BeaverBuddies.Colonies
                     break;
                 case TradeOfferForm.Verdict.BadAmount:
                     text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), Count(TradeOfferForm.MaxTyped), ExchangeTerms.MaxRounds);
+                    break;
+                case TradeOfferForm.Verdict.Uneven:
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorUneven"), ExchangeTerms.MaxAmount);
                     break;
                 case TradeOfferForm.Verdict.BadRounds:
                     text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorRounds"), ExchangeTerms.MaxRounds);
@@ -1107,6 +1134,9 @@ namespace BeaverBuddies.Colonies
             {
                 string rounding = RoundsText(rounds, repeat, give, get);
                 if (rounding.Length > 0) text += "\n" + rounding;
+                // A repeating offer typed over a round's worth repeats one equal part of it: say what each round is.
+                if (split && repeat)
+                    text += "\n" + string.Format(T("BeaverBuddies.Colony.Trade.SummarySplitRepeat"), AmountOf(give, giveItem), AmountOf(get, getItem), ExchangeTerms.MaxAmount);
             }
             if (offer && keepShown && keep > 0) text += "\n" + string.Format(T("BeaverBuddies.Colony.Trade.SummaryKeep"), Count(keep), _items.Name(giveItem));
             NativeElements.SetText(summary, text);
@@ -1300,21 +1330,23 @@ namespace BeaverBuddies.Colonies
             }
         }
 
-        /// <summary>The box was left, or − or + clicked: the new reserve goes to every computer, if it changed.</summary>
-        private void CommitActiveKeep()
+        /// <summary>− or + clicked: the new reserve goes to every computer, if it changed.</summary>
+        private void CommitActiveKeep() => CommitActiveKeep(MyHalf(), shownSerial);
+
+        /// <summary>The reserve typed at <paramref name="myHalf"/>'s exchange <paramref name="serial"/> goes to every computer, if it changed.</summary>
+        private void CommitActiveKeep(DistrictCrossing myHalf, int serial)
         {
-            DistrictCrossing myHalf = MyHalf();
+            if (!myHalf) return;
             CrossingExchange ax = ColonyExchangeService.Of(myHalf);
-            if (ax == null || !ax.IsActive || shownSerial == 0) return;
+            if (ax == null || !ax.IsActive || serial == 0 || ax.Serial != serial) return;
             if (!TradeOfferForm.TryReadKeep(activeKeepBox.value, out int keep))
             {
                 activeKeepBox.SetValueWithoutNotify(ax.Keep.ToString(CultureInfo.InvariantCulture));
                 return;
             }
             if (keep == ax.Keep) return;
-            shownKeep = keep;
+            if (myHalf == MyHalf()) shownKeep = keep;
             string halfId = ReplayEvent.GetEntityID(myHalf);
-            int serial = shownSerial;
             Send(() => new ExchangeFloorSetEvent { crossingID = halfId, serial = serial, keep = keep });
         }
 
@@ -1611,6 +1643,7 @@ namespace BeaverBuddies.Colonies
                 prefillRounds = shownRounds;
                 prefillRepeat = shownRepeat;
                 prefillKeep = keep;
+                prefillHalf = myHalf;
                 prefillPending = true;
             }
             string halfId = ReplayEvent.GetEntityID(myHalf);

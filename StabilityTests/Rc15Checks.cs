@@ -102,7 +102,8 @@ static class Rc15Checks
             Check(Body(notices, "private void GoTo(Notice notice)").Contains("_entitySelectionService.SelectAndFocusOn(notice.Half);"), "a click no longer goes to the post");
             // A question for a post stays until it is answered or closed: going to the post leaves it on screen.
             string goTo = Body(notices, "private void GoTo(Notice notice)");
-            Check(goTo.Contains("if (!notice.Asks) Close(notice);") && goTo.Split("Close(notice)").Length == 2, "a click on an offer closes it again");
+            // Only news, or a message whose post has since been taken down (Unity-null but not null), closes on a click.
+            Check(goTo.Contains("if (!notice.Asks || !ReferenceEquals(notice.Half, null)) Close(notice);") && goTo.Split("Close(notice)").Length == 2, "a click on an offer closes it again");
             Check(Body(notices, "public void UpdateSingleton()").Contains("_noticeSounds.Play(NoticeSounds.TradeSound);"), "a trade message no longer chimes");
             // Built outside the tick: an action only posts it.
             Check(Body(notices, "public bool Post(string text, DistrictCrossing half, bool warning)").Contains("posted.Add(new Posted(text, half, warning, null, null));"), "a message is built inside the tick");

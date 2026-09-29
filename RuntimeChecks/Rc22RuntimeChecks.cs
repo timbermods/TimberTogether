@@ -22,13 +22,17 @@ internal static class Rc22RuntimeChecks
                 for (int i = 0; i < map.InterfaceMethods.Length; i++)
                 {
                     MethodInfo target = map.TargetMethods[i];
-                    // Install's rule: a Play method that returns nothing and has a body.
-                    if (map.InterfaceMethods[i].Name.StartsWith("Play", StringComparison.Ordinal) && target.ReturnType == typeof(void) && !target.IsAbstract)
+                    // Install's rule: a Play method that returns nothing, has a body and takes no callback.
+                    if (map.InterfaceMethods[i].Name.StartsWith("Play", StringComparison.Ordinal) && target.ReturnType == typeof(void) && !target.IsAbstract
+                        && !target.GetParameters().Any(p => typeof(Delegate).IsAssignableFrom(p.ParameterType)))
                         covered.Add(type.Name + "." + target.Name + "(" + string.Join(", ", target.GetParameters().Select(p => p.ParameterType.Name)) + ")");
                 }
             }
             Console.WriteLine("      Muting a player's sounds covers: " + (covered.Count == 0 ? "nothing" : string.Join(", ", covered)));
             if (covered.Count == 0) throw new Exception("no ISoundSystem Play method to skip: the panel's sound button would do nothing");
+            // A player's actions play through the plain 2D and 3D overloads; both must still be covered.
+            if (!covered.Any(c => c.Contains(".PlaySound2D(")) || !covered.Any(c => c.Contains(".PlaySound3D(")))
+                throw new Exception("muting no longer covers both PlaySound2D and PlaySound3D");
         });
     }
 }

@@ -3,7 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using Timberborn.BaseComponentSystem;
+using Timberborn.Persistence;
+using Timberborn.WorldPersistence;
 
 namespace BeaverBuddies.Colonies
 {
@@ -14,7 +17,10 @@ namespace BeaverBuddies.Colonies
     /// skips any event about another colony's thing: each of its methods that returns nothing is given the event, and
     /// when that event (or a field or property of it), or the part the method belongs to, is another colony's building,
     /// beaver or other entity, the method is skipped. Things of nobody's, and events about no thing, count for everyone. Achievements are this computer's
-    /// own (Steam's), so nothing simulated changes.
+    /// own (Steam's), so nothing simulated changes. Two kinds of method are never skipped: those of an achievement
+    /// whose progress is kept in the world's save (it would then differ between computers; that achievement counts
+    /// every colony, as the game does), and a clean-up that only stops listening to a thing (skipping it would leave
+    /// the listener behind when a thing's colony was judged differently as it came and as it went).
     /// </summary>
     public static class ColonyAchievements
     {
@@ -69,11 +75,11 @@ namespace BeaverBuddies.Colonies
                 if (!name.StartsWith("Timberborn.", StringComparison.Ordinal) || name.IndexOf("Achievement", StringComparison.Ordinal) < 0) continue;
                 foreach (Type type in TypesOf(assembly))
                 {
-                    if (!type.IsClass || type.ContainsGenericParameters) continue;
+                    if (!type.IsClass || type.ContainsGenericParameters || IsSaved(type)) continue;
                     foreach (MethodInfo method in type.GetMethods(Declared))
                     {
                         if (method.IsAbstract || method.ContainsGenericParameters || method.ReturnType != typeof(void)
-                            || method.GetMethodBody() == null) continue;
+                            || method.GetMethodBody() == null || IsCleanUp(method)) continue;
                         // A part's own handlers (OnEnterFinishedState, say), never its set-up and clean-up, which must run.
                         bool ownThing = !method.IsStatic && typeof(BaseComponent).IsAssignableFrom(type)
                             && method.Name.StartsWith("On", StringComparison.Ordinal) && !Lifecycle.Contains(method.Name);
@@ -82,6 +88,30 @@ namespace BeaverBuddies.Colonies
                 }
             }
             return handlers;
+        }
+
+        /// <summary>
+        /// Whether the part keeps what it has counted in the world's save (a singleton or an entity that saves): each
+        /// computer saves the same world, so what it counts must be the same on every computer.
+        /// </summary>
+        internal static bool IsSaved(Type type) =>
+            typeof(ISaveableSingleton).IsAssignableFrom(type) || typeof(IPersistentEntity).IsAssignableFrom(type);
+
+        /// <summary>A method that stops listening to a thing's event (-=) and starts listening to none (+=).</summary>
+        internal static bool IsCleanUp(MethodInfo method)
+        {
+            bool removes = false;
+            try
+            {
+                foreach (KeyValuePair<OpCode, object> instruction in ColonyCuttingView.Instructions(method))
+                {
+                    if (!(instruction.Value is MethodInfo called) || !called.IsSpecialName) continue;
+                    if (called.Name.StartsWith("add_", StringComparison.Ordinal)) return false;
+                    if (called.Name.StartsWith("remove_", StringComparison.Ordinal)) removes = true;
+                }
+            }
+            catch (Exception) { }
+            return removes;
         }
 
         private static IEnumerable<Type> TypesOf(Assembly assembly)

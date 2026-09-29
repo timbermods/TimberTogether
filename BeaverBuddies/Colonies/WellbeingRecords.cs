@@ -24,6 +24,12 @@ namespace BeaverBuddies.Colonies
             return raised;
         }
 
+        /// <summary>
+        /// Whether a record that rose from <paramref name="previous"/> is announced: not a colony's first (its first day
+        /// with beavers, when any wellbeing beats 0), as the game doesn't announce its first either. Still recorded.
+        /// </summary>
+        public static bool Announces(int previous) => previous > 0;
+
         /// <summary>The records, for the save: "slot:record" separated by commas, only the colonies that have one.</summary>
         public static string Encode(int[] records) =>
             string.Join(",", records.Select((record, slot) => (record, slot)).Where(pair => pair.record > 0)

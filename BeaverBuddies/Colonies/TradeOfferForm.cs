@@ -35,6 +35,8 @@ namespace BeaverBuddies.Colonies
             GiveNotAllowed,
             /// <summary>A mixed-factions game: what the offering colony asks for may not come to its own faction.</summary>
             GetNotAllowed,
+            /// <summary>More than a round carries, and the two amounts don't split into equal rounds.</summary>
+            Uneven,
         }
 
         public static bool IsOffer(Verdict verdict) =>
@@ -112,7 +114,8 @@ namespace BeaverBuddies.Colonies
             }
             if (whole)
             {
-                if (!Split(give, get, 1, repeat, out int eachGive, out int eachGet, out int splitRounds)) return Verdict.BadAmount;
+                if (!Split(give, get, 1, repeat, out int eachGive, out int eachGet, out int splitRounds))
+                    return Needed(give, get) > ExchangeTerms.MaxRounds ? Verdict.BadAmount : Verdict.Uneven;
                 give = eachGive;
                 get = eachGet;
                 rounds = splitRounds;
@@ -125,33 +128,31 @@ namespace BeaverBuddies.Colonies
 
         /// <summary>
         /// Splits <paramref name="give"/> for <paramref name="get"/> a round, over <paramref name="rounds"/> rounds, into
-        /// the fewest rounds that carry the whole: 300 for 300 once is 3 rounds of 100 for 100. When the two don't divide
-        /// evenly, each round's amounts are the nearest whole numbers to the same ratio (never 0 for a side that gives
-        /// something). A repeating offer keeps repeating, with its round cut down to fit. False when the whole needs more
-        /// than <see cref="ExchangeTerms.MaxRounds"/> rounds.
+        /// the fewest equal rounds that carry exactly the whole: 300 for 300 once is 3 rounds of 100 for 100, and 250 for
+        /// 50 is 5 rounds of 50 for 10. The whole is never changed: false when no number of rounds up to
+        /// <see cref="ExchangeTerms.MaxRounds"/> divides both amounts (500 for 1). A repeating offer keeps repeating, with
+        /// its round cut down to one such equal part.
         /// </summary>
         public static bool Split(int give, int get, int rounds, bool repeat, out int eachGive, out int eachGet, out int splitRounds)
         {
             if (repeat) rounds = 1;
             long wholeGive = (long)Math.Max(0, give) * Math.Max(1, rounds), wholeGet = (long)Math.Max(0, get) * Math.Max(1, rounds);
-            long most = Math.Max(wholeGive, wholeGet);
-            long needed = Math.Max(1, (most + ExchangeTerms.MaxAmount - 1) / ExchangeTerms.MaxAmount);
             eachGive = eachGet = 0;
             splitRounds = 1;
-            if (!repeat && needed > ExchangeTerms.MaxRounds) return false;
-            eachGive = Share(wholeGive, needed);
-            eachGet = Share(wholeGet, needed);
-            splitRounds = repeat ? 1 : (int)needed;
-            return true;
+            for (long n = Needed(wholeGive, wholeGet); n <= ExchangeTerms.MaxRounds; n++)
+            {
+                if (wholeGive % n != 0 || wholeGet % n != 0) continue;
+                eachGive = (int)(wholeGive / n);
+                eachGet = (int)(wholeGet / n);
+                splitRounds = repeat ? 1 : (int)n;
+                return true;
+            }
+            return false;
         }
 
-        // One round's part of a whole: the nearest whole number, at least 1 of anything given, never more than a round carries.
-        private static int Share(long whole, long rounds)
-        {
-            if (whole <= 0) return 0;
-            long each = (long)Math.Round((double)whole / rounds, MidpointRounding.AwayFromZero);
-            return (int)Math.Max(1, Math.Min(ExchangeTerms.MaxAmount, each));
-        }
+        // The fewest rounds that could carry the whole: one per round's worth of the larger side.
+        private static long Needed(long wholeGive, long wholeGet) =>
+            Math.Max(1, (Math.Max(wholeGive, wholeGet) + ExchangeTerms.MaxAmount - 1) / ExchangeTerms.MaxAmount);
 
         /// <summary>
         /// How far one click of − or + moves an amount: ten at a time (Shift: one), beavers one at a time (Shift: ten).

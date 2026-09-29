@@ -19,6 +19,11 @@ internal static class Rc27RuntimeChecks
                 .Select(m => m.DeclaringType!.Assembly.GetName().Name + ":" + m.DeclaringType.Name + "." + m.Name).ToList();
             Console.WriteLine("      Cutting marks are hidden from: " + (found.Count == 0 ? "nothing" : string.Join(", ", found)));
             if (found.Count == 0) throw new Exception("no interface method reads the cutting area: the other colony's marks would stay drawn");
+            // rc30: the marking tool's preview stays the game's (it draws unmarked tiles); the highlight of marked trees is filtered.
+            if (found.Any(m => m.EndsWith(":TreeCuttingAreaSelectionTool.PreviewCallback")))
+                throw new Exception("the marking tool's preview is filtered: the other colony's marks would look markable");
+            if (!found.Any(m => m.EndsWith(":TreeCuttingAreaVisualizer.Highlight")))
+                throw new Exception("TreeCuttingAreaVisualizer.Highlight no longer reads the trees in the area: the other colony's marked trees may be highlighted");
             Type area = Assembly.Load("Timberborn.Forestry").GetType("Timberborn.Forestry.TreeCuttingArea", true)!;
             Type returned = area.GetProperty("CuttingArea")!.PropertyType;
             Console.WriteLine("      TreeCuttingArea.CuttingArea is " + returned);

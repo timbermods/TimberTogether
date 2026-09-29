@@ -954,18 +954,18 @@ static class ColonyChecks
             }
         });
 
-        yield return ("Colony: more than a round carries is split into the fewest rounds, at the nearest ratio", () =>
+        yield return ("Colony: more than a round carries is split into the fewest equal rounds, never rounded", () =>
         {
             TradeOfferForm.Verdict Judge(string give, string get, string rounds, bool repeat, out int g, out int a, out int r, out bool split) =>
                 TradeOfferForm.Judge("Log", give, "Bread", get, rounds, repeat, out g, out a, out r, out split);
             // 300 logs for 300 bread: three rounds of 100 for 100.
             Equal(TradeOfferForm.Verdict.Exchange, Judge("300", "300", "1", false, out int g1, out int a1, out int r1, out bool s1));
             Equal(100, g1); Equal(100, a1); Equal(3, r1); Check(s1, "300 for 300 is not split");
-            // Uneven: the nearest ratio in the fewest rounds.
+            // Not a multiple of 100: the fewest equal rounds that carry exactly the whole.
             Judge("250", "130", "1", false, out int g2, out int a2, out int r2, out _);
-            Equal(3, r2); Equal(83, g2); Equal(43, a2);
-            Judge("1000", "5", "1", false, out int g3, out int a3, out int r3, out _);
-            Equal(10, r3); Equal(100, g3); Equal(1, a3);
+            Equal(5, r2); Equal(50, g2); Equal(26, a2);
+            // No equal rounds carry 1000 for 5 within a round's 100: refused, not rounded up to 10.
+            Equal(TradeOfferForm.Verdict.Uneven, Judge("1000", "5", "1", false, out _, out _, out _, out _));
             // A gift stays a gift.
             Equal(TradeOfferForm.Verdict.Gift, Judge("450", "0", "1", false, out int g4, out int a4, out int r4, out _));
             Equal(90, g4); Equal(0, a4); Equal(5, r4);
@@ -983,20 +983,29 @@ static class ColonyChecks
             Judge("300", "150", "", true, out int g7, out int a7, out int r7, out _);
             Equal(100, g7); Equal(50, a7); Equal(1, r7);
             // The most an amount box takes fills the most rounds, whatever the rounds box says; more is refused.
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("9900", "10", "2", false, out int g8, out _, out int r8, out _));
+            Equal(TradeOfferForm.Verdict.Exchange, Judge("9900", "99", "2", false, out int g8, out _, out int r8, out _));
             Equal(100, g8); Equal(99, r8);
             Equal(TradeOfferForm.Verdict.BadAmount, Judge("9901", "10", "1", false, out _, out _, out _, out _));
-            // Every split carries at least the whole in the fewest rounds, each round within what a post holds.
+            // Every split carries exactly the whole, in the fewest equal rounds, each within what a post holds; amounts
+            // that no number of equal rounds divides are refused, never rounded (500 for 1 is not 5 beavers).
             for (int give = 0; give <= 2000; give += 37)
                 for (int get = 0; get <= 2000; get += 53)
                 {
                     if (give <= ExchangeTerms.MaxAmount && get <= ExchangeTerms.MaxAmount) continue;
-                    Check(TradeOfferForm.Split(give, get, 1, false, out int eg, out int ea, out int n), $"{give} for {get} did not split");
-                    Equal((Math.Max(give, get) + 99) / 100, n);
-                    Check(eg <= ExchangeTerms.MaxAmount && ea <= ExchangeTerms.MaxAmount && (give == 0) == (eg == 0) && (get == 0) == (ea == 0),
-                        $"{give} for {get}: {eg} for {ea} a round");
-                    Check(Math.Abs(eg * n - give) <= n && Math.Abs(ea * n - get) <= Math.Max(n, 1), $"{give} for {get}: {eg}x{n} for {ea}x{n} is not the nearest");
+                    int needed = (Math.Max(give, get) + 99) / 100;
+                    int fewest = Enumerable.Range(needed, Math.Max(0, ExchangeTerms.MaxRounds - needed + 1)).FirstOrDefault(k => give % k == 0 && get % k == 0);
+                    bool splits = TradeOfferForm.Split(give, get, 1, false, out int eg, out int ea, out int n);
+                    Equal(fewest != 0, splits);
+                    if (!splits) continue;
+                    Equal(fewest, n);
+                    Check(eg <= ExchangeTerms.MaxAmount && ea <= ExchangeTerms.MaxAmount && eg * n == give && ea * n == get,
+                        $"{give} for {get}: {eg}x{n} for {ea}x{n} is not the whole");
                 }
+            Check(!TradeOfferForm.Split(500, 1, 1, false, out _, out _, out _), "500 for 1 was rounded");
+            Equal(TradeOfferForm.Verdict.Uneven, Judge("500", "1", "", false, out _, out _, out _, out _));
+            Equal(TradeOfferForm.Verdict.Uneven, Judge("101", "0", "", false, out _, out _, out _, out _));
+            Judge("250", "50", "", false, out int g11, out int a11, out int r11, out _);
+            Equal(50, g11); Equal(10, a11); Equal(5, r11);
         });
 
         yield return ("Colony: − and + go to the next whole step and stay within their box's range", () =>

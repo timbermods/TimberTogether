@@ -184,9 +184,12 @@ namespace BeaverBuddies.Util
             if (element.text != text) element.text = text;
         }
 
-        /// <summary>Starts each sentence of a longer text on its own line, so a stray last word never sits alone on the line above.</summary>
+        /// <summary>
+        /// Starts each sentence of a longer text on its own line, so a stray last word never sits alone on the line above.
+        /// Not after a short capitalised word with a full stop, which may be part of a player's or colony's name ("Dr. Beaver").
+        /// </summary>
         public static string SentencePerLine(string text) =>
-            string.IsNullOrEmpty(text) ? text : System.Text.RegularExpressions.Regex.Replace(text, @"(?<=[.!?]) +(?=[\p{Lu}])", "\n");
+            string.IsNullOrEmpty(text) ? text : System.Text.RegularExpressions.Regex.Replace(text, @"(?<=[.!?])(?<!\b\p{Lu}\p{Ll}{0,2}\.) +(?=[\p{Lu}])", "\n");
 
         /// <summary>A name to put into rich text: it can add no markup of its own.</summary>
         public static string Plain(string value) => (value ?? "").Replace("<", "").Replace(">", "");
