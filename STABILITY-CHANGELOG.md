@@ -35,6 +35,12 @@ the game's assemblies; StabilityTests only). **Not played.**
   being built (unfinished), and a building that finishes is drawn again. Its tooltip is the game's own (the element's
   own tooltip never shows in the game) and reads *Hide construction* / *Show construction*. The speaker's tooltip
   goes through the game's tooltips too.
+- **An amount over 100 is the whole trade; the Rounds box is ignored.** From rc28 play: asking for 500 Bread with the
+  Rounds box at 5 (as the form refills after an offer: 100 over 5 rounds) asked for 2,500, 25 rounds of 100. Now
+  `TradeOfferForm.Judge` splits an amount over a round as it is (`Split` over one round), never times the Rounds box,
+  and the box is greyed out while it has no say. 500 is always 500 in all. An amount up to 100 still runs for the
+  Rounds box's rounds. The amount tooltip says so; the site's Trading Post demo does the same. StabilityTests
+  (`ColonyChecks`) check 500 with Rounds 5 or empty is 5 rounds of 100, and 9,900 fills 99 rounds whatever the box.
 - StabilityTests: source checks (`PanelLayoutChecks`, `Rc27Checks`); `PanelLayout.AlertShift` is removed.
 
 ## 1.4.0-rc27

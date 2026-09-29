@@ -8,7 +8,8 @@ namespace BeaverBuddies.Colonies
     /// click of − or + does, and which of the form's messages applies. An offer the form calls an exchange, a gift or a
     /// request is exactly one <see cref="ExchangeTerms.AreValid"/> and <see cref="ExchangeTerms.AreValidRounds"/> accept.
     /// A post carries at most <see cref="ExchangeTerms.MaxAmount"/> of each side a round, but a player may type more:
-    /// the whole (each amount times the rounds) is then split into the fewest rounds that carry it (<see cref="Split"/>).
+    /// what they type is then the whole trade, split into the fewest rounds that carry it (<see cref="Split"/>), and the
+    /// rounds box is not read.
     /// </summary>
     public static class TradeOfferForm
     {
@@ -102,14 +103,16 @@ namespace BeaverBuddies.Colonies
             if (give > 0 && get > 0 && string.Equals(giveItem, getItem, StringComparison.Ordinal)) return Verdict.SameItem;
             if (give > 0 && giveAllowed != null && !giveAllowed(giveItem)) return Verdict.GiveNotAllowed;
             if (get > 0 && getAllowed != null && !getAllowed(getItem)) return Verdict.GetNotAllowed;
-            if (!repeat && !TryReadRounds(roundsText, out rounds))
+            // More than a round carries is the whole trade: it is split into rounds, and the rounds box is not read.
+            bool whole = give > ExchangeTerms.MaxAmount || get > ExchangeTerms.MaxAmount;
+            if (!repeat && !whole && !TryReadRounds(roundsText, out rounds))
             {
                 rounds = 1;
                 return Verdict.BadRounds;
             }
-            if (give > ExchangeTerms.MaxAmount || get > ExchangeTerms.MaxAmount)
+            if (whole)
             {
-                if (!Split(give, get, rounds, repeat, out int eachGive, out int eachGet, out int splitRounds)) return Verdict.BadAmount;
+                if (!Split(give, get, 1, repeat, out int eachGive, out int eachGet, out int splitRounds)) return Verdict.BadAmount;
                 give = eachGive;
                 get = eachGet;
                 rounds = splitRounds;

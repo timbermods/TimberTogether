@@ -1046,11 +1046,13 @@ namespace BeaverBuddies.Colonies
         {
             if (summary == null) return;
             bool repeat = repeatToggle.value;
-            roundsBox.SetEnabled(!repeat);
-            roundsLess.SetEnabled(!repeat);
-            roundsMore.SetEnabled(!repeat);
             TradeOfferForm.Verdict verdict = TradeOfferForm.Judge(giveItem, giveSide.Amount.value, getItem, getSide.Amount.value,
                 roundsBox.value, repeat, out int give, out int get, out int rounds, out bool split, GiveAllowed(), GetAllowed());
+            // An amount over a round is the whole trade, so the rounds box has no say (nor for a repeating offer).
+            bool roundsUsed = !repeat && !split;
+            roundsBox.SetEnabled(roundsUsed);
+            roundsLess.SetEnabled(roundsUsed);
+            roundsMore.SetEnabled(roundsUsed);
             // A reserve matters over more than one round, and only when this side gives something.
             bool keepShown = give > 0 && (repeat || rounds > 1);
             NativeElements.Show(keepCard, keepShown);

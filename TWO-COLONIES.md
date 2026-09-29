@@ -206,8 +206,8 @@ see them there, under the header of a post you share, and in the goods grid when
 - One exchange at a time per post; build more posts for more.
 - A half holds up to 100 of a good for the round under way. The next round waits until the last one's goods have
   been hauled away, so staff both halves and keep storage room.
-- Type more than 100 in the form (300 for 300, say) and it's split into the fewest rounds that carry it, at the
-  nearest ratio. The offer's message says the whole trade.
+- Type more than 100 in the form (300 for 300, say) and that's the whole trade: it's split into the fewest rounds
+  that carry it, at the nearest ratio, and the Rounds box is ignored. The offer's message says the whole trade.
 - Heavy goods take many trips: give busy posts more workers (up to 10).
 - Either of its two colonies may remove a post; no one else can. Its halves are placed as one.
 

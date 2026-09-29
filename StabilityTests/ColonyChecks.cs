@@ -969,19 +969,23 @@ static class ColonyChecks
             // A gift stays a gift.
             Equal(TradeOfferForm.Verdict.Gift, Judge("450", "0", "1", false, out int g4, out int a4, out int r4, out _));
             Equal(90, g4); Equal(0, a4); Equal(5, r4);
-            // Amounts count every round: 150 a round for 2 rounds is 300 in all.
+            // More than a round carries is the whole trade: the rounds box is not read (500 Bread is 500 in all, never 500 x 5).
             Judge("150", "50", "2", false, out int g5, out int a5, out int r5, out _);
-            Equal(3, r5); Equal(100, g5); Equal(33, a5);
+            Equal(2, r5); Equal(75, g5); Equal(25, a5);
+            Equal(TradeOfferForm.Verdict.Request, Judge("0", "500", "5", false, out int g9, out int a9, out int r9, out _));
+            Equal(0, g9); Equal(100, a9); Equal(5, r9);
+            Equal(TradeOfferForm.Verdict.Request, Judge("0", "500", "", false, out _, out _, out int r10, out _));
+            Equal(5, r10);
             // What fits a round is left as typed.
             Judge("100", "25", "4", false, out int g6, out int a6, out int r6, out bool s6);
             Equal(100, g6); Equal(25, a6); Equal(4, r6); Check(!s6, "an offer that fits a round was split");
             // A repeating offer keeps repeating, its round cut to fit.
             Judge("300", "150", "", true, out int g7, out int a7, out int r7, out _);
             Equal(100, g7); Equal(50, a7); Equal(1, r7);
-            // More than 99 rounds can carry is refused.
-            Equal(TradeOfferForm.Verdict.BadAmount, Judge("9900", "10", "2", false, out _, out _, out _, out _));
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("9900", "10", "1", false, out int g8, out _, out int r8, out _));
+            // The most an amount box takes fills the most rounds, whatever the rounds box says; more is refused.
+            Equal(TradeOfferForm.Verdict.Exchange, Judge("9900", "10", "2", false, out int g8, out _, out int r8, out _));
             Equal(100, g8); Equal(99, r8);
+            Equal(TradeOfferForm.Verdict.BadAmount, Judge("9901", "10", "1", false, out _, out _, out _, out _));
             // Every split carries at least the whole in the fewest rounds, each round within what a post holds.
             for (int give = 0; give <= 2000; give += 37)
                 for (int get = 0; get <= 2000; get += 53)
