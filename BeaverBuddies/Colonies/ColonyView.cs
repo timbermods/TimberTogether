@@ -31,8 +31,8 @@ namespace BeaverBuddies.Colonies
     /// <summary>
     /// What each player sees: their own colony, never both added together. Timberborn's interface shows the whole
     /// settlement whenever no district is selected (the top bar's goods and their stock history, population, wellbeing,
-    /// the wellbeing window, the batch control window's lists and district choices, the alert panel, the notification
-    /// journal); in a separate-colonies session "the whole
+    /// the wellbeing window, the batch control window's lists, history graphs (ColonyHistoryView) and district choices,
+    /// the alert panel, the notification journal); in a separate-colonies session "the whole
     /// settlement" becomes "your colony". Display only: everything here reads the game and changes nothing that is
     /// simulated, so each computer may show something different without any risk to the shared game.
     /// </summary>
@@ -447,8 +447,8 @@ namespace BeaverBuddies.Colonies
         }
     }
 
-    // The window opens on the district the interface shows; with none, it would open on the whole settlement, whose
-    // graphs (goods, population) add both colonies together. Open on this player's biggest district instead.
+    // The window opens on the district the interface shows; with none, it would open on the whole settlement (whose
+    // lists and graphs show this player's colony, ColonyHistoryView). Open on this player's biggest district instead.
     [HarmonyPatch(typeof(BatchControlBoxDistrictController), nameof(BatchControlBoxDistrictController.Show))]
     static class ColonyViewBatchControlShowPatcher
     {

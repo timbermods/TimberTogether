@@ -72,6 +72,8 @@ namespace BeaverBuddies.Colonies
             // A hosted shared save made separate colonies at Start, from its waiting room (1.4.0-rc4).
             containerDefinition.Bind<SaveConversion>().AsSingleton();
             containerDefinition.Bind<ColonyViewService>().AsSingleton();
+            // The batch control window's whole-map history graphs, drawn for this player's colony (1.4.0-rc31).
+            containerDefinition.Bind<ColonyHistoryView>().AsSingleton();
             containerDefinition.Bind<ColonyJournal>().AsSingleton();
             containerDefinition.Bind<ColonyCuttingViewRefresher>().AsSingleton();
             containerDefinition.Bind<ColonyWellbeingRecords>().AsSingleton();
