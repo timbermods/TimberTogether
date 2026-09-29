@@ -69,8 +69,8 @@ on one map, links them only through Trading Post barter, and still offers ordina
   - **Away players keep their colony:** by default a colony is never handed over while its player is away. A friend
     can look after it (Y), and automatic hand-over after a set number of days away is opt-in, for groups where
     someone may not come back.
-  - **Sharing power** (not played yet): the **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs a
-    half, 200 science), two halves with a worker each, sends one colony's spare power to another (**Send power to …**, with
+  - **Sharing power** (not played yet): the **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs,
+    10 of each a half; 200 science), two halves with a worker each, sends one colony's spare power to another (**Send power to …**, with
     **Charge my batteries first** and **Use my batteries for …**). Power never joins between colonies otherwise;
     Ctrl+P shows every colony's power and H opens the Power window. It trades nothing: payment is a Trading Post barter.
 - Inherited from the Stability Fork: Steam invites, the connection panel and chat, pings, player cursors, desync

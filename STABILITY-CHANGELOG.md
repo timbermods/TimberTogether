@@ -14,8 +14,8 @@ against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 
 
 - **The building.** `Buildings/Power/MultiColonyPowerExport`, each faction's District Crossing model and block layout
   as two linked halves (`LinkedBuildingSpec`, laid down as a pair, built together, removed together), in the Power
-  tab: 20 Gears, 20 Planks and 20 Logs a half (each half is built and paid for on its own, as a District Crossing's
-  and a Trading Post's are), and 200 science to unlock. None of the
+  tab: 20 Gears, 20 Planks and 20 Logs for the facility (10 of each a half: each half is built and paid for on its
+  own), and 200 science to unlock. None of the
   crossing's workings: no `DistrictCrossingSpec`, no district obstacle, no walkway between the halves, so it never joins
   two colonies' roads. Each half has one worker (`WorkplaceSpec` 1/1, `WorkshopSpec`, and the game's
   `WorkWorkplaceBehavior`, as a Power Wheel's walker), a power node of 1 hp in and 1 hp out, and **one** power

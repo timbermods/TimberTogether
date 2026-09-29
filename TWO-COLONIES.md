@@ -216,8 +216,8 @@ see them there, under the header of a post you share, and in the goods grid when
 
 ## Power Export Facilities
 
-The **Power Export Facility** is in the Power tab. Each half **costs 20 gears, 20 planks and 20 logs**, it needs
-**200 science** to unlock, and it appears only in separate-colonies games. It's the only place two colonies' power meets.
+The **Power Export Facility** is in the Power tab. It **costs 20 gears, 20 planks and 20 logs** (10 of each a half),
+needs **200 science** to unlock, and appears only in separate-colonies games. It's the only place two colonies' power meets.
 
 **Placing it.** Build it between two colonies, as a Trading Post: one half for each. Each half needs its colony's road
 at its door, a shaft at its end (where the power marker shows while placing), and **one worker**. Either colony may

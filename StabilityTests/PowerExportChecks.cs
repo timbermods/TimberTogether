@@ -144,7 +144,7 @@ static class PowerExportChecks
                 JsonElement b = Json("BeaverBuddies", "Buildings", "Power", "MultiColonyPowerExport", $"MultiColonyPowerExport.{faction}.blueprint.json");
                 JsonElement building = b.GetProperty("BuildingSpec");
                 var cost = building.GetProperty("BuildingCost").EnumerateArray().ToDictionary(c => c.GetProperty("Id").GetString()!, c => c.GetProperty("Amount").GetInt32());
-                Check(cost.Count == 3 && cost["Gear"] == 20 && cost["Plank"] == 20 && cost["Log"] == 20, faction + ": wrong cost");
+                Check(cost.Count == 3 && cost["Gear"] == 10 && cost["Plank"] == 10 && cost["Log"] == 10, faction + ": wrong cost (10 of each a half, 20 for the facility)");
                 Check(building.GetProperty("ScienceCost").GetInt32() == 200, faction + ": wrong science cost");
                 Check(b.GetProperty("TemplateSpec").GetProperty("TemplateName").GetString() == $"MultiColonyPowerExport.{faction}", faction + ": wrong template name");
                 Check(b.GetProperty("WorkplaceSpec").GetProperty("MaxWorkers").GetInt32() == 1 && b.GetProperty("WorkplaceSpec").GetProperty("DefaultWorkers").GetInt32() == 1, faction + ": not one worker");

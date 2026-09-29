@@ -24,7 +24,7 @@ What the build settled that the plan left open (the VERIFY items, checked agains
   workshop whose worker works as a Power Wheel's walker does (`WorkWorkplaceBehavior`), in quarter-hour stretches, so
   `Workshop.CurrentlyWorking` drops for a tick between them: a half counts as staffed for 5 ticks after its worker
   last worked (VERIFY 6: off shift, paused or unassigned reads as unstaffed).
-- **Cost.** 20 of each a half on the game's cost line, as the Trading Post's 10 logs; the pair uses 40 of each.
+- **Cost.** 20 of each for the facility: 10 of each a half, since each half is built and paid for on its own.
 - **Look.** The District Crossing's model, as the Trading Post's.
 - **Keys** checked against the game's bindings: Ctrl+P is free (plain P is `ToggleBuildingPause`, no other modifiers),
   H is free (only Ctrl+H, `ToggleGUI`, no other modifiers).

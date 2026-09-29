@@ -134,7 +134,7 @@ goods in stock, what it is **looking for**, and who looks after it. Set what you
 
 ## Sharing power
 
-Build a **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs a half, 200 science) between two colonies, one half
+Build a **Power Export Facility** (Power tab; 20 gears, 20 planks, 20 logs, 200 science) between two colonies, one half
 for each. Each half needs its colony's road at its door, a shaft at its end, and one worker.
 
 Select your half and tick **Send power to …**. Your spare power goes to them, only as much as they can use. **Charge
