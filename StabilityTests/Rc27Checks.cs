@@ -61,5 +61,26 @@ static class Rc27Checks
             Check(csv.Contains("BeaverBuddies.Panel.EyeOnTooltip,\"Hide construction\"") && csv.Contains("BeaverBuddies.Panel.EyeOffTooltip,\"Show construction\""),
                 "the eye's tooltip is not Hide construction / Show construction");
         });
+        yield return ("rc29: the wellbeing window counts only your own colony's beavers, and nothing simulated is changed", () =>
+        {
+            string view = Source("BeaverBuddies", "Colonies", "ColonyView.cs");
+            // The need counts: this player's districts, each counted as the game counts a selected one.
+            Check(view.Contains("[HarmonyPatch(typeof(WellbeingService), nameof(WellbeingService.GlobalAppliedNeeds))]")
+                && view.Contains("WellbeingService.AppliedNeeds(districtCenter.DistrictPopulation.GetEnabledCharacters<NeedManager>(), appliedNeeds);"),
+                "the window's need counts are not this colony's");
+            // The two figures the simulation also reads are left alone: the window's own getter and update are patched.
+            Check(view.Contains("[HarmonyPatch(typeof(PopulationWellbeingBox), nameof(PopulationWellbeingBox.ContextualPopulationData), MethodType.Getter)]")
+                && view.Contains("[HarmonyPatch(typeof(PopulationWellbeingBox), nameof(PopulationWellbeingBox.UpdateAverageWellbeing))]"),
+                "the window's beaver count or average is not this colony's");
+            Check(!view.Contains("nameof(WellbeingService.AverageGlobalWellbeing)") && !view.Contains("nameof(PopulationService.GlobalPopulationData)"),
+                "a global figure the simulation reads is patched");
+            // A selected district keeps the game's figures.
+            Check(view.Contains("int wellbeing = ColonyViewService.Instance.ColonyWellbeing() ?? 0;")
+                && System.Text.RegularExpressions.Regex.Matches(view, @"if \(!ColonyViewService\.Active \|\| __instance\._districtContextService\.SelectedDistrict\) return").Count >= 5,
+                "a selected district no longer shows the game's figures");
+            string checks = Source("RuntimeChecks", "ColonyRuntimeChecks.cs");
+            Check(checks.Contains("\"GlobalAppliedNeeds\"),") && checks.Contains("\"get_ContextualPopulationData\"),") && checks.Contains("\"UpdateAverageWellbeing\"),"),
+                "RuntimeChecks does not list the window's methods");
+        });
     }
 }
