@@ -42,20 +42,23 @@ namespace BeaverBuddies.Colonies
         {
             public DistrictCrossing Half;
             public bool Asks;
+            // Names a message with a button, so it can be taken back when what it offers no longer stands.
+            public string Key;
             public VisualElement Root;
         }
 
         /// <summary>A message as posted: its text, its post (or none), and the button that does what it asks (or none).</summary>
         private readonly struct Posted
         {
-            public readonly string Text, ActionText;
+            public readonly string Text, ActionText, Key;
             public readonly DistrictCrossing Half;
             public readonly bool Warning;
             public readonly Action Action;
 
-            public Posted(string text, DistrictCrossing half, bool warning, string actionText, Action action)
+            public Posted(string text, DistrictCrossing half, bool warning, string actionText, Action action, string key = null)
             {
                 Text = text;
+                Key = key;
                 Half = half;
                 Warning = warning;
                 ActionText = actionText;
@@ -127,11 +130,19 @@ namespace BeaverBuddies.Colonies
         /// runs outside the tick as any button's click does); the button or the close button closes it. False if it
         /// cannot be shown this way, as <see cref="Post"/>.
         /// </summary>
-        public bool PostWithAction(string text, bool warning, string actionText, Action action)
+        public bool PostWithAction(string text, bool warning, string actionText, Action action, string key = null)
         {
             if (stack == null) return false;
-            posted.Add(new Posted(text, null, warning, actionText, action));
+            posted.Add(new Posted(text, null, warning, actionText, action, key));
             return true;
+        }
+
+        /// <summary>What the message named <paramref name="key"/> offered no longer stands: it is closed, or never shown.</summary>
+        public void CloseKey(string key)
+        {
+            if (key == null) return;
+            posted.RemoveAll(p => p.Key == key);
+            foreach (Notice notice in shown.Where(n => n.Key == key).ToList()) Close(notice);
         }
 
         /// <summary>Chimes on the next frame, as a message that stays does: for news shown the game's own way.</summary>
@@ -179,7 +190,7 @@ namespace BeaverBuddies.Colonies
             // Full: news goes first, a question for a post only when there is nothing else to drop.
             while (shown.Count >= MaxShown) Close(shown.FirstOrDefault(n => !n.Asks) ?? shown[0]);
 
-            var notice = new Notice { Half = half, Asks = half != null || message.Action != null };
+            var notice = new Notice { Half = half, Asks = half != null || message.Action != null, Key = message.Key };
             var board = new NineSliceVisualElement();
             board.AddToClassList(message.Warning ? "square-large--red" : "square-large--green");
             var s = board.style;
@@ -255,7 +266,8 @@ namespace BeaverBuddies.Colonies
         {
             if (!notice.Half)
             {
-                if (!notice.Asks) Close(notice);
+                // News, or a message whose post has since been taken down: nothing to go to.
+                if (!notice.Asks || !ReferenceEquals(notice.Half, null)) Close(notice);
                 return;
             }
             try { _entitySelectionService.SelectAndFocusOn(notice.Half); }

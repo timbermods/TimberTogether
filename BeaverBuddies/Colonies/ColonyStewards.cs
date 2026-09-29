@@ -154,6 +154,9 @@ namespace BeaverBuddies.Colonies
             foreach (int player in acting.Where(p => p.Value == slot).Select(p => p.Key).ToList()) SetActing(player, -1, tell: true);
             ColonyDigest.Note("steward", slot, 0);
             Plugin.Log($"[Colony] {name} ({playerId}) no longer looks after slot {slot}'s colony ({why})");
+            // Its Run this colony button no longer works: the message goes (display only).
+            try { TradeNotices.Instance?.CloseKey(RunKey(slot)); }
+            catch (Exception error) { Plugin.LogWarning("[Colony] Could not close a stewardship message: " + error.Message); }
             Tell(playerId, "BeaverBuddies.Colony.Steward.YouNoLonger", ColonyExchangeService.ColonyName(slot), warning: true);
             TellSeat(slot, "BeaverBuddies.Colony.Steward.YoursAlone", name, warning: false);
         }
@@ -195,7 +198,7 @@ namespace BeaverBuddies.Colonies
             {
                 string text = string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Steward.YouWereAskedButton"), colony);
                 if (TradeNotices.Instance?.PostWithAction(text, false, RegisteredLocalizationService.T("BeaverBuddies.Colony.Overview.RunColony"),
-                    () => ReplayEvent.DoPrefix(() => new ActAsColonyEvent { colonySlot = slot })) == true) return;
+                    () => ReplayEvent.DoPrefix(() => new ActAsColonyEvent { colonySlot = slot }), RunKey(slot)) == true) return;
             }
             catch (Exception error)
             {
@@ -203,6 +206,8 @@ namespace BeaverBuddies.Colonies
             }
             Notice(string.Format(RegisteredLocalizationService.T("BeaverBuddies.Colony.Steward.YouWereAsked"), colony), warning: false);
         }
+
+        private static string RunKey(int slot) => "steward-run-" + slot;
 
         private void TellSeat(int slot, string key, string argument, bool warning)
         {
