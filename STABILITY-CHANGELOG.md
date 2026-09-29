@@ -5,6 +5,16 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**The faction goal's progress is your own colony's** (built against Timberborn 1.1.2.4). **Not played.**
+
+- **The wellbeing window's faction goals show your own colony's wellbeing.** Kyler, after rc29: everything a player
+  sees should be their own colony's. rc29 left the goal row's "Progress: x / y" map-wide, because the game unlocks a
+  faction by the whole map's average. It now shows the colony's average (`GoalRowFactory.UpdateProgress`, a postfix
+  that rewrites the number on the row the game shows one on). Display only: `FactionGoalsUnlocker` still reads
+  `AverageGlobalWellbeing`, so a faction unlocks when the whole map reaches the goal, as in the game.
+
 ## 1.4.0-rc29
 
 **The wellbeing window shows your own colony** (PR #75). Built against Timberborn 1.1.2.4: both configurations with 0 warnings; StabilityTests 537 and RuntimeChecks 469 pass. **Not played.**

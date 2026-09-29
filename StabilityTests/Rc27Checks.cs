@@ -78,8 +78,13 @@ static class Rc27Checks
             Check(view.Contains("int wellbeing = ColonyViewService.Instance.ColonyWellbeing() ?? 0;")
                 && System.Text.RegularExpressions.Regex.Matches(view, @"if \(!ColonyViewService\.Active \|\| __instance\._districtContextService\.SelectedDistrict\) return").Count >= 5,
                 "a selected district no longer shows the game's figures");
+            // The faction goal's progress is the colony's too; the game still unlocks by the whole map.
+            Check(view.Contains("[HarmonyPatch(typeof(GoalRowFactory), nameof(GoalRowFactory.UpdateProgress),")
+                && view.Contains("__instance.UpdateProgress($\"{wellbeing} / {unlockableFactionSpec.AverageWellbeingToUnlock}\", goalRowElement);"),
+                "the faction goal's progress is not this colony's");
             string checks = Source("RuntimeChecks", "ColonyRuntimeChecks.cs");
-            Check(checks.Contains("\"GlobalAppliedNeeds\"),") && checks.Contains("\"get_ContextualPopulationData\"),") && checks.Contains("\"UpdateAverageWellbeing\"),"),
+            Check(checks.Contains("\"GlobalAppliedNeeds\"),") && checks.Contains("\"get_ContextualPopulationData\"),") && checks.Contains("\"UpdateAverageWellbeing\"),")
+                && checks.Contains("(\"Timberborn.WellbeingUI.GoalRowFactory\", \"Timberborn.WellbeingUI\", \"UpdateProgress\"),"),
                 "RuntimeChecks does not list the window's methods");
         });
     }
