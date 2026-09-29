@@ -4,6 +4,7 @@ using System.Globalization;
 using BeaverBuddies.Util;
 using Timberborn.CoreUI;
 using Timberborn.Localization;
+using Timberborn.TooltipSystem;
 using TimberNet;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -33,6 +34,8 @@ namespace BeaverBuddies.Panel
         }
 
         readonly ILoc loc;
+        // The game's tooltips (a VisualElement's tooltip text is never shown in the game); without it there are none.
+        readonly ITooltipRegistrar tooltips;
         readonly ScrollView log;
         readonly TextField input;
         readonly VisualElement boostRow;
@@ -50,7 +53,7 @@ namespace BeaverBuddies.Panel
         // Everything up to this message has been on screen; the others' messages after it are counted as unseen.
         int seenSequence, shownUnseen;
         int renderedSequence, focusDelayFrames;
-        // The frame a key press in the box (Enter, Esc) was handled on, so the same press can't open the chat again.
+        // The frame a key press in a box (Enter, Esc) was handled on, so the same press can't open the chat again.
         int keyFrame = -10;
         bool stickToBottom = true, blurRequested;
 
@@ -84,9 +87,10 @@ namespace BeaverBuddies.Panel
         /// <summary>Whether a message is this player's own, which never counts as unseen. Without it, none is.</summary>
         public Func<ChatMessage, bool> IsOwn;
 
-        public ChatView(ILoc loc, VisualElementInitializer initializer)
+        public ChatView(ILoc loc, VisualElementInitializer initializer, ITooltipRegistrar tooltips)
         {
             this.loc = loc;
+            this.tooltips = tooltips;
 
             Root = new VisualElement { name = "BeaverBuddiesChat" };
             var s = Root.style;
@@ -166,7 +170,7 @@ namespace BeaverBuddies.Panel
             s.paddingTop = 1; s.paddingBottom = 1; s.paddingLeft = 5; s.paddingRight = 6;
             s.backgroundColor = new Color(.09f, .08f, .06f, .95f);
             ConnectionPanelView.Border(badge, 1, ConnectionPanelView.Fair, 8);
-            badge.tooltip = loc.T("BeaverBuddies.Chat.Unseen.Tooltip");
+            Tooltip(badge, loc.T("BeaverBuddies.Chat.Unseen.Tooltip"));
             var dot = new VisualElement { pickingMode = PickingMode.Ignore };
             dot.style.width = 7; dot.style.height = 7; dot.style.marginRight = 4;
             dot.style.backgroundColor = ConnectionPanelView.Fair;
@@ -287,7 +291,7 @@ namespace BeaverBuddies.Panel
             var row = new VisualElement { name = "BeaverBuddiesSpeedBoost" };
             row.style.flexDirection = FlexDirection.Row; row.style.alignItems = Align.Center;
             row.style.flexShrink = 0; row.style.marginBottom = 6;
-            row.tooltip = loc.T("BeaverBuddies.Chat.Boost.Tooltip");
+            Tooltip(row, loc.T("BeaverBuddies.Chat.Boost.Tooltip"));
 
             var caption = ConnectionPanelView.Text(loc.T("BeaverBuddies.Chat.Boost"), 12, ConnectionPanelView.Muted);
             caption.style.width = 92; caption.style.flexShrink = 0;
@@ -330,6 +334,14 @@ namespace BeaverBuddies.Panel
             return row;
         }
 
+        // The game's tooltip (shown on hover in the game), and the element's own for anything that reads it.
+        void Tooltip(VisualElement element, string text)
+        {
+            element.tooltip = text;
+            try { tooltips?.Register(element, text); }
+            catch (Exception error) { Plugin.LogWarning("A chat element has no tooltip: " + error.Message); }
+        }
+
         static Button Small(Button button)
         {
             var s = button.style;
@@ -367,6 +379,8 @@ namespace BeaverBuddies.Panel
             if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)
             {
                 e.StopImmediatePropagation();
+                // Enter leaves the box; the same press must not open the chat.
+                keyFrame = Time.frameCount;
                 CommitBoost();
                 RequestBlur();
             }

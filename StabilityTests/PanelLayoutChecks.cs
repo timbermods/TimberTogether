@@ -73,9 +73,10 @@ static class PanelLayoutChecks
             while (root != null && !File.Exists(Path.Combine(root, "BeaverBuddies.sln"))) root = Path.GetDirectoryName(root)!;
             string lift = File.ReadAllText(Path.Combine(root!, "BeaverBuddies", "Panel", "CornerLift.cs"));
             Check(!lift.Contains("translate"), "the alerts are moved");
-            // Its own layer, the last thing in what holds both corners, with a slot keeping its place in the corner.
-            Check(lift.Contains("VisualElement host = CommonAncestor(corner, alerts);") && lift.Contains("host.Add(layer);")
-                && lift.Contains("layer.BringToFront();"), "the panel is not drawn after the alerts' corner");
+            // Its own layer in what holds both corners, after the alerts' corner and just before what the game draws over
+            // the corners, with a slot keeping its place in the corner.
+            Check(lift.Contains("VisualElement host = CommonAncestor(corner, alerts);") && lift.Contains("host.Insert(host.IndexOf(front), layer);")
+                && lift.Contains("layer.PlaceBehind(front);"), "the panel is not drawn after the alerts' corner, or is drawn over the game's windows");
             Check(lift.Contains("corner.Insert(corner.IndexOf(panel), slot);"), "the corner is laid out without the panel's room");
             Check(lift.Contains("pickingMode = PickingMode.Ignore"), "the layer takes the pointer from the game");
             int restore = lift.IndexOf("public void Restore()", StringComparison.Ordinal);

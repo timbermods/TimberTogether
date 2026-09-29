@@ -87,5 +87,54 @@ static class Rc27Checks
                 && checks.Contains("(\"Timberborn.WellbeingUI.GoalRowFactory\", \"Timberborn.WellbeingUI\", \"UpdateProgress\"),"),
                 "RuntimeChecks does not list the window's methods");
         });
+        yield return ("rc30: the connection panel is drawn under the game's windows and hidden with its corner, and its slot has an order", () =>
+        {
+            string lift = Source("BeaverBuddies", "Panel", "CornerLift.cs");
+            // Just before the entity panel and the windows, never after them.
+            Check(lift.Contains("const string FrontName = \"Absolute-items\";") && lift.Contains("host.Insert(host.IndexOf(front), layer);")
+                && lift.Contains("if (host.IndexOf(layer) != host.IndexOf(front) - 1) layer.PlaceBehind(front);") && !lift.Contains("BringToFront"),
+                "the panel is drawn over the game's windows, menus and dialogs");
+            Check(lift.Contains("bool shown = Displayed(slot, host);") && lift.Contains("layer.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;")
+                && lift.Contains("if (e.style.display == DisplayStyle.None || e.resolvedStyle.display == DisplayStyle.None) return false;"),
+                "the panel stays on screen while the game hides its corner");
+            // Another mod adding to the corner later must find an order for every panel in it.
+            Check(lift.Contains("layout._elementOrder[slot] = order;") && lift.Contains("layout?._elementOrder.Remove(slot);"),
+                "the slot has no order in its corner, or keeps it once gone");
+        });
+        yield return ("rc30: the panel's rows and facts are rebuilt only when they change, and its tooltips are the game's", () =>
+        {
+            string view = Source("BeaverBuddies", "Panel", "ConnectionPanelView.cs");
+            Check(!view.Contains("rows.Clear();\n            foreach (var row in model.Rows)") && view.Contains("if (signature.ToString() != rowsShown)")
+                && view.Contains("if (ping.text != shown[i].PingText) ping.text = shown[i].PingText;"), "the rows are built again at every refresh");
+            Check(view.Contains("if (!same)\n            {\n                facts.Clear(); factLines.Clear();"), "the facts are built again at every refresh");
+            // No tooltip set only on the element (never shown in the game) except in the helper that also registers it.
+            Check(System.Text.RegularExpressions.Regex.Matches(view, @"\.tooltip = ").Count == 1 && view.Contains("element.tooltip = text;\n            try { Tooltips?.Register(element, text); }"),
+                "a panel tooltip is not the game's");
+            Check(view.Contains("Tooltip(line, loc.T(labelKey + \".Tooltip\"));") && view.Contains("Tooltips?.RegisterUpdatable(element, text);"),
+                "the frame rate floor or the paused line has no tooltip in the game");
+            string chat = Source("BeaverBuddies", "Panel", "ChatView.cs");
+            Check(System.Text.RegularExpressions.Regex.Matches(chat, @"\.tooltip = ").Count == 1 && chat.Contains("try { tooltips?.Register(element, text); }")
+                && chat.Contains("Tooltip(badge, loc.T(\"BeaverBuddies.Chat.Unseen.Tooltip\"));") && chat.Contains("Tooltip(row, loc.T(\"BeaverBuddies.Chat.Boost.Tooltip\"));"),
+                "a chat tooltip is not the game's");
+        });
+        yield return ("rc30: Enter that leaves a text box never opens the chat, and names are never split over lines", () =>
+        {
+            string chat = Source("BeaverBuddies", "Panel", "ChatView.cs");
+            int boost = chat.IndexOf("void OnBoostKeyDown(KeyDownEvent e)", StringComparison.Ordinal);
+            Check(boost >= 0 && chat.IndexOf("keyFrame = Time.frameCount;", boost, StringComparison.Ordinal) is int at && at > boost
+                && at < chat.IndexOf("else if (e.keyCode == KeyCode.Escape)", boost, StringComparison.Ordinal), "Enter in the speed boost box can open the chat");
+            string service = Source("BeaverBuddies", "Panel", "ConnectionPanelService.cs");
+            Check(service.Contains("root.RegisterCallback<UnityEngine.UIElements.KeyDownEvent>(OnAnyKeyDown, UnityEngine.UIElements.TrickleDown.TrickleDown);")
+                && service.Contains("up is UnityEngine.UIElements.TextField || up is UnityEngine.UIElements.IntegerField || up is UnityEngine.UIElements.FloatField")
+                && service.Contains("if (Time.frameCount - textBoxEnterFrame <= 2) return;"), "Enter in a Trading Post's box can open the chat");
+            Check(service.Contains("watchedRoot?.UnregisterCallback<UnityEngine.UIElements.KeyDownEvent>(OnAnyKeyDown"), "the Enter watch outlives the scene");
+            // The splitter itself, run here: a sentence per line, but not after a short capitalised word.
+            string native = Source("BeaverBuddies", "Util", "NativeElements.cs");
+            var pattern = System.Text.RegularExpressions.Regex.Match(native, "Regex\\.Replace\\(text, @\"([^\"]+)\", \"\\\\n\"\\)");
+            Check(pattern.Success, "the sentence splitter is not where it was");
+            string Split(string text) => System.Text.RegularExpressions.Regex.Replace(text, pattern.Groups[1].Value, "\n");
+            Check(Split("Dr. Beaver sent logs. Then they left.") == "Dr. Beaver sent logs.\nThen they left.", "a name is split over two lines: " + Split("Dr. Beaver sent logs. Then they left."));
+            Check(Split("The trade is done! Colony 2 has it. Next round starts.") == "The trade is done!\nColony 2 has it.\nNext round starts.", "sentences are no longer one per line");
+        });
     }
 }
