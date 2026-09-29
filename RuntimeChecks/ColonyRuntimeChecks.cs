@@ -847,6 +847,9 @@ internal static class ColonyRuntimeChecks
                 .Select(m => m.DeclaringType!.FullName + "." + m.Name).OrderBy(n => n).ToList();
             if (handlers.Count == 0) throw new Exception("nothing in the game listens to NewWellbeingHighscoreEvent any more");
             Console.WriteLine("      NewWellbeingHighscoreEvent is heard by: " + string.Join(", ", handlers));
+            // Skipping the event on one computer is safe only while the interface alone hears it.
+            if (handlers.Any(h => !h.StartsWith("Timberborn.WellbeingUI.", StringComparison.Ordinal)))
+                throw new Exception("NewWellbeingHighscoreEvent is now heard outside the wellbeing interface: " + string.Join(", ", handlers));
             var patcher = mod.GetType("BeaverBuddies.Colonies.ColonyWellbeingHighscorePatcher", true)!;
             if (patcher.GetMethod("TargetMethod", all)!.Invoke(null, null) is not MethodInfo target || target != post)
                 throw new Exception("the high-score patch no longer targets EventBus.Post(object)");

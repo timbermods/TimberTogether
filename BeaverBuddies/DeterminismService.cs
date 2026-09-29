@@ -757,6 +757,10 @@ namespace BeaverBuddies
         static bool Prefix(TickableBucketService __instance)
         {
             if (EventIO.IsNull) return true;
+            // The exit save is taken whenever the player leaves, which may be mid-tick now that the menu no longer
+            // pauses: let the game finish the tick (its remaining buckets and the parallel tick) as it does alone, so
+            // the save never holds half a tick. The session ends right after, so nothing is left to keep in step.
+            if (AutosaverCreateExitSavePatcher.IsExitSaving) return true;
             // If we're saving, ignore this - we've ensured a full
             // tick was completed beforehand
             if (GameSaverSavePatcher.IsSaving) return false;
@@ -813,6 +817,8 @@ namespace BeaverBuddies
     [HarmonyPatch(typeof(Autosaver), nameof(Autosaver.CreateExitSave))]
     public class AutosaverCreateExitSavePatcher
     {
+        /// <summary>True while the exit save is made: the game then finishes the current tick itself.</summary>
+        public static bool IsExitSaving { get; private set; }
 
         static void Prefix(out bool __state)
         {
@@ -820,6 +826,7 @@ namespace BeaverBuddies
             // and don't need to keep clients in sync
             __state = GameSaverSavePatcher.IsSaving;
             GameSaverSavePatcher.IsSaving = true;
+            IsExitSaving = true;
         }
 
         // A finalizer also runs if creating the exit save throws. Preserve an
@@ -827,6 +834,7 @@ namespace BeaverBuddies
         static void Finalizer(bool __state)
         {
             GameSaverSavePatcher.IsSaving = __state;
+            IsExitSaving = false;
         }
     }
 

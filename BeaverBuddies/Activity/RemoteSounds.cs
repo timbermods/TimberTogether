@@ -68,9 +68,12 @@ namespace BeaverBuddies.Activity
                     {
                         MethodInfo target = map.TargetMethods[i];
                         // Only a method that starts a sound and returns nothing can be skipped without its caller noticing;
-                        // one inherited by several implementations is patched once.
+                        // one inherited by several implementations is patched once. One that calls back when the sound ends
+                        // (a speaker, the music) is left alone: skipping it would drop the callback, and no player's action
+                        // plays one.
                         if (!map.InterfaceMethods[i].Name.StartsWith("Play", StringComparison.Ordinal) || target.ReturnType != typeof(void)
-                            || target.IsAbstract || !seen.Add(target)) continue;
+                            || target.IsAbstract || target.GetParameters().Any(p => typeof(Delegate).IsAssignableFrom(p.ParameterType))
+                            || !seen.Add(target)) continue;
                         try
                         {
                             harmony.Patch(target, prefix: new HarmonyMethod(prefix));
