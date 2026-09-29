@@ -16,7 +16,8 @@ namespace BeaverBuddies.Colonies
     /// map and announces a new one (NewWellbeingHighscoreEvent) on every computer, so in co-op the other colony's record
     /// reached this player too. In a separate-colonies co-op game the game's announcement is dropped
     /// (ColonyWellbeingHighscorePatcher); instead every computer raises every colony's record as each day starts, from
-    /// the same simulated figures, and posts the game's own event only for its own colony's new record, with that
+    /// the same simulated figures, and posts the game's own event only for its own colony's new record (never its first,
+    /// from 0 on its first day with beavers, as the game skips its own first), with that
     /// colony's wellbeing as the top bar shows it (ColonyViewService.ColonyWellbeing). The records are saved so every
     /// computer keeps the same ones. Display only: nothing simulated reads them.
     /// </summary>
@@ -79,9 +80,11 @@ namespace BeaverBuddies.Colonies
             try
             {
                 int?[] wellbeing = ColoniesWellbeing();
+                int[] before = (int[])records.Clone();
                 foreach (int slot in WellbeingRecords.Raise(records, wellbeing))
                 {
-                    if (slot == ColonySession.LocalSlot && ColonyViewService.Active) Announce(records[slot]);
+                    // Every computer records it; only this player's own is announced, and never a colony's first.
+                    if (slot == ColonySession.LocalSlot && ColonyViewService.Active && WellbeingRecords.Announces(before[slot])) Announce(records[slot]);
                 }
             }
             catch (Exception error)

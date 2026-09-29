@@ -331,6 +331,22 @@ internal static class ColonyRuntimeChecks
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "get_ContextualPopulationData"),
             ("Timberborn.WellbeingUI.PopulationWellbeingBox", "Timberborn.WellbeingUI", "UpdateAverageWellbeing"),
             ("Timberborn.WellbeingUI.GoalRowFactory", "Timberborn.WellbeingUI", "UpdateProgress"),
+            // The goods tooltip's stock chart, and the district lists of the batch control and manual migration windows.
+            ("Timberborn.StockpilesUI.GoodStockpilesTooltipFactory", "Timberborn.StockpilesUI", "GetGoodSamplingRegistry"),
+            ("Timberborn.GoodsSampling.GoodSamplingRegistry", "Timberborn.GoodsSampling", "CreateFromSave"),
+            ("Timberborn.GoodsSampling.GoodSampleHistory", "Timberborn.GoodsSampling", "CreateFromSave"),
+            ("Timberborn.BatchControl.DistrictDropdownProvider", "Timberborn.BatchControl", "UpdateDistrictsList"),
+            ("Timberborn.GameDistrictsMigrationBatchControl.ManualMigrationDistrictDropdownProvider", "Timberborn.GameDistrictsMigrationBatchControl", "UpdateDistrictsList"),
+            // Cutting marks: the trees in the area, a new tree's highlight, the redraw, and the marking preview left alone.
+            ("Timberborn.Forestry.TreeCuttingArea", "Timberborn.Forestry", "get_YieldersInArea"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaVisualizer", "Timberborn.ForestryUI", "OnTreeAddedToCuttingArea"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaVisualizer", "Timberborn.ForestryUI", "UpdateOrMarkForUpdate"),
+            ("Timberborn.ForestryUI.TreeCuttingAreaSelectionTool", "Timberborn.ForestryUI", "PreviewCallback"),
+            // Status icons shown as a status comes on; another colony's construction redrawn by the game as it is shown.
+            ("Timberborn.StatusSystem.StatusIconCycler", "Timberborn.StatusSystem", "UpdateIcon"),
+            ("Timberborn.BlockObjectModelSystem.IBlockObjectModel", "Timberborn.BlockObjectModelSystem", "UpdateModelVisibility"),
+            ("Timberborn.BlockSystem.EnteredUnfinishedStateEvent", "Timberborn.BlockSystem", "get_BlockObject"),
+            ("Timberborn.BlockSystem.ExitedUnfinishedStateEvent", "Timberborn.BlockSystem", "get_BlockObject"),
             ("Timberborn.BatchControl.BatchControlRowGroup", "Timberborn.BatchControl", "UpdateVisibleRows"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "Show"),
             ("Timberborn.BatchControl.BatchControlBoxDistrictController", "Timberborn.BatchControl", "UpdateDropdown"),

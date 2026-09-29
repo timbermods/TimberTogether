@@ -5,10 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Timberborn.BaseComponentSystem;
 using Timberborn.BatchControl;
+using Timberborn.Common;
 using Timberborn.CoreUI;
 using Timberborn.EntitySystem;
 using Timberborn.FactionSystem;
 using Timberborn.GameDistricts;
+using Timberborn.GameDistrictsMigrationBatchControl;
+using Timberborn.GoodsSampling;
 using Timberborn.NeedSystem;
 using Timberborn.NotificationSystem;
 using Timberborn.NotificationSystemUI;
@@ -18,6 +21,7 @@ using Timberborn.ResourceCountingSystem;
 using Timberborn.ResourceCountingSystemUI;
 using Timberborn.SingletonSystem;
 using Timberborn.StatusSystem;
+using Timberborn.StockpilesUI;
 using Timberborn.Wellbeing;
 using Timberborn.WellbeingUI;
 using UnityEngine.UIElements;
@@ -26,8 +30,9 @@ namespace BeaverBuddies.Colonies
 {
     /// <summary>
     /// What each player sees: their own colony, never both added together. Timberborn's interface shows the whole
-    /// settlement whenever no district is selected (the top bar's goods, population, wellbeing, the wellbeing window,
-    /// the batch control window's lists, the alert panel, the notification journal); in a separate-colonies session "the whole
+    /// settlement whenever no district is selected (the top bar's goods and their stock history, population, wellbeing,
+    /// the wellbeing window, the batch control window's lists and district choices, the alert panel, the notification
+    /// journal); in a separate-colonies session "the whole
     /// settlement" becomes "your colony". Display only: everything here reads the game and changes nothing that is
     /// simulated, so each computer may show something different without any risk to the shared game.
     /// </summary>
@@ -200,6 +205,42 @@ namespace BeaverBuddies.Colonies
             return colonyPopulation;
         }
 
+        /// <summary>
+        /// This player's goods history, for the top bar's stock chart: their one district's, or their districts' added
+        /// together day by day (a younger district's days line up with the latest ones). A new registry is built for
+        /// the tooltip; the game's own are only read.
+        /// </summary>
+        public GoodSamplingRegistry ColonyGoodSamplingRegistry(GoodSamplingRegistry global)
+        {
+            var registries = new List<GoodSamplingRegistry>();
+            foreach (DistrictCenter districtCenter in OwnDistricts())
+            {
+                GoodSamplingRegistry registry = districtCenter.GetComponent<DistrictGoodSamplingRegistry>()?.GoodSamplingRegistry;
+                if (registry != null) registries.Add(registry);
+            }
+            if (registries.Count == 1) return registries[0];
+            var histories = new List<GoodSampleHistory>();
+            foreach (GoodSampleHistory all in global.GoodSampleHistories)
+            {
+                // Latest day first while adding, then turned round.
+                var summed = new List<GoodSample>();
+                foreach (GoodSamplingRegistry registry in registries)
+                {
+                    if (!registry._goodSampleHistoryMap.TryGetValue(all.GoodId, out GoodSampleHistory history)) continue;
+                    ReadOnlyList<GoodSample> samples = history.GoodSamples;
+                    for (int back = 0; back < samples.Count; back++)
+                    {
+                        GoodSample sample = samples[samples.Count - 1 - back];
+                        if (back < summed.Count) summed[back] = summed[back] + sample;
+                        else summed.Add(sample);
+                    }
+                }
+                summed.Reverse();
+                histories.Add(GoodSampleHistory.CreateFromSave(all.GoodId, summed));
+            }
+            return GoodSamplingRegistry.CreateFromSave(histories, new List<string>());
+        }
+
         /// <summary>The colony's average wellbeing: each district's average, weighted by its beavers. Null with no beavers.</summary>
         public int? ColonyWellbeing()
         {
@@ -262,12 +303,40 @@ namespace BeaverBuddies.Colonies
         static void Postfix(BasicStatisticsPanel __instance)
         {
             if (!ColonyViewService.Active || __instance._districtContextService.SelectedDistrict) return;
-            // The game blanks the number when every beaver on the map is gone; leave that as it is.
-            if (string.IsNullOrEmpty(__instance._wellbeingCount.text)) return;
-            int? wellbeing = ColonyViewService.Instance.ColonyWellbeing();
-            if (wellbeing == null) return;
-            __instance._wellbeingCount.text = wellbeing.Value.ToString();
-            __instance._wellbeingButton.EnableInClassList(BasicStatisticsPanel.NegativeWellbeingClass, wellbeing.Value < 0);
+            ColonyViewService colonyView = ColonyViewService.Instance;
+            int? wellbeing = colonyView.ColonyWellbeing();
+            VisualElement button = __instance._wellbeingButton;
+            button.RemoveFromClassList(BasicStatisticsPanel.BeaversPerishedClass);
+            button.RemoveFromClassList(BasicStatisticsPanel.AllPerishedClass);
+            if (wellbeing != null)
+            {
+                __instance._wellbeingCount.text = wellbeing.Value.ToString();
+                button.EnableInClassList(BasicStatisticsPanel.NegativeWellbeingClass, wellbeing.Value < 0);
+                return;
+            }
+            // No beavers of their own: blank, as the game shows a settlement whose beavers perished (only bots left, or
+            // no one). Before this player has a colony at all, just blank.
+            __instance._wellbeingCount.text = "";
+            if (colonyView.OwnDistricts().Count == 0)
+            {
+                button.RemoveFromClassList(BasicStatisticsPanel.NegativeWellbeingClass);
+                return;
+            }
+            bool bots = colonyView.ColonyPopulationData().NumberOfBots > 0;
+            button.AddToClassList(bots ? BasicStatisticsPanel.BeaversPerishedClass : BasicStatisticsPanel.AllPerishedClass);
+            button.EnableInClassList(BasicStatisticsPanel.NegativeWellbeingClass, !bots);
+        }
+    }
+
+    // The goods tooltip's chart of the last days' stock (hover a good on the top bar). With no district selected the
+    // game charts the whole map's; chart this player's colony's instead. Display only: a registry made for the chart.
+    [HarmonyPatch(typeof(GoodStockpilesTooltipFactory), nameof(GoodStockpilesTooltipFactory.GetGoodSamplingRegistry))]
+    static class ColonyViewGoodHistoryPatcher
+    {
+        static void Postfix(GoodStockpilesTooltipFactory __instance, ref GoodSamplingRegistry __result)
+        {
+            if (!ColonyViewService.Active || __instance._districtContextService.SelectedDistrict || __result == null) return;
+            __result = ColonyViewService.Instance.ColonyGoodSamplingRegistry(__result);
         }
     }
 
@@ -390,6 +459,43 @@ namespace BeaverBuddies.Colonies
             if (!main) return;
             __instance._batchControlDistrict.SetDistrict(main);
             __instance.UpdateDropdown();
+        }
+    }
+
+    // The window's district list (and the manual migration panel's) offers every district on the map. Offer this
+    // player's own instead (and the one already shown, whoever's it is, so the list can show it). Only the lists are
+    // changed: choosing from them is this player's own action, judged by the rules as before (ColonyRules).
+    [HarmonyPatch(typeof(DistrictDropdownProvider), nameof(DistrictDropdownProvider.UpdateDistrictsList))]
+    static class ColonyViewDistrictDropdownPatcher
+    {
+        static void Postfix(DistrictDropdownProvider __instance)
+        {
+            if (!ColonyViewService.Active) return;
+            ColonyViewDropdowns.KeepOwn(__instance._districtKeys, __instance._districtCenterRegistry, __instance._batchControlDistrict.SelectedDistrict);
+        }
+    }
+
+    [HarmonyPatch(typeof(ManualMigrationDistrictDropdownProvider), nameof(ManualMigrationDistrictDropdownProvider.UpdateDistrictsList))]
+    static class ColonyViewMigrationDropdownPatcher
+    {
+        static void Postfix(ManualMigrationDistrictDropdownProvider __instance)
+        {
+            if (!ColonyViewService.Active) return;
+            ColonyViewDropdowns.KeepOwn(__instance._districtKeys, __instance._districtCenterRegistry, __instance._selectedDistrict);
+        }
+    }
+
+    static class ColonyViewDropdowns
+    {
+        /// <summary>
+        /// The game's district lists key each district by its place in the registry's finished districts; any other
+        /// key (the whole settlement's) is kept.
+        /// </summary>
+        internal static void KeepOwn(List<string> keys, DistrictCenterRegistry registry, DistrictCenter shown)
+        {
+            ReadOnlyList<DistrictCenter> districts = registry.FinishedDistrictCenters;
+            keys.RemoveAll(key => int.TryParse(key, out int index) && index >= 0 && index < districts.Count
+                && districts[index] != shown && !ColonyViewService.IsOwnDistrict(districts[index]));
         }
     }
 

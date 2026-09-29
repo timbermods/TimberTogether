@@ -18,7 +18,12 @@ internal static class Rc28RuntimeChecks
             Console.WriteLine("      Achievement assemblies: " + (loaded.Count == 0 ? "none" : string.Join(", ", loaded.Select(a => a.GetName().Name))));
             Type achievements = mod.GetType("BeaverBuddies.Colonies.ColonyAchievements", true)!;
             MethodInfo handlers = achievements.GetMethod("Handlers", All) ?? throw new Exception("ColonyAchievements.Handlers is gone");
-            var found = ((IEnumerable<MethodInfo>)handlers.Invoke(null, new object[] { loaded })!)
+            var methods = ((IEnumerable<MethodInfo>)handlers.Invoke(null, new object[] { loaded })!).ToList();
+            // rc30: an achievement whose progress is in the world's save counts every colony, so the save is the same everywhere.
+            Type saveable = Assembly.Load("Timberborn.WorldPersistence").GetType("Timberborn.WorldPersistence.ISaveableSingleton", true)!;
+            var saved = methods.Where(m => saveable.IsAssignableFrom(m.DeclaringType!)).Select(m => m.DeclaringType!.Name + "." + m.Name).ToList();
+            if (saved.Count > 0) throw new Exception("achievements kept in the save would skip another colony's things: " + string.Join(", ", saved));
+            var found = methods
                 .Select(m => m.DeclaringType!.Name + "." + m.Name + "(" + string.Join(", ", m.GetParameters().Select(p => p.ParameterType.Name)) + ")").ToList();
             Console.WriteLine("      Achievements skip another colony's things in: " + (found.Count == 0 ? "nothing" : string.Join(", ", found)));
             if (found.Count == 0) throw new Exception("no achievement method hears of a game thing: another colony's buildings would still unlock achievements");
