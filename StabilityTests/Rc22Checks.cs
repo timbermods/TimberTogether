@@ -48,12 +48,14 @@ static class Rc22Checks
         {
             string exchange = Source("BeaverBuddies", "Colonies", "TradingPostExchange.cs");
             string accept = Body(exchange, "public void Accept(DistrictCrossing half,");
-            Check(accept.Contains("\"BeaverBuddies.Colony.Trade.Notice.AcceptedRounds\"") && accept.Contains("chime: true"), "an accepted offer no longer chimes, or no longer says every round");
+            Check(accept.Contains("\"BeaverBuddies.Colony.Trade.Notice.Accepted\"") && accept.Contains("theirs.Whole") && accept.Contains("chime: true"),
+                "an accepted offer no longer chimes, or no longer says the whole trade");
             Check(Body(exchange, "private void Tell(").Contains("if (chime) TradeNotices.Instance?.ChimeSoon();"), "Tell no longer chimes when asked");
-            Check(Body(exchange, "public void Propose(DistrictCrossing half,").Contains("\"BeaverBuddies.Colony.Trade.Notice.ProposedRounds\""), "an offer's message says one round only");
-            Check(Body(exchange, "private string Whole(").Contains("Amount(giveAmount * rounds, giveGood)"), "the whole exchange is not every round's goods");
-            Check(Csv("BeaverBuddies.Colony.Trade.Notice.ProposedRounds").Contains("in all, over {3} rounds")
-                && Csv("BeaverBuddies.Colony.Trade.Notice.AcceptedRounds").Contains("in all, over {3} rounds"), "the rounds' messages don't say the whole");
+            // rc31: an offer's messages say the whole trade as typed ("101 Logs for 2 Gears"), never its rounds.
+            Check(Body(exchange, "public void Propose(DistrictCrossing half,").Contains("\"BeaverBuddies.Colony.Trade.Notice.Proposed\""), "an offer has no message");
+            Check(Body(exchange, "private string Whole(").Contains("Amount(giveAmount, giveGood), Amount(getAmount, getGood)"), "the message is not the whole trade");
+            Check(!exchange.Contains("Notice.ProposedRounds") && !exchange.Contains("Notice.AcceptedRounds") && !Csv("BeaverBuddies.Colony.Trade.Notice.Accepted").Contains("rounds"),
+                "a message still names the rounds");
             // The chime is played on the next frame, never inside the action.
             string notices = Source("BeaverBuddies", "Colonies", "TradeNotices.cs");
             Check(Body(notices, "public void UpdateSingleton()").Contains("if (posted.Count == 0 && !chimePending) return;"), "a chime asked for is never played");
@@ -137,7 +139,7 @@ static class Rc22Checks
         yield return ("The colonies window says each exchange in three lines: the whole deal, each side's round, what it waits on", () =>
         {
             string describe = Body(Source("BeaverBuddies", "Colonies", "TradeOverviewPanel.cs"), "private void Describe(");
-            Check(describe.Contains("mine.Total * rounds") && describe.Contains("theirs.Total * rounds"), "the first line counts one round, not the whole deal");
+            Check(describe.Contains("exchanges.Amount(mine.Whole, mine.GoodId)") && describe.Contains("exchanges.Amount(theirs.Whole, theirs.GoodId)"), "the first line is not the whole deal");
             Check(describe.Contains("deal + \"\\n\" + progress"), "the deal and the sides are not on lines of their own");
             Check(describe.Contains("string.Format(T(dealKey), get, give)"), "an offer made to you names your goods first");
             Check(Csv("BeaverBuddies.Colony.Overview.Progress") == "Your side: {0}. Their side: {1}.", "the sides' line changed");

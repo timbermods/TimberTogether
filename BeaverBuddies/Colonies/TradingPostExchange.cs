@@ -44,6 +44,7 @@ namespace BeaverBuddies.Colonies
         private static readonly PropertyKey<int> ProposedHereKey = new PropertyKey<int>("ProposedHere");
         private static readonly PropertyKey<string> GoodKey = new PropertyKey<string>("Good");
         private static readonly PropertyKey<int> TotalKey = new PropertyKey<int>("Total");
+        private static readonly PropertyKey<int> WholeKey = new PropertyKey<int>("Whole");
         private static readonly PropertyKey<int> HeldKey = new PropertyKey<int>("Held");
         private static readonly PropertyKey<int> SerialKey = new PropertyKey<int>("Serial");
         private static readonly PropertyKey<int> RepeatKey = new PropertyKey<int>("Repeat");
@@ -64,8 +65,16 @@ namespace BeaverBuddies.Colonies
         public bool ProposedHere { get; private set; }
         /// <summary>What this half's colony gives each round, or null for nothing.</summary>
         public string GoodId { get; private set; }
-        /// <summary>How many of it each round (0 to <see cref="ExchangeTerms.MaxAmount"/>).</summary>
+        /// <summary>
+        /// How many of it this round (0 to <see cref="ExchangeTerms.MaxAmount"/>): its share of <see cref="Whole"/>, set
+        /// again as each round starts (<see cref="ExchangeTerms.ShareOf"/>), so the rounds add up to exactly the whole.
+        /// </summary>
         public int Total { get; private set; }
+        /// <summary>
+        /// How many of it over the whole exchange, as offered (a repeating exchange: each round's). What the players
+        /// see; the rounds are the game's detail.
+        /// </summary>
+        public int Whole { get; private set; }
         /// <summary>How many of this round's goods already wait on this half (reserved there, so nobody takes them).</summary>
         public int Held { get; private set; }
         /// <summary>
@@ -98,16 +107,18 @@ namespace BeaverBuddies.Colonies
         public bool IsActive => State == ExchangeState.Active;
         public bool GivesGoods => Total > 0 && GoodId != null && !ExchangeTerms.IsSpecial(GoodId);
 
-        internal void Propose(int serial, bool proposedHere, string goodId, int total, int rounds, bool repeat, int colony, int keep)
+        /// <summary><paramref name="whole"/> is this side's whole (a repeating exchange: each round's).</summary>
+        internal void Propose(int serial, bool proposedHere, string goodId, int whole, int rounds, bool repeat, int colony, int keep)
         {
             Serial = serial;
             State = ExchangeState.Proposed;
             ProposedHere = proposedHere;
-            GoodId = ExchangeTerms.GoodOf(goodId, total);
-            Total = total;
+            GoodId = ExchangeTerms.GoodOf(goodId, whole);
+            Whole = whole;
             Held = 0;
             Repeat = repeat;
             Rounds = repeat ? 1 : rounds;
+            Total = repeat ? whole : ExchangeTerms.ShareOf(whole, Rounds, 0);
             Done = 0;
             CancelAsked = false;
             Colony = colony;
@@ -145,6 +156,8 @@ namespace BeaverBuddies.Colonies
         {
             Done++;
             Held = 0;
+            // The next round's share of the whole (a repeating exchange's rounds are all the same).
+            if (!Repeat && Done < Rounds) Total = ExchangeTerms.ShareOf(Whole, Rounds, Done);
             Changed("exchange-crossed");
         }
 
@@ -170,7 +183,7 @@ namespace BeaverBuddies.Colonies
 
         /// <summary>Diagnostics: every field, open or not (a serial that differs makes Accept or Cancel skip on one computer only).</summary>
         public long Fingerprint() =>
-            1 + (int)State + 3L * Held + 7919L * Total + 104729L * Done + 15485863L * Serial + 1299709L * Rounds
+            1 + (int)State + 3L * Held + 7919L * Total + 31L * Whole + 104729L * Done + 15485863L * Serial + 1299709L * Rounds
             + (CancelAsked ? 2 : 0) + (Repeat ? 4 : 0) + (ProposedHere ? 8 : 0) + 16L * (Colony + 2)
             + 17L * ColonyDigest.Of(GoodId) + 19L * ledger.Count + (ledger.Count > 0 ? ColonyDigest.Of(ledger[ledger.Count - 1].Encode()) : 0)
             + 23L * Keep + 29L * ColonyDigest.Of(LastTerms);
@@ -188,6 +201,7 @@ namespace BeaverBuddies.Colonies
             ProposedHere = false;
             GoodId = null;
             Total = 0;
+            Whole = 0;
             Held = 0;
             Repeat = false;
             Rounds = 0;
@@ -212,6 +226,7 @@ namespace BeaverBuddies.Colonies
             saver.Set(ProposedHereKey, ProposedHere ? 1 : 0);
             if (!string.IsNullOrEmpty(GoodId)) saver.Set(GoodKey, GoodId);
             saver.Set(TotalKey, Total);
+            saver.Set(WholeKey, Whole);
             if (Held > 0) saver.Set(HeldKey, Held);
             if (Repeat) saver.Set(RepeatKey, 1);
             saver.Set(RoundsKey, Rounds);
@@ -239,14 +254,17 @@ namespace BeaverBuddies.Colonies
             int total = loader.Has(TotalKey) ? loader.Get(TotalKey) : 0;
             int rounds = loader.Has(RoundsKey) ? loader.Get(RoundsKey) : 1;
             bool repeat = loader.Has(RepeatKey) && loader.Get(RepeatKey) != 0;
+            int whole = loader.Has(WholeKey) ? loader.Get(WholeKey) : total;
             // Only a state an exchange can be in (a side that gives nothing has no good and 0).
             if (state < (int)ExchangeState.Proposed || state > (int)ExchangeState.Active || total < 0 || total > ExchangeTerms.MaxAmount
-                || (total > 0 && string.IsNullOrEmpty(good)) || (!repeat && !ExchangeTerms.AreValidRounds(rounds)))
+                || whole < 0 || whole > (repeat ? ExchangeTerms.MaxAmount : ExchangeTerms.MaxWhole)
+                || (whole > 0 && string.IsNullOrEmpty(good)) || (!repeat && !ExchangeTerms.AreValidRounds(rounds)))
                 return;
             State = (ExchangeState)state;
             ProposedHere = loader.Has(ProposedHereKey) && loader.Get(ProposedHereKey) != 0;
-            GoodId = ExchangeTerms.GoodOf(good, total);
+            GoodId = ExchangeTerms.GoodOf(good, whole);
             Total = total;
+            Whole = whole;
             Held = loader.Has(HeldKey) ? Math.Max(0, Math.Min(total, loader.Get(HeldKey))) : 0;
             Repeat = repeat;
             Rounds = repeat ? 1 : rounds;
@@ -507,8 +525,7 @@ namespace BeaverBuddies.Colonies
                 bool trading = partnerOpen && TradingPosts.IsTradingPost(half);
                 // A mixed-factions game: terms the factions no longer allow (a colony founded again as another faction),
                 // judged only while the post trades (C1).
-                bool factionsAllow = !trading || FactionsAllow(owner, partnerOwner, mine.Total > 0 ? mine.GoodId : null,
-                    theirs.Total > 0 ? theirs.GoodId : null);
+                bool factionsAllow = !trading || FactionsAllow(owner, partnerOwner, mine.GoodId, theirs.GoodId);
                 switch (ExchangeTerms.Ending(partnerOpen, mine.ProposedHere, mine.Colony, owner, theirs?.Colony ?? -1, partnerOwner,
                     trading, factionsAllow))
                 {
@@ -666,8 +683,10 @@ namespace BeaverBuddies.Colonies
             if (aTotal > 0) totals?.Record(aSlot, bSlot, aGood, aTotal);
             if (bTotal > 0) totals?.Record(bSlot, aSlot, bGood, bTotal);
             int cycle = _gameCycleService.Cycle, day = _gameCycleService.CycleDay;
-            ax.Record(new TradeRecord(cycle, day, aGood, aTotal, bGood, bTotal));
-            bx.Record(new TradeRecord(cycle, day, bGood, bTotal, aGood, aTotal));
+            // A round may carry none of a side's whole (1 Gear over 5 rounds): the ledger says nothing for it.
+            string aGave = ExchangeTerms.GoodOf(aGood, aTotal), bGave = ExchangeTerms.GoodOf(bGood, bTotal);
+            ax.Record(new TradeRecord(cycle, day, aGave, aTotal, bGave, bTotal));
+            bx.Record(new TradeRecord(cycle, day, bGave, bTotal, aGave, aTotal));
             Plugin.Log($"[Colony] Exchange {ax.Serial} round {ax.Done} crossed: slot {aSlot} gave {aTotal} {aGood}, slot {bSlot} gave {bTotal} {bGood}");
             if (ExchangeTerms.HasAnotherRound(ax.Rounds, ax.Done, ax.Repeat)) return;
             int rounds = ax.Done;
@@ -746,8 +765,9 @@ namespace BeaverBuddies.Colonies
             if (!half) return "no such crossing";
             if (!TradingPosts.IsTradingPost(half)) return "the crossing is not a Trading Post between two colonies";
             if (actorSlot < 0 || OwnerOf(half) != actorSlot) return $"the half is slot {OwnerOf(half)}'s, not slot {actorSlot}'s";
-            if (!ExchangeTerms.AreValid(giveGood, giveAmount, getGood, getAmount)) return "the terms are not valid";
-            if (!repeat && !ExchangeTerms.AreValidRounds(rounds)) return $"{rounds} rounds";
+            if (!ExchangeTerms.AreValidTerms(giveGood, giveAmount, getGood, getAmount, repeat)) return "the terms are not valid";
+            // The rounds follow from the amounts (a Trading Post carries up to MaxAmount of each a round).
+            if (!repeat && rounds != ExchangeTerms.RoundsFor(giveAmount, getAmount)) return $"{rounds} rounds for {giveAmount} for {getAmount}";
             if (!ExchangeTerms.IsValidKeep(keep)) return $"a reserve of {keep}";
             if ((giveAmount > 0 && !IsKnownItem(giveGood)) || (getAmount > 0 && !IsKnownItem(getGood)))
                 return "a good is unknown in this game, or science is not separate";
@@ -763,6 +783,10 @@ namespace BeaverBuddies.Colonies
         public bool IsKnownItem(string item) =>
             item == ExchangeTerms.Beavers || (item == ExchangeTerms.Science ? ColonyScienceService.IsEnabled : _goodService.HasGood(item));
 
+        /// <summary>
+        /// An offer of <paramref name="giveAmount"/> for <paramref name="getAmount"/> in all, over
+        /// <see cref="ExchangeTerms.RoundsFor"/> rounds (a repeating one: each round's, until both stop).
+        /// </summary>
         public void Propose(DistrictCrossing half, int actorSlot, string giveGood, int giveAmount, string getGood, int getAmount,
             int rounds, bool repeat, int keep = 0)
         {
@@ -786,9 +810,9 @@ namespace BeaverBuddies.Colonies
             theirs.RememberTerms(ExchangeTerms.EncodeTerms(getGood, getAmount, giveGood, giveAmount, rounds, repeat, 0));
             Plugin.Log($"[Colony] Slot {from} offers {giveAmount} {giveGood} for {getAmount} {getGood} from slot {to}, "
                 + $"{(repeat ? "repeating" : rounds + " rounds")}{(keep > 0 ? $", keeping {keep}" : "")} (exchange {serial})");
-            // The notice says the whole exchange (every round's goods), not one round's.
-            Ask(() => to, partner, () => Whole("BeaverBuddies.Colony.Trade.Notice.Proposed", "BeaverBuddies.Colony.Trade.Notice.ProposedRounds",
-                "BeaverBuddies.Colony.Trade.Notice.ProposedRepeat", ColonyName(from), giveGood, giveAmount, getGood, getAmount, rounds, repeat), warning: false);
+            // The notice says the whole exchange, as offered; the rounds are the game's detail.
+            Ask(() => to, partner, () => Whole("BeaverBuddies.Colony.Trade.Notice.Proposed", "BeaverBuddies.Colony.Trade.Notice.ProposedRepeat",
+                ColonyName(from), giveGood, giveAmount, getGood, getAmount, repeat), warning: false);
         }
 
         /// <summary>
@@ -808,15 +832,15 @@ namespace BeaverBuddies.Colonies
                 why = "no offer is waiting here";
             else if (actorSlot < 0 || OwnerOf(half) != actorSlot)
                 why = $"the half is slot {OwnerOf(half)}'s, not slot {actorSlot}'s";
-            else if (mine.Serial != serial || mine.Repeat != repeat || (!repeat && mine.Rounds != rounds) || mine.Total != giveAmount
-                || theirs.Total != getAmount || mine.GoodId != ExchangeTerms.GoodOf(giveGood, giveAmount)
+            else if (mine.Serial != serial || mine.Repeat != repeat || (!repeat && mine.Rounds != rounds) || mine.Whole != giveAmount
+                || theirs.Whole != getAmount || mine.GoodId != ExchangeTerms.GoodOf(giveGood, giveAmount)
                 || theirs.GoodId != ExchangeTerms.GoodOf(getGood, getAmount))
                 why = "the offer changed";
             // A mixed game only (the faction check below needs the colony it was offered to); otherwise the tick's
             // check ends such an exchange, as before.
             else if (Factions.MixedFactions.IsOn && theirs.Colony >= 0 && OwnerOf(partner) != theirs.Colony)
                 why = "the other half has changed colony";
-            else if (!FactionsAllow(OwnerOf(half), OwnerOf(partner), mine.Total > 0 ? mine.GoodId : null, theirs.Total > 0 ? theirs.GoodId : null))
+            else if (!FactionsAllow(OwnerOf(half), OwnerOf(partner), mine.GoodId, theirs.GoodId))
                 why = FactionsRefuse;
             if (why != null)
             {
@@ -829,9 +853,8 @@ namespace BeaverBuddies.Colonies
             int me = OwnerOf(half), them = OwnerOf(partner);
             Plugin.Log($"[Colony] Slot {me} accepted exchange {serial}: {getAmount} {getGood} for {giveAmount} {giveGood}");
             // The colony that offered hears it, and a chime says so (it may be looking elsewhere).
-            Tell(() => them, null, () => Whole("BeaverBuddies.Colony.Trade.Notice.Accepted", "BeaverBuddies.Colony.Trade.Notice.AcceptedRounds",
-                "BeaverBuddies.Colony.Trade.Notice.AcceptedRepeat", ColonyName(me), theirs.GoodId, theirs.Total, mine.GoodId, mine.Total,
-                mine.Rounds, mine.Repeat), warning: false, chime: true);
+            Tell(() => them, null, () => Whole("BeaverBuddies.Colony.Trade.Notice.Accepted", "BeaverBuddies.Colony.Trade.Notice.AcceptedRepeat",
+                ColonyName(me), theirs.GoodId, theirs.Whole, mine.GoodId, mine.Whole, mine.Repeat), warning: false, chime: true);
         }
 
         /// <summary>
@@ -1162,17 +1185,12 @@ namespace BeaverBuddies.Colonies
         }
 
         /// <summary>
-        /// A notice about a whole exchange, "{colony} offers {1} for {2}": <paramref name="once"/> for one round,
-        /// <paramref name="many"/> with every round's goods added up and the rounds, <paramref name="repeating"/> for a
-        /// standing deal (one round's goods, every round).
+        /// A notice about a whole exchange, "{colony} offers {1} for {2}": <paramref name="once"/> with the whole as
+        /// offered (never the rounds), <paramref name="repeating"/> for a standing deal (one round's goods, every round).
         /// </summary>
-        private string Whole(string once, string many, string repeating, string colony, string giveGood, int giveAmount, string getGood,
-            int getAmount, int rounds, bool repeat)
-        {
-            if (repeat) return string.Format(T(repeating), colony, Amount(giveAmount, giveGood), Amount(getAmount, getGood));
-            if (rounds <= 1) return string.Format(T(once), colony, Amount(giveAmount, giveGood), Amount(getAmount, getGood));
-            return string.Format(T(many), colony, Amount(giveAmount * rounds, giveGood), Amount(getAmount * rounds, getGood), rounds);
-        }
+        private string Whole(string once, string repeating, string colony, string giveGood, int giveAmount, string getGood,
+            int getAmount, bool repeat) =>
+            string.Format(T(repeat ? repeating : once), colony, Amount(giveAmount, giveGood), Amount(getAmount, getGood));
 
         /// <summary>"100 Planks", "1 Beaver", or "nothing" for a side that gives nothing.</summary>
         public string Amount(int amount, string goodId) =>
@@ -1206,6 +1224,7 @@ namespace BeaverBuddies.Colonies
     {
         public string crossingID;
         public string giveGood;
+        // The whole exchange's amounts (a repeating one: each round's), and the rounds they take (ExchangeTerms.RoundsFor).
         public int giveAmount;
         public string getGood;
         public int getAmount;

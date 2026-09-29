@@ -16,6 +16,19 @@ static class Rc27Checks
         return File.ReadAllText(Path.Combine(new[] { root! }.Concat(parts).ToArray())).Replace("\r\n", "\n");
     }
 
+    static string Body(string text, string signature)
+    {
+        int start = text.IndexOf(signature, StringComparison.Ordinal);
+        Check(start >= 0, "not found: " + signature);
+        int open = text.IndexOf('{', start), depth = 0;
+        for (int i = open; i < text.Length; i++)
+        {
+            if (text[i] == '{') depth++;
+            else if (text[i] == '}' && --depth == 0) return text.Substring(start, i - start + 1);
+        }
+        throw new Exception("unbalanced braces after " + signature);
+    }
+
     public static IEnumerable<(string Name, Action Run)> Tests()
     {
         yield return ("rc27: another colony's cutting marks are hidden only from the game's interface, never from the simulation", () =>
@@ -207,6 +220,64 @@ static class Rc27Checks
             string source = Source("BeaverBuddies", "Colonies", "ColonyWellbeingRecords.cs");
             Check(source.Contains("int[] before = (int[])records.Clone();") && source.Contains("&& WellbeingRecords.Announces(before[slot])) Announce(records[slot]);"),
                 "the first record is announced");
+        });
+        yield return ("rc31: the Global history graphs (F9, F10) show your colony, built for the display and never saved", () =>
+        {
+            string history = Source("BeaverBuddies", "Colonies", "ColonyHistoryView.cs");
+            // The graphs are handed the colony's history in place of the whole map's, only while one colony is shown.
+            Check(history.Contains("[HarmonyPatch(typeof(PopulationStatisticsGraphFactory), nameof(PopulationStatisticsGraphFactory.Create), new[] { typeof(PopulationSampleHistory) })]")
+                && history.Contains("ColonyHistoryView.Instance?.SwapPopulation(ref populationSampleHistory);"), "the population graphs are the whole map's");
+            Check(history.Contains("[HarmonyPatch(typeof(GoodStatisticsGroupFactory), nameof(GoodStatisticsGroupFactory.Create))]")
+                && history.Contains("ColonyHistoryView.Instance?.SwapGoods(ref goodSamplingRegistry);"), "the goods charts are the whole map's");
+            Check(System.Text.RegularExpressions.Regex.Matches(history, @"if \(!ColonyViewService\.Active\) return;\n            ColonyHistoryView\.Instance\?\.Swap").Count == 2,
+                "the graphs are swapped alone or in a shared game");
+            // Only the whole map's history is swapped: a district's graphs stay the game's.
+            Check(history.Contains("if (global == null || !ReferenceEquals(history, global)) return;")
+                && history.Contains("if (global == null || !ReferenceEquals(registry, global)) return;"), "a district's graphs could be swapped");
+            // The game's registries are only read: nothing is added to them, and the colony's lists are this view's own.
+            Check(!history.Contains(".AddSample(") && !history.Contains(".Add(sample") && !history.Contains(".PopulationSampleHistory =")
+                && !history.Contains(".GoodSamplingRegistry ="), "a game registry could be written");
+            Check(history.Contains("PopulationSampleHistory.CreateFromSave(populationSamples)") && history.Contains("GoodSampleHistory.CreateFromSave(all.GoodId, samples)"),
+                "the colony's history is not a list of its own");
+            // Summed day by day from the latest; wellbeing weighted by beavers, as the top bar's.
+            Check(history.Contains("if (back >= samples.Count) continue;") && history.Contains("if (back < district.Count) sum += district[district.Count - 1 - back];")
+                && history.Contains("wellbeing += (long)sample.Wellbeing * count;"), "the colony's days are not lined up, or wellbeing is not weighted by beavers");
+            // Rebuilt only for a new day or a change of districts, and only when a graph of the colony's asks.
+            Check(history.Contains("if (!populationBuilt.Changed(days.Count, active, own)) return;") && history.Contains("if (!goodsBuilt.Changed(samples, active, own)) return;")
+                && history.Contains("ReferenceEquals(history, populationHistory)) RefreshPopulation();") && history.Contains("goodsHistories.Contains(history)) RefreshGoods();"),
+                "the colony's histories are rebuilt on every redraw");
+            Check(Source("BeaverBuddies", "Colonies", "ColonyConfigurator.cs").Contains("containerDefinition.Bind<ColonyHistoryView>().AsSingleton();"), "the history view is not bound");
+            string checks = Source("RuntimeChecks", "ColonyRuntimeChecks.cs");
+            foreach (string method in new[] { "PopulationStatisticsGraphFactory\", \"Timberborn.PopulationStatisticsBatchControl\", \"Create\"),",
+                "PopulationStatisticsGraph\", \"Timberborn.PopulationStatisticsBatchControl\", \"UpdateItem\"),",
+                "GoodStatisticsGroupFactory\", \"Timberborn.GoodStatisticsBatchControl\", \"Create\"),",
+                "GoodSampleHistoryElement\", \"Timberborn.GoodStatisticsUI\", \"Update\"),", "\"_populationSampleHistory\"),", "\"_goodSampleHistory\"),",
+                "\"populationSampleHistory\", \"Timberborn.PopulationStatisticsSampling.PopulationSampleHistory\"),",
+                "\"goodSamplingRegistry\", \"Timberborn.GoodsSampling.GoodSamplingRegistry\")," })
+                Check(checks.Contains(method), "RuntimeChecks does not list " + method);
+            string rules = System.Text.RegularExpressions.Regex.Replace(Source("TWO-COLONIES.md"), @"\s+", " ");
+            Check(!rules.Contains("*Global* history graphs") && rules.Contains("Faction unlocks still cover the whole map."), "TWO-COLONIES.md says the Global graphs are the whole map's");
+        });
+        yield return ("rc31: the trading posts window names only the game UI's classes it lists, and none of the entity panel's", () =>
+        {
+            string window = Source("BeaverBuddies", "Colonies", "TradeOverviewPanel.cs");
+            int start = window.IndexOf("public static readonly string[] ClassesUsed", StringComparison.Ordinal);
+            Check(start >= 0, "the window no longer lists its classes");
+            string listed = window.Substring(start, window.IndexOf("};", start, StringComparison.Ordinal) - start);
+            // Every class the window adds or builds a box of is listed (RuntimeChecks holds the list to the game's sheets).
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(window,
+                "(?:AddToClassList|Box)\\(\"([^\"]+)\"\\)"))
+                Check(listed.Contains("\"" + m.Groups[1].Value + "\""), "the window uses " + m.Groups[1].Value + " without listing it");
+            // The entity panel's sheet is not in a window: its classes (the red button, entity-panel__text's colour) draw nothing there.
+            foreach (string panelOnly in new[] { "NativeElements.RedButton(", "NativeElements.Caption(", "NativeElements.Section(", "entity-panel__", "entity-fragment__" })
+                Check(!window.Contains(panelOnly), "the window relies on the entity panel's style sheet: " + panelOnly);
+            // Text takes its size and colour from the game's classes, not colours set on it (only the warning and muted ones).
+            Check(!window.Contains("Color.white") && !window.Contains("style.fontSize"), "the window sets a text colour or size of its own");
+            // Outside an entity panel the mod's text and buttons still have the game's light grey.
+            string native = Body(Source("BeaverBuddies", "Util", "NativeElements.cs"), "public static Label Text(");
+            Check(native.Contains("label.AddToClassList(TextNormal);"), "the mod's text has no colour outside an entity panel");
+            Check(Body(Source("BeaverBuddies", "Util", "NativeElements.cs"), "private static Button TextButton(").Contains("button.AddToClassList(TextNormal);"),
+                "the mod's buttons have no text colour outside an entity panel");
         });
     }
 }

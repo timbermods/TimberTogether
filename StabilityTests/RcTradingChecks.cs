@@ -205,9 +205,9 @@ static class RcTradingChecks
                 foreach (string get in goods)
                 {
                     if (give == get) continue;
-                    string terms = ExchangeTerms.EncodeTerms(give, 100, get, 7, 12, false, 250);
+                    string terms = ExchangeTerms.EncodeTerms(give, 1200, get, 7, 12, false, 250);
                     Check(ExchangeTerms.TryDecodeTerms(terms, out string g1, out int a1, out string g2, out int a2, out int r, out bool rep, out int k));
-                    Check(g1 == give && a1 == 100 && g2 == get && a2 == 7 && r == 12 && !rep && k == 250, terms);
+                    Check(g1 == give && a1 == 1200 && g2 == get && a2 == 7 && r == 12 && !rep && k == 250, terms);
                 }
         });
 
@@ -234,14 +234,15 @@ static class RcTradingChecks
 
     sealed class Side
     {
-        public int State, Serial, Total, Held, Rounds, Done, Keep, Colony = -1;
+        // Total: this round's share of Whole (the whole exchange, as offered; a repeating one's: each round's).
+        public int State, Serial, Total, Whole, Held, Rounds, Done, Keep, Colony = -1;
         public bool ProposedHere, Repeat, CancelAsked;
         public string Good, LastTerms;
         public readonly List<TradeRecord> Ledger = new List<TradeRecord>();
         public bool IsOpen => State != 0;
         public bool IsActive => State == 2;
         public bool GivesGoods => Total > 0 && Good != null && !ExchangeTerms.IsSpecial(Good);
-        public void Clear() { State = 0; ProposedHere = Repeat = CancelAsked = false; Good = null; Total = Held = Rounds = Done = Keep = 0; Colony = -1; }
+        public void Clear() { State = 0; ProposedHere = Repeat = CancelAsked = false; Good = null; Total = Whole = Held = Rounds = Done = Keep = 0; Colony = -1; }
     }
 
     sealed class Half
@@ -409,14 +410,18 @@ static class RcTradingChecks
         int aTotal = mine.Total, bTotal = theirs.Total, aHeld = mine.Held, bHeld = theirs.Held;
         mine.Done++; mine.Held = 0;
         theirs.Done++; theirs.Held = 0;
+        // The next round's share of the whole, as CrossingExchange.Crossed sets it.
+        foreach (Side side in new[] { mine, theirs })
+            if (!side.Repeat && side.Done < side.Rounds) side.Total = ExchangeTerms.ShareOf(side.Whole, side.Rounds, side.Done);
         MoveGoods(half, partner, aGood, aHeld);
         MoveGoods(partner, half, bGood, bHeld);
         aTotal = MoveSpecial(w, half, partner, aGood, aTotal, movableHere);
         bTotal = MoveSpecial(w, partner, half, bGood, bTotal, movableThere);
         if (aTotal > 0) { w.Totals.Record(half.Owner, partner.Owner, aGood, aTotal); Add2(w.Crossed, (half.Owner, partner.Owner, aGood), aTotal); }
         if (bTotal > 0) { w.Totals.Record(partner.Owner, half.Owner, bGood, bTotal); Add2(w.Crossed, (partner.Owner, half.Owner, bGood), bTotal); }
-        Record(mine, new TradeRecord(1, 1, aGood, aTotal, bGood, bTotal));
-        Record(theirs, new TradeRecord(1, 1, bGood, bTotal, aGood, aTotal));
+        string aGave = ExchangeTerms.GoodOf(aGood, aTotal), bGave = ExchangeTerms.GoodOf(bGood, bTotal);
+        Record(mine, new TradeRecord(1, 1, aGave, aTotal, bGave, bTotal));
+        Record(theirs, new TradeRecord(1, 1, bGave, bTotal, aGave, aTotal));
         if (!ExchangeTerms.HasAnotherRound(mine.Rounds, mine.Done, mine.Repeat)) { mine.Clear(); theirs.Clear(); }
         return 1;
     }
@@ -465,12 +470,14 @@ static class RcTradingChecks
         if (!w.Trading || half.X.IsOpen || partner.X.IsOpen) return;
         string[] items = Goods.Concat(new[] { ExchangeTerms.Science, ExchangeTerms.Beavers }).ToArray();
         string give = items[random.Next(items.Length)], get = items[random.Next(items.Length)];
-        int giveAmount = give == ExchangeTerms.Beavers ? random.Next(0, 4) : random.Next(0, 101);
-        int getAmount = get == ExchangeTerms.Beavers ? random.Next(0, 4) : random.Next(0, 101);
-        int rounds = random.Next(1, 6);
+        // A whole trade as typed (up to a few rounds' worth, awkward numbers included), or a repeating one's round.
         bool repeat = random.Next(5) == 0;
+        int most = repeat ? ExchangeTerms.MaxAmount : 250;
+        int giveAmount = give == ExchangeTerms.Beavers ? random.Next(0, 4) : random.Next(0, most + 1);
+        int getAmount = get == ExchangeTerms.Beavers ? random.Next(0, 4) : random.Next(0, most + 1);
+        int rounds = repeat ? 1 : ExchangeTerms.RoundsFor(giveAmount, getAmount);
         int keep = random.Next(5) == 0 ? random.Next(0, 300) : 0;
-        if (!ExchangeTerms.AreValid(give, giveAmount, get, getAmount) || !ExchangeTerms.AreValidRounds(rounds) || !ExchangeTerms.IsValidKeep(keep)) return;
+        if (!ExchangeTerms.AreValidTerms(give, giveAmount, get, getAmount, repeat) || !ExchangeTerms.IsValidKeep(keep)) return;
         int serial = Math.Max(half.X.Serial, partner.X.Serial) + 1;
         Set(half.X, serial, true, give, giveAmount, rounds, repeat, half.Owner, keep);
         Set(partner.X, serial, false, get, getAmount, rounds, repeat, partner.Owner, 0);
@@ -478,10 +485,11 @@ static class RcTradingChecks
         partner.X.LastTerms = ExchangeTerms.EncodeTerms(get, getAmount, give, giveAmount, rounds, repeat, 0);
     }
 
-    static void Set(Side side, int serial, bool here, string good, int total, int rounds, bool repeat, int colony, int keep)
+    static void Set(Side side, int serial, bool here, string good, int whole, int rounds, bool repeat, int colony, int keep)
     {
-        side.Serial = serial; side.State = 1; side.ProposedHere = here; side.Good = ExchangeTerms.GoodOf(good, total); side.Total = total;
+        side.Serial = serial; side.State = 1; side.ProposedHere = here; side.Good = ExchangeTerms.GoodOf(good, whole); side.Whole = whole;
         side.Held = 0; side.Repeat = repeat; side.Rounds = repeat ? 1 : rounds; side.Done = 0; side.CancelAsked = false; side.Colony = colony;
+        side.Total = repeat ? whole : ExchangeTerms.ShareOf(whole, side.Rounds, 0);
         side.Keep = keep;
     }
 

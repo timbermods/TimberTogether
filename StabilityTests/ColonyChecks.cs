@@ -877,6 +877,8 @@ static class ColonyChecks
         yield return ("Colony: an amount box holds a whole number from 0 to a whole exchange's worth, and empty means 0", () =>
         {
             Equal(9900, TradeOfferForm.MaxTyped);
+            Equal(100, TradeOfferForm.MaxFor(repeat: true));
+            Equal(9900, TradeOfferForm.MaxFor(repeat: false));
             foreach (var (text, amount) in new[] { ("", 0), ("  ", 0), (null, 0), ("0", 0), ("100", 100), (" 42 ", 42), ("050", 50), ("101", 101), ("9900", 9900) })
             {
                 Check(TradeOfferForm.TryReadAmount(text, out int read), $"[{text}] should read");
@@ -884,19 +886,12 @@ static class ColonyChecks
             }
             foreach (string text in new[] { "9901", "99999", "-5", "+5", "1,000", "1.5", "12a", "1e3", "٣" })
                 Check(!TradeOfferForm.TryReadAmount(text, out _), $"[{text}] should not read");
-            foreach (var (text, rounds) in new[] { ("1", 1), (" 3 ", 3), ("99", 99), ("07", 7) })
-            {
-                Check(TradeOfferForm.TryReadRounds(text, out int read), $"[{text}] rounds should read");
-                Equal(rounds, read);
-            }
-            foreach (string text in new[] { "", "0", "100", "-1", "x", null })
-                Check(!TradeOfferForm.TryReadRounds(text, out _), $"[{text}] rounds should not read");
         });
 
-        yield return ("Colony: the offer form says what an offer is, or what is wrong with it", () =>
+        yield return ("Colony: the offer form says what an offer is, or what is wrong with it; amounts are never refused for their size", () =>
         {
-            TradeOfferForm.Verdict Judge(string giveItem, string giveText, string getItem, string getText, string roundsText = "1",
-                bool repeat = false) => TradeOfferForm.Judge(giveItem, giveText, getItem, getText, roundsText, repeat, out _, out _, out _);
+            TradeOfferForm.Verdict Judge(string giveItem, string giveText, string getItem, string getText, bool repeat = false) =>
+                TradeOfferForm.Judge(giveItem, giveText, getItem, getText, repeat, out _, out _, out _);
             Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "100", "Gear", "25"));
             Equal(TradeOfferForm.Verdict.Gift, Judge("Log", "30", "Gear", "0"));
             Equal(TradeOfferForm.Verdict.Gift, Judge("Log", "30", "Gear", ""));
@@ -908,104 +903,75 @@ static class ColonyChecks
             Equal(TradeOfferForm.Verdict.BadAmount, Judge("Log", "5", "Gear", "lots"));
             Equal(TradeOfferForm.Verdict.NoItem, Judge(null, "5", "Gear", "5"));
             Equal(TradeOfferForm.Verdict.Exchange, Judge(ExchangeTerms.Science, "100", ExchangeTerms.Beavers, "2"));
-            Equal(TradeOfferForm.Verdict.BadRounds, Judge("Log", "100", "Gear", "25", "0"));
-            Equal(TradeOfferForm.Verdict.BadRounds, Judge("Log", "100", "Gear", "25", "100"));
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "100", "Gear", "25", "99"));
-            // A repeating offer ignores the rounds box.
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "100", "Gear", "25", "", repeat: true));
-            TradeOfferForm.Judge("Log", "100", "Gear", "25", "7", false, out _, out _, out int seven);
-            Equal(7, seven);
+            // Awkward numbers are offers too: the game spreads them over its rounds.
+            Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "101", "Gear", "2"));
+            Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "500", "Gear", "1"));
+            Equal(TradeOfferForm.Verdict.Gift, Judge("Log", "101", "Gear", "0"));
+            // A repeating offer's amounts are each round's (the form brings a larger one down to 100).
+            Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "100", "Gear", "25", repeat: true));
+            Equal(TradeOfferForm.Verdict.BadAmount, Judge("Log", "101", "Gear", "25", repeat: true));
+            TradeOfferForm.Judge("Log", "301", "Gear", "300", false, out int wg, out int wa, out int wr);
+            Equal(301, wg); Equal(300, wa); Equal(4, wr);
 
-            // Whatever is typed, the form offers exactly what an exchange accepts: the numbers it read when a round
-            // carries them, else those split into rounds.
+            // Whatever is typed, the form offers exactly what an exchange accepts, as typed, in RoundsFor rounds.
             var random = new Random(20260921);
             string[] items = { "Log", "Gear", ExchangeTerms.Science, ExchangeTerms.Beavers, null, "" };
             string[] texts = { "", "0", "1", "10", "100", "101", "250", "9900", "9901", "-1", "x", " 7 " };
-            string[] roundTexts = { "", "0", "1", "2", "50", "99", "100", "x", " 3 " };
             for (int i = 0; i < 5000; i++)
             {
                 string giveItem = items[random.Next(items.Length)], getItem = items[random.Next(items.Length)];
                 string giveText = random.Next(4) == 0 ? texts[random.Next(texts.Length)] : random.Next(0, random.Next(3) == 0 ? 1200 : 130).ToString();
                 string getText = random.Next(4) == 0 ? texts[random.Next(texts.Length)] : random.Next(0, random.Next(3) == 0 ? 1200 : 130).ToString();
-                string roundsText = roundTexts[random.Next(roundTexts.Length)];
                 bool repeat = random.Next(3) == 0;
-                var verdict = TradeOfferForm.Judge(giveItem, giveText, getItem, getText, roundsText, repeat, out int give, out int get, out int rounds, out bool split);
+                var verdict = TradeOfferForm.Judge(giveItem, giveText, getItem, getText, repeat, out int give, out int get, out int rounds);
                 bool read = TradeOfferForm.TryReadAmount(giveText, out int g) & TradeOfferForm.TryReadAmount(getText, out int a);
-                bool roundsRead = TradeOfferForm.TryReadRounds(roundsText, out int r);
-                bool fits = g <= ExchangeTerms.MaxAmount && a <= ExchangeTerms.MaxAmount;
-                if (TradeOfferForm.IsOffer(verdict))
-                {
-                    Check(ExchangeTerms.AreValid(giveItem, give, getItem, get) && (repeat || ExchangeTerms.AreValidRounds(rounds)),
-                        $"{giveText} {giveItem} for {getText} {getItem} x[{roundsText}]: the form offers {give} for {get} x{rounds}, which an exchange refuses");
-                    Equal(!fits, split);
-                    if (fits)
-                    {
-                        Equal(g, give); Equal(a, get);
-                        Equal(repeat ? 1 : r, rounds);
-                    }
-                }
-                // Where a round carries both amounts the form agrees with an exchange exactly, as before.
-                if (read && fits)
-                {
-                    bool valid = ExchangeTerms.AreValid(giveItem, g, getItem, a) && (repeat || roundsRead);
-                    Check(TradeOfferForm.IsOffer(verdict) == valid,
-                        $"{giveText} {giveItem} for {getText} {getItem} x[{roundsText}]{(repeat ? " repeating" : "")}: the form says {verdict}, an exchange says {(valid ? "valid" : "not valid")}");
-                }
+                bool valid = read && ExchangeTerms.AreValidTerms(giveItem, g, getItem, a, repeat);
+                Check(TradeOfferForm.IsOffer(verdict) == valid,
+                    $"{giveText} {giveItem} for {getText} {getItem}{(repeat ? " repeating" : "")}: the form says {verdict}, an exchange says {(valid ? "valid" : "not valid")}");
+                if (!TradeOfferForm.IsOffer(verdict)) continue;
+                Equal(g, give); Equal(a, get);
+                Equal(repeat ? 1 : ExchangeTerms.RoundsFor(g, a), rounds);
             }
         });
 
-        yield return ("Colony: more than a round carries is split into the fewest equal rounds, never rounded", () =>
+        yield return ("Colony: a whole trade takes one round per 100 of its larger side, spread evenly, adding up to exactly what was typed", () =>
         {
-            TradeOfferForm.Verdict Judge(string give, string get, string rounds, bool repeat, out int g, out int a, out int r, out bool split) =>
-                TradeOfferForm.Judge("Log", give, "Bread", get, rounds, repeat, out g, out a, out r, out split);
-            // 300 logs for 300 bread: three rounds of 100 for 100.
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("300", "300", "1", false, out int g1, out int a1, out int r1, out bool s1));
-            Equal(100, g1); Equal(100, a1); Equal(3, r1); Check(s1, "300 for 300 is not split");
-            // Not a multiple of 100: the fewest equal rounds that carry exactly the whole.
-            Judge("250", "130", "1", false, out int g2, out int a2, out int r2, out _);
-            Equal(5, r2); Equal(50, g2); Equal(26, a2);
-            // No equal rounds carry 1000 for 5 within a round's 100: refused, not rounded up to 10.
-            Equal(TradeOfferForm.Verdict.Uneven, Judge("1000", "5", "1", false, out _, out _, out _, out _));
-            // A gift stays a gift.
-            Equal(TradeOfferForm.Verdict.Gift, Judge("450", "0", "1", false, out int g4, out int a4, out int r4, out _));
-            Equal(90, g4); Equal(0, a4); Equal(5, r4);
-            // More than a round carries is the whole trade: the rounds box is not read (500 Bread is 500 in all, never 500 x 5).
-            Judge("150", "50", "2", false, out int g5, out int a5, out int r5, out _);
-            Equal(2, r5); Equal(75, g5); Equal(25, a5);
-            Equal(TradeOfferForm.Verdict.Request, Judge("0", "500", "5", false, out int g9, out int a9, out int r9, out _));
-            Equal(0, g9); Equal(100, a9); Equal(5, r9);
-            Equal(TradeOfferForm.Verdict.Request, Judge("0", "500", "", false, out _, out _, out int r10, out _));
-            Equal(5, r10);
-            // What fits a round is left as typed.
-            Judge("100", "25", "4", false, out int g6, out int a6, out int r6, out bool s6);
-            Equal(100, g6); Equal(25, a6); Equal(4, r6); Check(!s6, "an offer that fits a round was split");
-            // A repeating offer keeps repeating, its round cut to fit.
-            Judge("300", "150", "", true, out int g7, out int a7, out int r7, out _);
-            Equal(100, g7); Equal(50, a7); Equal(1, r7);
-            // The most an amount box takes fills the most rounds, whatever the rounds box says; more is refused.
-            Equal(TradeOfferForm.Verdict.Exchange, Judge("9900", "99", "2", false, out int g8, out _, out int r8, out _));
-            Equal(100, g8); Equal(99, r8);
-            Equal(TradeOfferForm.Verdict.BadAmount, Judge("9901", "10", "1", false, out _, out _, out _, out _));
-            // Every split carries exactly the whole, in the fewest equal rounds, each within what a post holds; amounts
-            // that no number of equal rounds divides are refused, never rounded (500 for 1 is not 5 beavers).
-            for (int give = 0; give <= 2000; give += 37)
-                for (int get = 0; get <= 2000; get += 53)
+            Equal(1, ExchangeTerms.RoundsFor(0, 0));
+            Equal(1, ExchangeTerms.RoundsFor(100, 25));
+            Equal(2, ExchangeTerms.RoundsFor(101, 2));
+            Equal(3, ExchangeTerms.RoundsFor(300, 300));
+            Equal(4, ExchangeTerms.RoundsFor(301, 300));
+            Equal(5, ExchangeTerms.RoundsFor(1, 500));
+            Equal(99, ExchangeTerms.RoundsFor(9900, 9900));
+            // 101 Logs for 2 Gears: 51 then 50 Logs, 1 and 1 Gear. 500 Logs for 1 Gear: the Gear in the first round.
+            Equal(51, ExchangeTerms.ShareOf(101, 2, 0)); Equal(50, ExchangeTerms.ShareOf(101, 2, 1));
+            Equal(1, ExchangeTerms.ShareOf(2, 2, 0)); Equal(1, ExchangeTerms.ShareOf(2, 2, 1));
+            Equal(1, ExchangeTerms.ShareOf(1, 5, 0)); Equal(0, ExchangeTerms.ShareOf(1, 5, 4));
+            Equal(0, ExchangeTerms.ShareOf(10, 2, 2));
+            for (int give = 0; give <= ExchangeTerms.MaxWhole; give += 37)
+                foreach (int get in new[] { 0, 1, 2, 7, 99, 100, 101, 999, 4321, 9900 })
                 {
-                    if (give <= ExchangeTerms.MaxAmount && get <= ExchangeTerms.MaxAmount) continue;
-                    int needed = (Math.Max(give, get) + 99) / 100;
-                    int fewest = Enumerable.Range(needed, Math.Max(0, ExchangeTerms.MaxRounds - needed + 1)).FirstOrDefault(k => give % k == 0 && get % k == 0);
-                    bool splits = TradeOfferForm.Split(give, get, 1, false, out int eg, out int ea, out int n);
-                    Equal(fewest != 0, splits);
-                    if (!splits) continue;
-                    Equal(fewest, n);
-                    Check(eg <= ExchangeTerms.MaxAmount && ea <= ExchangeTerms.MaxAmount && eg * n == give && ea * n == get,
-                        $"{give} for {get}: {eg}x{n} for {ea}x{n} is not the whole");
+                    int rounds = ExchangeTerms.RoundsFor(give, get);
+                    Check(rounds >= 1 && rounds <= ExchangeTerms.MaxRounds, $"{give} for {get}: {rounds} rounds");
+                    int sumGive = 0, sumGet = 0;
+                    for (int r = 0; r < rounds; r++)
+                    {
+                        int eg = ExchangeTerms.ShareOf(give, rounds, r), ea = ExchangeTerms.ShareOf(get, rounds, r);
+                        Check(eg >= 0 && eg <= ExchangeTerms.MaxAmount && ea >= 0 && ea <= ExchangeTerms.MaxAmount, $"{give} for {get}: round {r} is {eg} for {ea}");
+                        int before = r == 0 ? eg : ExchangeTerms.ShareOf(give, rounds, r - 1);
+                        Check(before - eg == 0 || before - eg == 1, $"{give} over {rounds}: not even");
+                        sumGive += eg; sumGet += ea;
+                    }
+                    Equal(give, sumGive); Equal(get, sumGet);
                 }
-            Check(!TradeOfferForm.Split(500, 1, 1, false, out _, out _, out _), "500 for 1 was rounded");
-            Equal(TradeOfferForm.Verdict.Uneven, Judge("500", "1", "", false, out _, out _, out _, out _));
-            Equal(TradeOfferForm.Verdict.Uneven, Judge("101", "0", "", false, out _, out _, out _, out _));
-            Judge("250", "50", "", false, out int g11, out int a11, out int r11, out _);
-            Equal(50, g11); Equal(10, a11); Equal(5, r11);
+            // An exchange's own terms: whole amounts need their rounds; a repeating one's are each round's.
+            Check(ExchangeTerms.AreValidTerms("Log", 101, "Gear", 2, repeat: false));
+            Check(!ExchangeTerms.AreValidTerms("Log", 101, "Gear", 2, repeat: true));
+            Check(!ExchangeTerms.AreValidTerms("Log", 9901, "Gear", 2, repeat: false));
+            Check(ExchangeTerms.TryDecodeTerms(ExchangeTerms.EncodeTerms("Log", 101, "Gear", 2, 2, false, 0), out _, out int dg, out _, out int da, out int dr, out _, out _)
+                && dg == 101 && da == 2 && dr == 2, "whole terms are not remembered");
+            Check(!ExchangeTerms.TryDecodeTerms(ExchangeTerms.EncodeTerms("Log", 101, "Gear", 2, 5, false, 0), out _, out _, out _, out _, out _, out _, out _),
+                "terms with rounds that don't follow from the amounts were accepted");
         });
 
         yield return ("Colony: − and + go to the next whole step and stay within their box's range", () =>
@@ -1015,28 +981,22 @@ static class ColonyChecks
             Equal(10, TradeOfferForm.Step(ExchangeTerms.Science, shift: false));
             Equal(1, TradeOfferForm.Step(ExchangeTerms.Beavers, shift: false));
             Equal(10, TradeOfferForm.Step(ExchangeTerms.Beavers, shift: true));
-            Equal(1, TradeOfferForm.RoundsStep(false));
-            Equal(10, TradeOfferForm.RoundsStep(true));
-            Equal(100, TradeOfferForm.Stepped(95, 10, up: true));
-            Equal(90, TradeOfferForm.Stepped(95, 10, up: false));
-            Check(TradeOfferForm.Stepped(100, 10, up: true) == 100, "no more than a half holds");
-            // An amount typed above a round's worth steps on from there.
-            Equal(310, TradeOfferForm.Stepped(300, 10, up: true));
-            Equal(290, TradeOfferForm.Stepped(300, 10, up: false));
-            Equal(90, TradeOfferForm.Stepped(100, 10, up: false));
-            Equal(0, TradeOfferForm.Stepped(0, 10, up: false));
-            Equal(1, TradeOfferForm.Stepped(0, 1, up: true));
-            Equal(99, TradeOfferForm.Stepped(98, 1, up: true));
-            // Rounds: from 1 to 99.
-            Equal(1, TradeOfferForm.Stepped(1, 1, up: false, 1, ExchangeTerms.MaxRounds));
-            Equal(10, TradeOfferForm.Stepped(1, 10, up: true, 1, ExchangeTerms.MaxRounds));
-            Equal(99, TradeOfferForm.Stepped(95, 10, up: true, 1, ExchangeTerms.MaxRounds));
-            Equal(1, TradeOfferForm.Stepped(5, 10, up: false, 1, ExchangeTerms.MaxRounds));
+            Equal(100, TradeOfferForm.Stepped(95, 10, up: true, repeat: false));
+            Equal(90, TradeOfferForm.Stepped(95, 10, up: false, repeat: false));
+            // A whole trade steps on past a round's worth; a repeating one's round stops at 100.
+            Equal(110, TradeOfferForm.Stepped(100, 10, up: true, repeat: false));
+            Check(TradeOfferForm.Stepped(100, 10, up: true, repeat: true) == 100, "a repeating round went over what a post carries");
+            Equal(310, TradeOfferForm.Stepped(300, 10, up: true, repeat: false));
+            Equal(290, TradeOfferForm.Stepped(300, 10, up: false, repeat: false));
+            Equal(9900, TradeOfferForm.Stepped(9900, 10, up: true, repeat: false));
+            Equal(0, TradeOfferForm.Stepped(0, 10, up: false, repeat: false));
+            Equal(1, TradeOfferForm.Stepped(0, 1, up: true, repeat: false));
+            Equal(99, TradeOfferForm.Stepped(98, 1, up: true, repeat: true));
             for (int amount = 0; amount <= ExchangeTerms.MaxAmount; amount += 3)
             {
                 foreach (int step in new[] { 1, 10 })
                 {
-                    int up = TradeOfferForm.Stepped(amount, step, up: true), down = TradeOfferForm.Stepped(amount, step, up: false);
+                    int up = TradeOfferForm.Stepped(amount, step, up: true, repeat: true), down = TradeOfferForm.Stepped(amount, step, up: false, repeat: true);
                     Check(up > amount || amount == ExchangeTerms.MaxAmount, $"+ from {amount} by {step} gave {up}");
                     Check(down < amount || amount == 0, $"- from {amount} by {step} gave {down}");
                     Check(up - amount <= step && amount - down <= step, $"{amount} by {step} jumped to {down} or {up}");

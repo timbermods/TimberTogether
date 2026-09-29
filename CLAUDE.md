@@ -146,7 +146,9 @@ Kyler, 2026-09-24: "simplicity and elegance is effective and desirable." Every c
   as in game.
 - The Trading Post demo must keep matching the mod (`Colonies/TradingPostFragment.cs`, `ExchangeTerms`,
   `TradeOfferForm`): a colony is named by its player (Player 1 = colony 1, Player 2 = colony 2); ledger stamp
-  `cycle-day` ("3-13"); 0–100 of an item per round, steps 10 / Shift 1 (beavers 1 / Shift 10); rounds 1–99.
+  `cycle-day` ("3-13"); the whole trade is typed, 0–9,900 a side (a repeating offer: each round's, 0–100), steps 10 /
+  Shift 1 (beavers 1 / Shift 10); the rounds are not chosen: one per 100 of the larger side, each side spread evenly
+  (`ExchangeTerms.RoundsFor`/`ShareOf`), the greyed Rounds box shows them, and offers say only the whole trade.
 - `docs/assets/release.js` is Timber Together's own variant of the timbermods release script (the other sites share one
   byte-identical copy, SHA-1 f771fa55…). This copy fills `data-release` / `data-release-href` from the most recently
   *published* pre-release, because GitHub's release list sorts tags as text. The HTML's static values are the

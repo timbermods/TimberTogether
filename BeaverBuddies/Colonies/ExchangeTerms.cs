@@ -143,6 +143,38 @@ namespace BeaverBuddies.Colonies
         public const int MaxRounds = 99;
         /// <summary>The most a side can say it keeps back (see <see cref="CanSpare"/>).</summary>
         public const int MaxKeep = 9999;
+        /// <summary>The most one side gives over a whole exchange: a full round every round.</summary>
+        public const int MaxWhole = MaxAmount * MaxRounds;
+
+        /// <summary>
+        /// The rounds a whole exchange takes: one for each <see cref="MaxAmount"/> of its larger side (300 for 300 is 3,
+        /// 301 for 300 is 4). The players never choose them; they follow from what a Trading Post carries.
+        /// </summary>
+        public static int RoundsFor(int wholeGive, int wholeGet) =>
+            Math.Max(1, (Math.Max(Math.Max(0, wholeGive), Math.Max(0, wholeGet)) + MaxAmount - 1) / MaxAmount);
+
+        /// <summary>
+        /// What a side gives in round <paramref name="index"/> (from 0) of <paramref name="rounds"/>: the whole spread as
+        /// evenly as it goes, the larger rounds first (101 over 2 rounds is 51, then 50; 1 over 5 is 1, then 0). The
+        /// rounds add up to exactly the whole, and none carries more than <see cref="MaxAmount"/> when
+        /// <paramref name="rounds"/> is <see cref="RoundsFor"/>.
+        /// </summary>
+        public static int ShareOf(int whole, int rounds, int index)
+        {
+            if (whole <= 0 || rounds <= 0 || index < 0 || index >= rounds) return 0;
+            return whole / rounds + (index < whole % rounds ? 1 : 0);
+        }
+
+        /// <summary>
+        /// Whole exchange terms: amounts from 0 to <see cref="MaxWhole"/> (a repeating exchange's are each round's, up to
+        /// <see cref="MaxAmount"/>), not both 0, each with its item, two different items.
+        /// </summary>
+        public static bool AreValidTerms(string giveGood, int giveAmount, string getGood, int getAmount, bool repeat)
+        {
+            int most = repeat ? MaxAmount : MaxWhole;
+            if (giveAmount > most || getAmount > most) return false;
+            return AreValid(giveGood, Math.Min(giveAmount, MaxAmount), getGood, Math.Min(getAmount, MaxAmount));
+        }
 
         /// <summary>Science points as an exchange item: moved from pool to pool, with separate science.</summary>
         public const string Science = "BeaverBuddies.Science";
@@ -207,7 +239,8 @@ namespace BeaverBuddies.Colonies
             giveGood = GoodOf(parts[0], giveAmount);
             getGood = GoodOf(parts[2], getAmount);
             repeat = parts[5] == "1";
-            return AreValid(giveGood, giveAmount, getGood, getAmount) && (repeat || AreValidRounds(rounds)) && IsValidKeep(keep);
+            return AreValidTerms(giveGood, giveAmount, getGood, getAmount, repeat)
+                && (repeat || rounds == RoundsFor(giveAmount, getAmount)) && IsValidKeep(keep);
         }
 
         /// <summary>The good a side gives, or null for a side that gives nothing.</summary>

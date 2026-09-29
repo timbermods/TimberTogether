@@ -139,15 +139,15 @@ static class FactionChecks
             Func<string, bool> toFolktails = item => FactionRules.FactionAllows(item, g => goods.Has(Folktails, g), IronTeeth, Folktails,
                 ExchangeTerms.Science, ExchangeTerms.Beavers);
             TradeOfferForm.Verdict Judge(string give, string get) =>
-                TradeOfferForm.Judge(give, "10", get, "10", "1", false, out _, out _, out _, toIronTeeth, toFolktails);
+                TradeOfferForm.Judge(give, "10", get, "10", false, out _, out _, out _, toIronTeeth, toFolktails);
             Equal(TradeOfferForm.Verdict.Exchange, Judge("Log", "Plank"));
             Equal(TradeOfferForm.Verdict.GiveNotAllowed, Judge("Carrot", "Log"));
             Equal(TradeOfferForm.Verdict.GetNotAllowed, Judge("Log", "Corn"));
             Equal(TradeOfferForm.Verdict.GiveNotAllowed, Judge(ExchangeTerms.Beavers, "Log"));
             Equal(TradeOfferForm.Verdict.Exchange, Judge(ExchangeTerms.Science, "Log"));
             // A side of nothing is not judged, and without the predicates everything may (as before mixed factions).
-            Equal(TradeOfferForm.Verdict.Request, TradeOfferForm.Judge("Carrot", "0", "Log", "5", "1", false, out _, out _, out _, toIronTeeth, toFolktails));
-            Equal(TradeOfferForm.Verdict.Exchange, TradeOfferForm.Judge("Carrot", "10", "Corn", "10", "1", false, out _, out _, out _));
+            Equal(TradeOfferForm.Verdict.Request, TradeOfferForm.Judge("Carrot", "0", "Log", "5", false, out _, out _, out _, toIronTeeth, toFolktails));
+            Equal(TradeOfferForm.Verdict.Exchange, TradeOfferForm.Judge("Carrot", "10", "Corn", "10", false, out _, out _, out _));
             Check(!TradeOfferForm.IsOffer(TradeOfferForm.Verdict.GiveNotAllowed) && !TradeOfferForm.IsOffer(TradeOfferForm.Verdict.GetNotAllowed));
         });
 

@@ -164,13 +164,15 @@ colony's road. Until then its panel says *Not trading yet*.
 isn't a store: its halves hold goods only for the round under way. (The District Crossing stays the game's own, for
 your own districts.)
 
-An **exchange** is "this many of one thing for that many of another, so many times": for example *100 logs for 25
-gears, 4 rounds*. You trade from **your half**, the one your roads reach.
+An **exchange** is "this many of one thing for that many of another": for example *400 logs for 100 gears*. You
+trade from **your half**, the one your roads reach.
 
-1. **Offer.** Select your half. Set **You give** and **You get**: click an item for the goods grid, and set the amount
-   from 0 to 100 (**−**/**+** by 10, Shift by 1; beavers by 1). Set **Rounds** (1 to 99), or tick **Repeat until
-   cancelled**. A side at 0 is a gift, or a request for help. For more than one round, **Keep at least** holds back a
-   reserve so a long deal never empties your stock. Then **Make offer**.
+1. **Offer.** Select your half. Set **You give** and **You get**: click an item for the goods grid, and type the whole
+   trade, up to 9,900 each (**−**/**+** by 10, Shift by 1; beavers by 1). A post carries up to 100 of each a round, so
+   the game takes one round per 100 of the larger side; the greyed **Rounds** box shows how many. Or tick **Repeat
+   until cancelled**: the amounts are then each round's, up to 100. A side at 0 is a gift, or a request for help. For
+   more than one round, **Keep at least** holds back a reserve so a long deal never empties your stock. Then
+   **Make offer**.
 2. **Answer.** The offer reaches the other player as a message under the top bar, with a chime. It stays until they
    click it: a click takes them to their half of the post, and its **×** just closes it. They choose **Accept** or
    **Decline**. Until then you can **Withdraw offer**. A declined or withdrawn offer stays in the form, ready to change.
@@ -206,9 +208,8 @@ see them there, under the header of a post you share, and in the goods grid when
 - One exchange at a time per post; build more posts for more.
 - A half holds up to 100 of a good for the round under way. The next round waits until the last one's goods have
   been hauled away, so staff both halves and keep storage room.
-- Type more than 100 in the form (300 for 300, say) and that's the whole trade: it's split into the fewest equal
-  rounds that carry exactly it (250 for 50 is 5 rounds of 50 for 10), and the Rounds box shows them. Amounts that
-  don't split into equal rounds (500 for 1) are refused. The offer's message says the whole trade.
+- What you type is exactly what crosses, however awkward: 101 logs for 2 gears goes as 51 logs for 1 gear, then 50
+  for 1. Offers and messages say the whole trade; the ledger shows each round as it crossed.
 - Heavy goods take many trips: give busy posts more workers (up to 10).
 - Either of its two colonies may remove a post; no one else can. Its halves are placed as one.
 
@@ -285,12 +286,12 @@ A tile marked by one colony can't be marked or unmarked by another. Unmarking an
 ## What you see
 
 In co-op, your interface shows **your own colony**: the top bar (goods, population, housing, workplaces, wellbeing,
-science, and a good's 10-day stock chart) and the wellbeing window it opens, the batch control lists and district
-lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the trees marked
-for cutting. Each colony has its own wellbeing high score, and only its player hears of a new one. Achievements count
-your own colony's buildings and beavers, except those whose progress is kept in the save, which count every colony.
-You can open another colony's buildings; your figures stay yours. The *Global* history graphs (F9, F10) and faction
-unlocks still cover the whole map.
+science, and a good's 10-day stock chart) and the wellbeing window it opens, the batch control lists, history graphs
+and district lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the
+trees marked for cutting. Each colony has its own wellbeing high score, and only its player hears of a new one.
+Achievements count your own colony's buildings and beavers, except those whose progress is kept in the save, which
+count every colony. You can open another colony's buildings; your figures stay yours. Faction unlocks still cover the
+whole map.
 
 ## The road rule
 

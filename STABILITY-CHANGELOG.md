@@ -5,6 +5,46 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**Trades typed whole and never refused, the Global history graphs your own colony's, and a design pass of the
+colonies window** (built against Timberborn 1.1.2.4). **Not played.**
+
+- **A trade is typed whole and never refused for its amounts.** Kyler, after rc30: "No trade offer should be refused,
+  the game should just take of those details without concerning the player." rc30 refused amounts over 100 that
+  didn't split into equal rounds (101 Logs for 2 Gears); before that, rounding changed the totals (500 Logs for 1 Gear
+  became 5 Gears). Now the player types the whole trade, up to 9,900 a side, and exactly that crosses. The game takes
+  one round per 100 of the larger side (`ExchangeTerms.RoundsFor`: 300 for 300 is 3, 301 for 300 is 4) and spreads
+  each side as evenly as it goes, larger rounds first (`ExchangeTerms.ShareOf`: 101 Logs for 2 Gears is 51 for 1,
+  then 50 for 1; 500 Logs for 1 Gear carries the Gear in the first round and Logs alone after). `CrossingExchange`
+  saves each side's `Whole`; `Total` is the current round's share, set again as each round crosses, so everything
+  that reads a round (workers, holding, crossing, the progress bars) is unchanged. `ExchangeProposedEvent` and
+  `ExchangeAcceptedEvent` carry the whole amounts, and the host checks the rounds follow from them. The form's
+  **Rounds** box is display-only (greyed, the round count, or ∞ for **Repeat until cancelled**, whose amounts stay
+  each round's, up to 100: a larger number is brought down to 100). Offers, answers, the offer panel, the last-terms
+  line and the colonies window say only the whole trade ("101 Logs for 2 Gears"); once it runs, the panel shows
+  "round 1 of 2" and the ledger each round as it crossed. The site's Trading Post demo plays by the same rules.
+  Both players need this build.
+- **The Global history graphs show your own colony.** The batch control window's Global view of the goods (F9) and
+  population (F10) graphs added both colonies. `ColonyHistoryView` builds a display-only colony history, day by day,
+  from this player's own districts' saved histories (goods summed; population summed, wellbeing weighted by beavers)
+  and hands it to the graphs (`GoodStatisticsGroupFactory.Create`, `PopulationStatisticsGraphFactory.Create`). The
+  game's saved global registries are only read. A deleted district's days drop out, as its history goes with it.
+  Faction unlocks are now the only map-wide figure a player sees.
+- **The Trading Posts and colonies window (Y) looks like the game's own windows.** It was written without the
+  game's files. Checked against the game's UXML and USS (`StreamingAssets/Modding/UI.zip`): the window hangs in the
+  interface's `Absolute-items`, where only `GameUI.uxml`'s style sheets reach, so two entity-panel classes it relied on
+  drew nothing: `entity-panel__text` (every label and button text fell back to the theme's dark default; this was the
+  dark text seen in play) and `entity-fragment__button--red` (the Clear button had no red). It now uses only classes
+  those sheets define, matched to the game's well-being window and batch control rows: the named box's frame,
+  capsule title and close button, `game-scroll-view`, the green row boards, `game-text-small/normal/big/heading` and
+  `text--yellow` for counts and captions, and wooden `button-game` buttons. Text is the game's light grey; the box is
+  540 wide with the game's own 45 px padding; rows use the entity panel's 8/12 px padding; a colony's buttons sit in a
+  wrapping row under its text instead of a column squeezing it; food and water keep their icon and amount together;
+  another colony's wishes are plain tiles instead of buttons that did nothing. `NativeElements` text and buttons also
+  carry `game-text-normal`, which fixes the same dark text on a trade message's button and in the goods grid opened
+  from the window. RuntimeChecks reads UI.zip and fails if the window names a class those sheets don't define.
+
 ## 1.4.0-rc30
 
 **The faction goal's progress is your own colony's, and an audit of rc16 to rc29 against the game's assemblies**
