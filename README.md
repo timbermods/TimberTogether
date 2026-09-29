@@ -113,8 +113,8 @@ the colonies window (**Y**), or after its player misses the host's limit, **Hand
 Build a **Trading Post** (District Management; 10 logs, no science) between your road and another colony's, one
 half's door on each road. It's the only place two colonies' roads meet, and it starts trading once both reach it.
 
-1. **Offer.** Select your half. Choose what **You give** and **You get** (up to 100 of each a round; type more and
-   it's split into rounds) and how many **Rounds**, or tick **Repeat until cancelled**. A side at 0 is a gift. **Keep at least** holds back a reserve so
+1. **Offer.** Select your half. Choose what **You give** and **You get** (up to 100 of each a round; type more for the
+   whole trade and it's split into rounds) and how many **Rounds**, or tick **Repeat until cancelled**. A side at 0 is a gift. **Keep at least** holds back a reserve so
    a long deal never empties your stock. Then **Make offer**.
 2. **They accept** on their half, or decline; a declined offer stays in your form, ready to adjust. The offer reaches
    them as a message that says the whole trade and stays until they answer or close it, with a chime. Clicking it

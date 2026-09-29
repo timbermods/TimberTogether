@@ -60,19 +60,20 @@
     if (d.give === d.get) return { verdict: 'same' };
     var give = d.giveAmount, get = d.getAmount;
     if (isNaN(give) || isNaN(get) || give < 0 || get < 0 || give > MAX_TYPED || get > MAX_TYPED) return { verdict: 'badAmount' };
-    if (!d.repeat && (isNaN(d.rounds) || d.rounds < 1 || d.rounds > MAX_ROUNDS)) return { verdict: 'badRounds' };
+    // More than a round carries is the whole trade, and the rounds box is not read, as TradeOfferForm.Judge does.
+    var whole = give > MAX_AMOUNT || get > MAX_AMOUNT;
+    if (!d.repeat && !whole && (isNaN(d.rounds) || d.rounds < 1 || d.rounds > MAX_ROUNDS)) return { verdict: 'badRounds' };
     if (give === 0 && get === 0) return { verdict: 'nothing' };
     var rounds = d.repeat ? 1 : d.rounds, wasSplit = false;
-    // More than a round carries: split the whole into rounds, as TradeOfferForm.Judge does.
-    if (give > MAX_AMOUNT || get > MAX_AMOUNT) {
-      var s = split(give, get, rounds, d.repeat);
+    if (whole) {
+      var s = split(give, get, 1, d.repeat);
       if (!s) return { verdict: 'badAmount' };
       give = s.give; get = s.get; rounds = s.rounds; wasSplit = true;
     }
     var v = give > 0 && get > 0 ? 'exchange' : give > 0 ? 'gift' : 'request';
     return { verdict: v, give: give, get: get, rounds: rounds, split: wasSplit };
   }
-  // TradeOfferForm.Split: the whole (each amount times the rounds) over the fewest rounds that carry it, each side the
+  // TradeOfferForm.Split: the whole over the fewest rounds that carry it, each side the
   // nearest whole number to the same ratio and never 0 for a side that gives. A repeating offer keeps one round a time.
   function split(give, get, rounds, repeat) {
     if (repeat) rounds = 1;
@@ -274,11 +275,12 @@
     var d = S.draft, h = '';
     h += offerSide('give', 'You give', d.give, 'You have ' + S.stock[me][d.give], d.giveAmount);
     h += offerSide('get', 'You get', d.get, esc(COLONY[them]) + ' has ' + S.stock[them][d.get], d.getAmount);
-    // rounds card
+    // rounds card (no say for a repeating offer, nor when an amount is the whole trade)
+    var roundsOff = d.repeat || d.giveAmount > MAX_AMOUNT || d.getAmount > MAX_AMOUNT;
     h += '<div class="tp-card"><div class="tp-head"><span class="tp-caption">Rounds</span><span class="tp-muted">up to ' + MAX_AMOUNT + ' of each per round</span></div>'
-      + '<div class="tp-row"><button class="tp-btn tp-sq" type="button" data-rounds="-1"' + (d.repeat ? ' disabled' : '') + ' aria-label="One round fewer" title="-1 (Shift+click: -10)">&minus;</button>'
-      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + d.rounds + '" data-rounds-box' + (d.repeat ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
-      + '<button class="tp-btn tp-sq" type="button" data-rounds="1"' + (d.repeat ? ' disabled' : '') + ' aria-label="One round more" title="+1 (Shift+click: +10)">+</button>'
+      + '<div class="tp-row"><button class="tp-btn tp-sq" type="button" data-rounds="-1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round fewer" title="-1 (Shift+click: -10)">&minus;</button>'
+      + '<input class="tp-input tp-input--rounds" type="text" inputmode="numeric" maxlength="2" value="' + d.rounds + '" data-rounds-box' + (roundsOff ? ' disabled' : '') + ' aria-label="Rounds, 1 to 99" title="How many times the exchange runs: 1 to 99.">'
+      + '<button class="tp-btn tp-sq" type="button" data-rounds="1"' + (roundsOff ? ' disabled' : '') + ' aria-label="One round more" title="+1 (Shift+click: +10)">+</button>'
       + '<label class="tp-check" style="margin-left:10px" title="A standing deal: round after round, until both colonies agree to end it."><input type="checkbox" data-repeat' + (d.repeat ? ' checked' : '') + '><span class="box"></span>Repeat until cancelled</label></div></div>';
     // summary
     var j = judge(d), text, ok = isOffer(j.verdict);
@@ -306,7 +308,7 @@
     var h = '<div class="tp-card"><div class="tp-head"><span class="tp-caption">' + caption + '</span><span class="tp-muted">' + stock + '</span></div>'
       + '<div class="tp-row"><button class="tp-btn tp-select" type="button" data-pick="' + which + '" aria-expanded="' + open + '" title="Choose what to trade">' + icon(item, 60) + '<span>' + esc(good(item).name) + '</span><i></i></button>'
       + '<button class="tp-btn tp-sq" type="button" data-step="' + which + '" data-dir="-1" aria-label="' + step(item, false) + ' fewer ' + esc(good(item).plural) + ' you ' + which + '" title="-' + step(item, false) + ' (Shift+click: -' + step(item, true) + ')">&minus;</button>'
-      + '<input class="tp-input tp-input--amount" type="text" inputmode="numeric" maxlength="4" value="' + amount + '" data-amount="' + which + '" aria-label="' + esc(good(item).plural) + ' you ' + which + ' each round, 0 to ' + MAX_AMOUNT + '" title="How many each round: 0 to ' + MAX_AMOUNT + '. Type more and the offer is split into rounds.">'
+      + '<input class="tp-input tp-input--amount" type="text" inputmode="numeric" maxlength="4" value="' + amount + '" data-amount="' + which + '" aria-label="' + esc(good(item).plural) + ' you ' + which + ' each round, 0 to ' + MAX_AMOUNT + '" title="How many each round: 0 to ' + MAX_AMOUNT + '. Type more for the whole trade: it\'s split into rounds.">'
       + '<button class="tp-btn tp-sq" type="button" data-step="' + which + '" data-dir="1" aria-label="' + step(item, false) + ' more ' + esc(good(item).plural) + ' you ' + which + '" title="+' + step(item, false) + ' (Shift+click: +' + step(item, true) + ')">+</button></div>';
     if (open) {
       var owner = which === 'give' ? S.me : 1 - S.me;
