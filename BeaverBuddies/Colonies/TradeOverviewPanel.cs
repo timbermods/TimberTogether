@@ -39,7 +39,27 @@ namespace BeaverBuddies.Colonies
         public const string KeyBindingId = "BeaverBuddies.KeyBind.TradeOverview";
         // The Trade button's icon, drawn like the game's own top-right buttons' (a file of this mod).
         private const string ToggleIconPath = "UI/Images/BeaverBuddies/square-toggle-trade";
-        private const float Top = 110, BottomMargin = 40, Width = 470;
+        // Below the top bar, where the game's entity panel starts (entity-panel: top 110px). The box is as wide as the
+        // game's boxes of lists (the population's well-being is 590): room for a row's text beside its buttons.
+        private const float Top = 110, BottomMargin = 40, Width = 540;
+
+        /// <summary>
+        /// Every class of the game's the window is drawn with. All are in the style sheets every game window has (the game
+        /// UI's: CoreStyle, CommonStyle, GameStyle), not the entity panel's, which a window does not have; RuntimeChecks
+        /// holds them to the game's UI files.
+        /// </summary>
+        public static readonly string[] ClassesUsed =
+        {
+            // The game's named box (Common/NamedBoxTemplate, as the population's well-being): frame, title badge, close button.
+            "sliced-border", "sliced-border--nontransparent", "box__content-container", "capsule-header", "capsule-header--lower",
+            "content-centered", "capsule-header__text", "close-button",
+            // Its list (the well-being box's scroll view), each row's green board, and a good's tile (the good cells' board).
+            "game-scroll-view", "bg-sub-box--green", "bg-box--green",
+            // Text: headings, a row's title, its lines, captions in the game's yellow.
+            NativeElements.TextSmall, NativeElements.TextNormal, NativeElements.TextBig, NativeElements.TextHeading, "text--bold", "text--yellow",
+            // Buttons: the wooden button (with its hover and pressed art), the square +.
+            "button-game", "button-square", "button-square--large", "button-plus",
+        };
 
         private readonly UILayout _uiLayout;
         private readonly InputService _inputService;
@@ -55,6 +75,7 @@ namespace BeaverBuddies.Colonies
         /// <summary>A colony's row: its texts, its food and water, what it is looking for.</summary>
         private sealed class ColonyCard
         {
+            public VisualElement Root;
             public Label Title, Detail, Note;
             public VisualElement Supplies, Wishes;
             public Image FoodIcon, WaterIcon;
@@ -203,8 +224,10 @@ namespace BeaverBuddies.Colonies
         // ---- building ----
 
         /// <summary>
-        /// The game's box (CoreStyle): a framed panel (sliced-border, box__content-container), a title badge on its top
-        /// edge (capsule-header), the round close button at its corner (close-button), and a scrolling list inside.
+        /// The game's named box (Common/NamedBoxTemplate, as the population's well-being): a framed panel (sliced-border,
+        /// box__content-container, with the game's padding), a title badge on its top edge (capsule-header), the round
+        /// close button at its corner (close-button), and a scrolling list inside (game-scroll-view). The frame is the
+        /// solid one of the game's dialog boxes (sliced-border--nontransparent), as the box stays open over the map.
         /// </summary>
         private void Build()
         {
@@ -225,9 +248,6 @@ namespace BeaverBuddies.Colonies
             // The class stretches a box across its parent (box__content-container: align-self: stretch, flex-grow: 1).
             box.style.alignSelf = Align.Center;
             box.style.flexGrow = 0;
-            box.style.paddingLeft = 32;
-            box.style.paddingRight = 32;
-            box.style.paddingBottom = 30;
             window.Add(box);
 
             var header = new NineSliceVisualElement();
@@ -253,11 +273,11 @@ namespace BeaverBuddies.Colonies
             scroll.style.flexShrink = 1;
             scroll.style.minHeight = 0;
             postsTitle = Heading();
-            emptyPosts = NativeElements.MutedText("", 13);
+            emptyPosts = NativeElements.GameText("", NativeElements.TextNormal);
             emptyPosts.style.marginTop = 4;
             postsList = new VisualElement();
             Label coloniesTitle = Heading(T("BeaverBuddies.Colony.Overview.Colonies"));
-            coloniesTitle.style.marginTop = 14;
+            coloniesTitle.style.marginTop = 16;
             coloniesList = new VisualElement();
             scroll.Add(postsTitle);
             scroll.Add(emptyPosts);
@@ -269,7 +289,7 @@ namespace BeaverBuddies.Colonies
             VisualElement footer = NativeElements.Row();
             footer.style.marginTop = 12;
             footer.style.justifyContent = Justify.SpaceBetween;
-            Label hint = NativeElements.Text(T("BeaverBuddies.Colony.Overview.Hint"), 12);
+            Label hint = NativeElements.GameText(T("BeaverBuddies.Colony.Overview.Hint"), NativeElements.TextSmall);
             hint.style.flexShrink = 1;
             hint.style.marginRight = 8;
             footer.Add(hint);
@@ -283,8 +303,6 @@ namespace BeaverBuddies.Colonies
             box.Add(picker.Root);
 
             _visualElementInitializer.InitializeVisualElement(window);
-            // White on the dark board, set after the initializer so nothing it applies can darken it.
-            hint.style.color = Color.white;
             window.style.display = DisplayStyle.None;
             _uiLayout.AddAbsoluteItem(window);
         }
@@ -404,7 +422,7 @@ namespace BeaverBuddies.Colonies
                 foreach (var (key, half) in posts)
                 {
                     DistrictCrossing target = half;
-                    postsList.Add(Card(out Label title, out Label detail,
+                    postsList.Add(PostCard(out Label title, out Label detail,
                         SmallButton(T("BeaverBuddies.Colony.Overview.GoTo"), () => GoTo(target))));
                     postLabels[key] = (title, detail);
                 }
@@ -467,7 +485,7 @@ namespace BeaverBuddies.Colonies
                     if (started) buttons.AddRange(StewardButtons(slot, seat, me, myId, host, present, others, stewards, lifecycle));
                     if (started && slot == seat && slot == me) buttons.AddRange(FactionSwitchButtons(slot));
                     ColonyCard card = BuildColonyCard(buttons.ToArray());
-                    coloniesList.Add(card.Title.parent.parent.parent);
+                    coloniesList.Add(card.Root);
                     colonyCards[slot] = card;
                     // This player's colony (the one their actions count as) says what it is looking for from here.
                     if (slot == me && started) BuildWishEditor(card, slot, wishlist);
@@ -617,7 +635,8 @@ namespace BeaverBuddies.Colonies
             NativeElements.SetText(label, days == null
                 ? string.Format(T("BeaverBuddies.Colony.Overview.SupplyNoDays"), stock)
                 : string.Format(T("BeaverBuddies.Colony.Overview.SupplyDays"), stock, days));
-            label.style.color = SupplyDays.IsLow(supply.Days) ? new StyleColor(NativeElements.Warning) : new StyleColor(NativeElements.Muted);
+            // The game's light grey (its class), or the warning colour when less than a day is left.
+            label.style.color = SupplyDays.IsLow(supply.Days) ? new StyleColor(NativeElements.Warning) : new StyleColor(StyleKeyword.Null);
         }
 
         /// <summary>
@@ -636,7 +655,7 @@ namespace BeaverBuddies.Colonies
                 card.ShownGoods = key;
                 card.GoodsChips.Clear();
                 card.GoodsAmounts.Clear();
-                if (goods.Count == 0) card.GoodsChips.Add(NativeElements.MutedText(T("BeaverBuddies.Colony.Trade.Nothing")));
+                if (goods.Count == 0) card.GoodsChips.Add(MutedLine(T("BeaverBuddies.Colony.Trade.Nothing")));
                 foreach (var good in goods)
                 {
                     VisualElement chip = NativeElements.Row();
@@ -646,8 +665,9 @@ namespace BeaverBuddies.Colonies
                     icon.sprite = _items.IconOf(good.Key);
                     icon.style.marginRight = 2;
                     chip.Add(icon);
-                    Label amount = NativeElements.Text("", 12);
-                    amount.style.color = Color.white;
+                    // An amount in the game's light grey, as its inventories write them.
+                    Label amount = NativeElements.GameText("", NativeElements.TextSmall);
+                    amount.style.whiteSpace = WhiteSpace.NoWrap;
                     chip.Add(amount);
                     _tooltipRegistrar.Register(chip, _items.Name(good.Key));
                     card.GoodsChips.Add(chip);
@@ -693,10 +713,8 @@ namespace BeaverBuddies.Colonies
             if (card.Wishes.userData as string == key) return;
             card.Wishes.userData = key;
             card.Wishes.Clear();
-            Label caption = NativeElements.MutedText(T("BeaverBuddies.Colony.Overview.LookingFor"));
-            caption.style.marginRight = 6;
-            card.Wishes.Add(caption);
-            foreach (string item in wishes) card.Wishes.Add(WishChip(item, null));
+            card.Wishes.Add(Caption(T("BeaverBuddies.Colony.Overview.LookingFor")));
+            foreach (string item in wishes) card.Wishes.Add(WishTile(item));
         }
 
         /// <summary>
@@ -707,15 +725,14 @@ namespace BeaverBuddies.Colonies
         {
             NativeElements.Show(card.Wishes, true);
             card.Wishes.Clear();
-            Label caption = NativeElements.MutedText(T("BeaverBuddies.Colony.Overview.LookingFor"));
-            caption.style.marginRight = 6;
+            Label caption = Caption(T("BeaverBuddies.Colony.Overview.LookingFor"));
             _tooltipRegistrar.Register(caption, T("BeaverBuddies.Colony.Overview.LookingForTooltip"));
             card.Wishes.Add(caption);
             List<string> wishes = (wishlist?.Of(slot) ?? (IReadOnlyList<string>)Array.Empty<string>()).ToList();
             for (int i = 0; i < wishes.Count; i++)
             {
                 int index = i;
-                Button chip = WishChip(wishes[i], () => EditWish(slot, index, card.Wishes));
+                Button chip = WishButton(wishes[i], () => EditWish(slot, index, card.Wishes));
                 picker.AddOpener(chip);
                 card.Wishes.Add(chip);
             }
@@ -729,36 +746,50 @@ namespace BeaverBuddies.Colonies
             }
             if (wishes.Count > 0)
             {
-                Button clear = NativeElements.RedButton(T("BeaverBuddies.Colony.Overview.ClearWishes"), () => SendWishes(new List<string>()));
-                clear.style.fontSize = 12;
-                clear.style.color = Color.white;
-                clear.style.minHeight = 24;
-                clear.style.height = 24;
-                clear.style.paddingTop = 0;
-                clear.style.paddingBottom = 0;
-                clear.style.marginLeft = 8;
+                // The window's wooden button, as its others (the entity panel's red button has no art in a window).
+                Button clear = SmallButton(T("BeaverBuddies.Colony.Overview.ClearWishes"), () => SendWishes(new List<string>()));
+                clear.style.marginLeft = 6;
                 card.Wishes.Add(clear);
             }
         }
 
-        /// <summary>A good's icon on the game's wooden button (or, with no click, a plain chip with a tooltip).</summary>
-        private Button WishChip(string item, Action onClick)
+        // A good's tile: 32 by 28, its icon centred, as the goods grid's cells.
+        private const int WishWidth = 32, WishHeight = 28, WishIcon = 20;
+
+        /// <summary>This player's wish: a good's icon on the game's wooden button (lighter on hover, pressed on click).</summary>
+        private Button WishButton(string item, Action onClick)
         {
             Button chip = NativeElements.WoodenButton("", onClick);
-            chip.style.minHeight = 28;
-            chip.style.height = 28;
-            chip.style.paddingLeft = 4; chip.style.paddingRight = 4; chip.style.paddingTop = 2; chip.style.paddingBottom = 2;
-            chip.style.marginRight = 4;
-            if (onClick == null) chip.pickingMode = PickingMode.Position;
-            chip.style.width = 32; chip.style.minWidth = 32;
-            chip.style.alignItems = Align.Center; chip.style.justifyContent = Justify.Center;
-            Image icon = NativeElements.Icon(20);
-            icon.style.marginLeft = 0; icon.style.marginRight = 0; icon.style.marginTop = 0; icon.style.marginBottom = 0;
+            chip.style.paddingLeft = 0; chip.style.paddingRight = 0; chip.style.paddingTop = 0; chip.style.paddingBottom = 0;
+            WishTileLayout(chip, item);
+            _tooltipRegistrar.Register(chip, string.Format(T("BeaverBuddies.Colony.Overview.WishTooltip"), _items.Name(item)));
+            return chip;
+        }
+
+        /// <summary>
+        /// Another colony's wish, which is not a button: the good's icon on the game's plain green tile (the goods
+        /// cells' board, which has no hover art), with its name as a tooltip.
+        /// </summary>
+        private VisualElement WishTile(string item)
+        {
+            NineSliceVisualElement tile = NativeElements.Box("bg-box--green");
+            WishTileLayout(tile, item);
+            _tooltipRegistrar.Register(tile, _items.Name(item));
+            return tile;
+        }
+
+        private void WishTileLayout(VisualElement tile, string item)
+        {
+            var s = tile.style;
+            s.width = WishWidth; s.minWidth = WishWidth;
+            s.height = WishHeight; s.minHeight = WishHeight;
+            s.flexShrink = 0;
+            s.marginRight = 4; s.marginTop = 2; s.marginBottom = 2;
+            s.alignItems = Align.Center; s.justifyContent = Justify.Center;
+            Image icon = NativeElements.Icon(WishIcon);
             icon.style.alignSelf = Align.Center;
             icon.sprite = _items.IconOf(item);
-            chip.Add(icon);
-            _tooltipRegistrar.Register(chip, onClick == null ? _items.Name(item) : string.Format(T("BeaverBuddies.Colony.Overview.WishTooltip"), _items.Name(item)));
-            return chip;
+            tile.Add(icon);
         }
 
         private void EditWish(int slot, int index, VisualElement anchor)
@@ -891,53 +922,51 @@ namespace BeaverBuddies.Colonies
         // ---- elements ----
 
         /// <summary>
-        /// A colony's row: the post row's title and line, then its food and water (icons and days), a muted note (who
-        /// looks after it), and what it is looking for, with its buttons at the right.
+        /// A colony's row on the game's green board: its faction (a mixed game), then its name, its population and status,
+        /// its food and water (icons and days), its goods, a muted note (who looks after it), and what it is looking for;
+        /// its buttons under all that, at the right, wrapping onto a second line when there are many.
         /// </summary>
         private ColonyCard BuildColonyCard(params Button[] buttons)
         {
             var card = new ColonyCard();
-            NineSliceVisualElement board = Card(out card.Title, out card.Detail, buttons);
-            VisualElement text = card.Title.parent;
+            NineSliceVisualElement board = Board();
+            card.Root = board;
+            VisualElement top = NativeElements.Row(Align.FlexStart);
             card.Faction = new VisualElement();
             card.Faction.style.marginRight = 8;
-            card.Faction.style.alignSelf = Align.FlexStart;
             card.Faction.style.flexShrink = 0;
             card.Faction.style.display = DisplayStyle.None;
-            text.parent.Insert(0, card.Faction);
+            top.Add(card.Faction);
+            VisualElement text = TitleAndDetail(out card.Title, out card.Detail);
+            top.Add(text);
+            board.Add(top);
+
+            // Food and water as the top bar counts them: each an icon and its stock, a pair that wraps as one.
             card.Supplies = NativeElements.Row();
-            card.Supplies.style.marginTop = 3;
-            card.FoodIcon = NativeElements.Icon(18);
-            card.Food = NativeElements.MutedText("", 12);
-            card.Food.style.marginLeft = 3;
-            card.Food.style.marginRight = 12;
-            card.WaterIcon = NativeElements.Icon(18);
-            card.Water = NativeElements.MutedText("", 12);
-            card.Water.style.marginLeft = 3;
-            card.Supplies.Add(card.FoodIcon);
-            card.Supplies.Add(card.Food);
-            card.Supplies.Add(card.WaterIcon);
-            card.Supplies.Add(card.Water);
+            card.Supplies.style.flexWrap = Wrap.Wrap;
+            card.Supplies.style.marginTop = 4;
+            card.Supplies.Add(Supply(out card.FoodIcon, out card.Food));
+            card.Supplies.Add(Supply(out card.WaterIcon, out card.Water));
             _tooltipRegistrar.Register(card.Supplies, T("BeaverBuddies.Colony.Overview.SuppliesTooltip"));
             text.Add(card.Supplies);
             // Another colony's goods, laid out as the Trading Post's totals: a caption, then icons and amounts that wrap.
             card.Goods = NativeElements.Row(Align.FlexStart);
             card.Goods.style.marginTop = 4;
             card.Goods.style.display = DisplayStyle.None;
-            card.GoodsCaption = NativeElements.MutedText("", 12);
-            card.GoodsCaption.style.marginRight = 6;
-            card.GoodsCaption.style.marginTop = 1;
-            card.GoodsCaption.style.flexShrink = 0;
+            card.GoodsCaption = Caption();
+            // Level with the icons' line (20 px) beside it.
+            card.GoodsCaption.style.marginTop = 2;
             _tooltipRegistrar.Register(card.GoodsCaption, T("BeaverBuddies.Colony.Overview.GoodsTooltip"));
             card.GoodsChips = NativeElements.Row();
             card.GoodsChips.style.flexWrap = Wrap.Wrap;
             card.GoodsChips.style.flexGrow = 1;
             card.GoodsChips.style.flexShrink = 1;
+            card.GoodsChips.style.minWidth = 0;
             card.Goods.Add(card.GoodsCaption);
             card.Goods.Add(card.GoodsChips);
             text.Add(card.Goods);
-            card.Note = NativeElements.MutedText("", 12);
-            card.Note.style.marginTop = 2;
+            card.Note = MutedLine();
+            card.Note.style.marginTop = 4;
             card.Note.style.display = DisplayStyle.None;
             text.Add(card.Note);
             card.Wishes = NativeElements.Row();
@@ -945,53 +974,110 @@ namespace BeaverBuddies.Colonies
             card.Wishes.style.flexWrap = Wrap.Wrap;
             card.Wishes.style.display = DisplayStyle.None;
             text.Add(card.Wishes);
+
+            if (buttons.Length > 0)
+            {
+                VisualElement actions = NativeElements.Row();
+                actions.style.flexWrap = Wrap.Wrap;
+                actions.style.justifyContent = Justify.FlexEnd;
+                actions.style.marginTop = 4;
+                foreach (Button button in buttons)
+                {
+                    button.style.marginLeft = 6;
+                    button.style.marginTop = 4;
+                    actions.Add(button);
+                }
+                board.Add(actions);
+            }
             return card;
         }
 
-        /// <summary>A row of the list on the game's green board: a title, a line under it, and its buttons at the right.</summary>
-        private static NineSliceVisualElement Card(out Label title, out Label detail, params Button[] buttons)
+        /// <summary>A Trading Post's row on the game's green board: a title, the lines under it, and its button at the right.</summary>
+        private static NineSliceVisualElement PostCard(out Label title, out Label detail, Button button)
         {
-            NineSliceVisualElement card = NativeElements.Box("bg-sub-box--green");
-            card.style.marginTop = 6;
-            card.style.paddingLeft = 10; card.style.paddingRight = 8; card.style.paddingTop = 6; card.style.paddingBottom = 7;
+            NineSliceVisualElement board = Board();
             VisualElement row = NativeElements.Row();
-            VisualElement text = new VisualElement();
+            row.Add(TitleAndDetail(out title, out detail));
+            button.style.marginLeft = 10;
+            row.Add(button);
+            board.Add(row);
+            return board;
+        }
+
+        /// <summary>A row's board: the game's green sub-box, with the padding of the game's panel sections (entity-sub-panel: 8px 12px).</summary>
+        private static NineSliceVisualElement Board()
+        {
+            NineSliceVisualElement board = NativeElements.Box("bg-sub-box--green");
+            board.style.marginTop = 6;
+            board.style.paddingLeft = 12; board.style.paddingRight = 12; board.style.paddingTop = 8; board.style.paddingBottom = 8;
+            return board;
+        }
+
+        /// <summary>
+        /// A row's text, taking the room its buttons leave: its title (game-text-big, with a colony's name in bold in its
+        /// colour) and its lines under it (game-text-small), both in the game's light grey.
+        /// </summary>
+        private static VisualElement TitleAndDetail(out Label title, out Label detail)
+        {
+            var text = new VisualElement();
             text.style.flexGrow = 1;
             text.style.flexShrink = 1;
-            title = NativeElements.Text("", 13);
+            text.style.minWidth = 0;
+            title = NativeElements.GameText("", NativeElements.TextBig);
             title.enableRichText = true;
-            detail = NativeElements.MutedText("", 12);
-            detail.style.marginTop = 1;
+            detail = NativeElements.GameText("", NativeElements.TextSmall);
+            detail.style.marginTop = 2;
             text.Add(title);
             text.Add(detail);
-            row.Add(text);
-            VisualElement actions = new VisualElement();
-            actions.style.flexShrink = 0;
-            actions.style.alignItems = Align.FlexEnd;
-            foreach (Button button in buttons)
-            {
-                button.style.marginLeft = 8;
-                button.style.marginTop = 2;
-                actions.Add(button);
-            }
-            row.Add(actions);
-            card.Add(row);
-            return card;
+            return text;
         }
 
-        /// <summary>A heading as the game's boxes write them (game-text-heading).</summary>
+        /// <summary>Food's or water's icon and its stock, kept together.</summary>
+        private static VisualElement Supply(out Image icon, out Label amount)
+        {
+            VisualElement pair = NativeElements.Row();
+            pair.style.marginRight = 12;
+            pair.style.height = 20;
+            icon = NativeElements.Icon(18);
+            pair.Add(icon);
+            amount = NativeElements.GameText("", NativeElements.TextSmall);
+            amount.style.whiteSpace = WhiteSpace.NoWrap;
+            amount.style.marginLeft = 3;
+            pair.Add(amount);
+            return pair;
+        }
+
+        /// <summary>A caption before a line of icons ("Goods", "Looking for:"), in the game's yellow, as the Trading Post's.</summary>
+        private static Label Caption(string text = "")
+        {
+            Label caption = NativeElements.GameText(text, NativeElements.TextSmall);
+            caption.AddToClassList("text--yellow");
+            caption.style.whiteSpace = WhiteSpace.NoWrap;
+            caption.style.flexShrink = 0;
+            caption.style.marginRight = 6;
+            return caption;
+        }
+
+        /// <summary>A secondary line (who looks after a colony, "nothing yet"), in the mod's muted grey.</summary>
+        private static Label MutedLine(string text = "")
+        {
+            Label label = NativeElements.GameText(text, NativeElements.TextSmall);
+            label.style.color = NativeElements.Muted;
+            return label;
+        }
+
+        /// <summary>A heading as the game's boxes write them (game-text-heading, bold).</summary>
         private static Label Heading(string text = "")
         {
-            var label = new Label(text);
-            label.AddToClassList("game-text-heading");
+            Label label = NativeElements.GameText(text, NativeElements.TextHeading);
             label.AddToClassList("text--bold");
             return label;
         }
 
+        /// <summary>The window's button: the game's wooden button (button-game) in its small text (game-text-small), 24 px high.</summary>
         private static Button SmallButton(string text, Action onClick)
         {
-            Button button = NativeElements.WoodenButton(text, onClick);
-            button.style.fontSize = 12;
+            Button button = NativeElements.WithTextClass(NativeElements.WoodenButton(text, onClick), NativeElements.TextSmall);
             button.style.minHeight = 24;
             button.style.height = 24;
             button.style.paddingTop = 0;

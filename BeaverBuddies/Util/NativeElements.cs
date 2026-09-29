@@ -37,11 +37,19 @@ namespace BeaverBuddies.Util
             return box;
         }
 
-        /// <summary>Text as the game's entity panels write it (13 px, light grey), wrapping.</summary>
+        /// <summary>The game's text classes by size (CommonStyle, which every game window has): light grey, wrapping.</summary>
+        public const string TextSmall = "game-text-small", TextNormal = "game-text-normal", TextBig = "game-text-big", TextHeading = "game-text-heading";
+        private static readonly string[] TextSizes = { TextSmall, TextNormal, TextBig, TextHeading };
+
+        /// <summary>
+        /// Text as the game's entity panels write it (13 px, light grey), wrapping. Also in the game's own light grey
+        /// (game-text-normal) outside an entity panel, whose sheet (entity-panel__text) a window does not have.
+        /// </summary>
         public static Label Text(string text = "", int size = 13, bool bold = false)
         {
             var label = new Label(SentencePerLine(text));
             label.AddToClassList("entity-panel__text");
+            label.AddToClassList(TextNormal);
             var s = label.style;
             s.fontSize = size;
             s.whiteSpace = WhiteSpace.Normal;
@@ -66,6 +74,26 @@ namespace BeaverBuddies.Util
             return label;
         }
 
+        /// <summary>
+        /// Text sized and coloured by one of the game's text classes alone (<see cref="TextSmall"/> … <see cref="TextHeading"/>),
+        /// as the game's windows write it: for a window, where the entity panel's sheet is not loaded.
+        /// </summary>
+        public static Label GameText(string text = "", string textClass = TextNormal) => WithTextClass(Text(text), textClass);
+
+        /// <summary>
+        /// Gives a text (a label or a button) one of the game's text classes for its size and colour, in place of the
+        /// size set on it here: the entity panel's text class, the other size classes and the inline size are taken off,
+        /// so the class decides.
+        /// </summary>
+        public static T WithTextClass<T>(T element, string textClass) where T : TextElement
+        {
+            element.RemoveFromClassList("entity-panel__text");
+            foreach (string size in TextSizes) element.RemoveFromClassList(size);
+            element.AddToClassList(textClass);
+            element.style.fontSize = StyleKeyword.Null;
+            return element;
+        }
+
         /// <summary>The game's wooden button (the warehouse's "Accept goods" selector, MixedStorage's buttons).</summary>
         public static Button WoodenButton(string text, Action onClick) => TextButton(text, onClick, "button-game");
 
@@ -77,7 +105,10 @@ namespace BeaverBuddies.Util
         {
             var button = new NineSliceButton { text = text };
             if (onClick != null) button.clicked += onClick;
+            // The game's light grey in an entity panel (entity-panel__text) and in a window (game-text-normal), as the
+            // map editor's wooden buttons are written (button-game game-text-normal).
             button.AddToClassList("entity-panel__text");
+            button.AddToClassList(TextNormal);
             foreach (string c in classes) button.AddToClassList(c);
             var s = button.style;
             s.fontSize = 13;
