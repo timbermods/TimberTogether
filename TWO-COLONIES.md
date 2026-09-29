@@ -206,8 +206,9 @@ see them there, under the header of a post you share, and in the goods grid when
 - One exchange at a time per post; build more posts for more.
 - A half holds up to 100 of a good for the round under way. The next round waits until the last one's goods have
   been hauled away, so staff both halves and keep storage room.
-- Type more than 100 in the form (300 for 300, say) and that's the whole trade: it's split into the fewest rounds
-  that carry it, at the nearest ratio, and the Rounds box is ignored. The offer's message says the whole trade.
+- Type more than 100 in the form (300 for 300, say) and that's the whole trade: it's split into the fewest equal
+  rounds that carry exactly it (250 for 50 is 5 rounds of 50 for 10), and the Rounds box shows them. Amounts that
+  don't split into equal rounds (500 for 1) are refused. The offer's message says the whole trade.
 - Heavy goods take many trips: give busy posts more workers (up to 10).
 - Either of its two colonies may remove a post; no one else can. Its halves are placed as one.
 
@@ -284,9 +285,12 @@ A tile marked by one colony can't be marked or unmarked by another. Unmarking an
 ## What you see
 
 In co-op, your interface shows **your own colony**: the top bar (goods, population, housing, workplaces, wellbeing,
-science) and the wellbeing window it opens, the batch control lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the trees marked for cutting. Each colony has its own wellbeing
-high score, and only its player hears of a new one. You can open another colony's buildings; your figures stay yours.
-The *Global* history graphs (F9, F10) still cover the whole map.
+science, and a good's 10-day stock chart) and the wellbeing window it opens, the batch control lists and district
+lists (F1 to F10), alerts, the status icons over beavers and buildings, the notification journal and the trees marked
+for cutting. Each colony has its own wellbeing high score, and only its player hears of a new one. Achievements count
+your own colony's buildings and beavers, except those whose progress is kept in the save, which count every colony.
+You can open another colony's buildings; your figures stay yours. The *Global* history graphs (F9, F10) and faction
+unlocks still cover the whole map.
 
 ## The road rule
 
