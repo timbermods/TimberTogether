@@ -94,7 +94,6 @@ namespace BeaverBuddies.Colonies
         private VisualElement compose;
         private OfferSide giveSide, getSide;
         private TextField roundsBox;
-        private Button roundsLess, roundsMore;
         private Label roundsNote;
         private Label summary;
         private Toggle repeatToggle;
@@ -330,11 +329,13 @@ namespace BeaverBuddies.Colonies
             minus.style.marginLeft = 4;
             _tooltipRegistrar.Register(minus, () => StepTooltip(o, "BeaverBuddies.Colony.Trade.StepLess"));
             row.Add(minus);
-            // Room for more than a round carries: the offer is then split into rounds (TradeOfferForm.Split).
+            // The whole trade, up to 9,900 (a repeating one: each round's, up to 100); the game carries it in rounds.
             o.Amount = NativeElements.InputBox(maxLength: 4, width: 50);
             o.Amount.value = ExchangeTerms.MaxAmount.ToString(CultureInfo.InvariantCulture);
-            o.Amount.RegisterValueChangedCallback(_ => RefreshSummary());
-            _tooltipRegistrar.Register(o.Amount, () => string.Format(T("BeaverBuddies.Colony.Trade.AmountTooltip"), ExchangeTerms.MaxAmount));
+            o.Amount.RegisterValueChangedCallback(_ => { FitRepeating(); RefreshSummary(); });
+            _tooltipRegistrar.Register(o.Amount, () => repeatToggle != null && repeatToggle.value
+                ? string.Format(T("BeaverBuddies.Colony.Trade.AmountTooltipRepeat"), ExchangeTerms.MaxAmount)
+                : string.Format(T("BeaverBuddies.Colony.Trade.AmountTooltip"), Count(TradeOfferForm.MaxTyped)));
             row.Add(o.Amount);
             Button plus = NativeElements.SquareButton(plus: true, e => StepAmount(o, up: true, e.shiftKey));
             _tooltipRegistrar.Register(plus, () => StepTooltip(o, "BeaverBuddies.Colony.Trade.StepMore"));
@@ -343,7 +344,10 @@ namespace BeaverBuddies.Colonies
             return o;
         }
 
-        /// <summary>"Rounds" [−] [3] [+] with the check box for a standing deal, on the description's blue.</summary>
+        /// <summary>
+        /// "Rounds" [3] with the check box for a standing deal, on the description's blue. The box only shows how many
+        /// rounds the game carries the trade in (a Trading Post carries up to 100 of each a round); nobody types in it.
+        /// </summary>
         private VisualElement BuildRounds()
         {
             NineSliceVisualElement card = Card();
@@ -359,21 +363,15 @@ namespace BeaverBuddies.Colonies
             card.Add(top);
 
             VisualElement row = NativeElements.Row();
-            roundsLess = NativeElements.SquareButton(plus: false, e => StepRounds(up: false, e.shiftKey));
-            _tooltipRegistrar.Register(roundsLess, () => string.Format(T("BeaverBuddies.Colony.Trade.StepLess"), TradeOfferForm.RoundsStep(false), TradeOfferForm.RoundsStep(true)));
-            row.Add(roundsLess);
             roundsBox = NativeElements.InputBox(maxLength: 2, width: 36);
             roundsBox.value = "1";
-            roundsBox.RegisterValueChangedCallback(_ => RefreshSummary());
-            _tooltipRegistrar.Register(roundsBox, () => string.Format(T("BeaverBuddies.Colony.Trade.RoundsTooltip"), ExchangeTerms.MaxRounds));
+            roundsBox.SetEnabled(false);
+            _tooltipRegistrar.Register(roundsBox, () => string.Format(T("BeaverBuddies.Colony.Trade.RoundsTooltip"), ExchangeTerms.MaxAmount));
             row.Add(roundsBox);
-            roundsMore = NativeElements.SquareButton(plus: true, e => StepRounds(up: true, e.shiftKey));
-            _tooltipRegistrar.Register(roundsMore, () => string.Format(T("BeaverBuddies.Colony.Trade.StepMore"), TradeOfferForm.RoundsStep(false), TradeOfferForm.RoundsStep(true)));
-            row.Add(roundsMore);
             repeatToggle = NativeElements.CheckBox(T("BeaverBuddies.Colony.Trade.RepeatToggle"));
             repeatToggle.style.marginLeft = 10;
             repeatToggle.style.flexShrink = 1;
-            repeatToggle.RegisterValueChangedCallback(_ => RefreshSummary());
+            repeatToggle.RegisterValueChangedCallback(_ => { FitRepeating(); RefreshSummary(); });
             _tooltipRegistrar.Register(repeatToggle, T("BeaverBuddies.Colony.Trade.RepeatTooltip"));
             row.Add(repeatToggle);
             card.Add(row);
@@ -926,9 +924,10 @@ namespace BeaverBuddies.Colonies
             shownSerial = state == ExchangeState.None ? 0 : ax.Serial;
             if (state == ExchangeState.None) return;
             shownGiveGood = ax.GoodId;
-            shownGiveAmount = ax.Total;
+            // The whole trade, as offered (what Accept checks).
+            shownGiveAmount = ax.Whole;
             shownGetGood = bx.GoodId;
-            shownGetAmount = bx.Total;
+            shownGetAmount = bx.Whole;
             shownRounds = ax.Rounds;
             shownRepeat = ax.Repeat;
         }
@@ -991,7 +990,7 @@ namespace BeaverBuddies.Colonies
             RefreshSummary();
         }
 
-        /// <summary>"Last exchange here: 100 Logs for 25 Gears, 4 rounds." with Offer again, when this half remembers one.</summary>
+        /// <summary>"Last exchange here: 400 Logs for 100 Gears." with Offer again, when this half remembers one.</summary>
         private void RefreshLast(CrossingExchange ax, int them)
         {
             string give = null, get = null;
@@ -1001,10 +1000,8 @@ namespace BeaverBuddies.Colonies
                 out rounds, out repeat, out _);
             NativeElements.Show(lastRow, known);
             if (!known) return;
-            string terms = string.Format(T("BeaverBuddies.Colony.Trade.LastTerms"), AmountOf(giveAmount, give), AmountOf(getAmount, get))
-                ;
-            string lastRounds = RoundsText(rounds, repeat, giveAmount, getAmount);
-            if (lastRounds.Length > 0) terms += "\n" + lastRounds;
+            string terms = string.Format(T("BeaverBuddies.Colony.Trade.LastTerms"), AmountOf(giveAmount, give), AmountOf(getAmount, get));
+            if (repeat) terms += "\n" + T("BeaverBuddies.Colony.Trade.RoundsRepeatLine");
             NativeElements.SetText(lastLabel, terms);
         }
 
@@ -1037,9 +1034,10 @@ namespace BeaverBuddies.Colonies
             prefillPending = false;
             if (prefillGive != null && _items.IsOffered(prefillGive)) giveItem = prefillGive;
             if (prefillGet != null && _items.IsOffered(prefillGet) && prefillGet != giveItem) getItem = prefillGet;
-            giveSide.Amount.SetValueWithoutNotify(Math.Max(0, Math.Min(ExchangeTerms.MaxAmount, prefillGiveAmount)).ToString(CultureInfo.InvariantCulture));
-            getSide.Amount.SetValueWithoutNotify(Math.Max(0, Math.Min(ExchangeTerms.MaxAmount, prefillGetAmount)).ToString(CultureInfo.InvariantCulture));
-            roundsBox.SetValueWithoutNotify(Math.Max(1, Math.Min(ExchangeTerms.MaxRounds, prefillRounds)).ToString(CultureInfo.InvariantCulture));
+            // The terms are whole trades (a repeating one's: each round's), as offered.
+            int most = TradeOfferForm.MaxFor(prefillRepeat);
+            giveSide.Amount.SetValueWithoutNotify(Math.Max(0, Math.Min(most, prefillGiveAmount)).ToString(CultureInfo.InvariantCulture));
+            getSide.Amount.SetValueWithoutNotify(Math.Max(0, Math.Min(most, prefillGetAmount)).ToString(CultureInfo.InvariantCulture));
             repeatToggle.SetValueWithoutNotify(prefillRepeat);
             keepBox.SetValueWithoutNotify(Math.Max(0, Math.Min(ExchangeTerms.MaxKeep, prefillKeep)).ToString(CultureInfo.InvariantCulture));
         }
@@ -1069,14 +1067,10 @@ namespace BeaverBuddies.Colonies
             if (summary == null) return;
             bool repeat = repeatToggle.value;
             TradeOfferForm.Verdict verdict = TradeOfferForm.Judge(giveItem, giveSide.Amount.value, getItem, getSide.Amount.value,
-                roundsBox.value, repeat, out int give, out int get, out int rounds, out bool split, GiveAllowed(), GetAllowed());
-            // An amount over a round is the whole trade, so the rounds box has no say (nor for a repeating offer).
-            bool roundsUsed = !repeat && !split;
-            roundsBox.SetEnabled(roundsUsed);
-            roundsLess.SetEnabled(roundsUsed);
-            roundsMore.SetEnabled(roundsUsed);
-            // The greyed box says how many rounds the whole trade is split into, not a number it ignores.
-            if (split && !repeat) roundsBox.SetValueWithoutNotify(rounds.ToString(CultureInfo.InvariantCulture));
+                repeat, out int give, out int get, out int rounds, GiveAllowed(), GetAllowed());
+            // The greyed box shows how many rounds the game carries the trade in: one per 100 of the larger side, or
+            // "∞" for a repeating one. It says nothing while the form holds no offer.
+            roundsBox.SetValueWithoutNotify(!TradeOfferForm.IsOffer(verdict) ? "" : repeat ? "∞" : rounds.ToString(CultureInfo.InvariantCulture));
             // A reserve matters over more than one round, and only when this side gives something.
             bool keepShown = give > 0 && (repeat || rounds > 1);
             NativeElements.Show(keepCard, keepShown);
@@ -1093,22 +1087,16 @@ namespace BeaverBuddies.Colonies
             switch (verdict)
             {
                 case TradeOfferForm.Verdict.Exchange:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryExchange"), AmountOf(give * (repeat ? 1 : rounds), giveItem), AmountOf(get * (repeat ? 1 : rounds), getItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryExchange"), AmountOf(give, giveItem), AmountOf(get, getItem));
                     break;
                 case TradeOfferForm.Verdict.Gift:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryGift"), partner, AmountOf(give * (repeat ? 1 : rounds), giveItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryGift"), partner, AmountOf(give, giveItem));
                     break;
                 case TradeOfferForm.Verdict.Request:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryRequest"), partner, AmountOf(get * (repeat ? 1 : rounds), getItem));
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.SummaryRequest"), partner, AmountOf(get, getItem));
                     break;
                 case TradeOfferForm.Verdict.BadAmount:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), Count(TradeOfferForm.MaxTyped), ExchangeTerms.MaxRounds);
-                    break;
-                case TradeOfferForm.Verdict.Uneven:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorUneven"), ExchangeTerms.MaxAmount);
-                    break;
-                case TradeOfferForm.Verdict.BadRounds:
-                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorRounds"), ExchangeTerms.MaxRounds);
+                    text = string.Format(T("BeaverBuddies.Colony.Trade.ErrorAmount"), Count(TradeOfferForm.MaxFor(repeat)));
                     break;
                 case TradeOfferForm.Verdict.NothingEitherWay:
                     text = T("BeaverBuddies.Colony.Trade.ErrorNothing");
@@ -1129,28 +1117,12 @@ namespace BeaverBuddies.Colonies
                     break;
             }
             bool offer = TradeOfferForm.IsOffer(verdict);
-            // Each thing on its own line: the deal, then how it is split into rounds.
-            if (offer)
-            {
-                string rounding = RoundsText(rounds, repeat, give, get);
-                if (rounding.Length > 0) text += "\n" + rounding;
-                // A repeating offer typed over a round's worth repeats one equal part of it: say what each round is.
-                if (split && repeat)
-                    text += "\n" + string.Format(T("BeaverBuddies.Colony.Trade.SummarySplitRepeat"), AmountOf(give, giveItem), AmountOf(get, getItem), ExchangeTerms.MaxAmount);
-            }
+            // The deal as typed; the rounds are the game's detail (only a standing deal says it repeats).
+            if (offer && repeat) text += "\n" + T("BeaverBuddies.Colony.Trade.RoundsRepeatLine");
             if (offer && keepShown && keep > 0) text += "\n" + string.Format(T("BeaverBuddies.Colony.Trade.SummaryKeep"), Count(keep), _items.Name(giveItem));
             NativeElements.SetText(summary, text);
             summary.style.color = offer ? NativeElements.Muted : NativeElements.Warning;
             makeOfferButton.SetEnabled(offer);
-        }
-
-        /// <summary>"Once.", "3 rounds: 300 Berries for 3 Beavers in all.", or "Round after round, until you both agree to stop."</summary>
-        private string RoundsText(int rounds, bool repeat, int give, int get)
-        {
-            if (rounds <= 1 && !repeat) return "";
-            string each = give > 0 && get > 0 ? Count(give) + "/" + Count(get) : Count(Math.Max(give, get));
-            return repeat ? string.Format(T("BeaverBuddies.Colony.Trade.RoundsRepeat"), each)
-                : string.Format(T("BeaverBuddies.Colony.Trade.RoundsMany"), rounds, each);
         }
 
         private string ItemOf(OfferSide side) => side.Side == Give ? giveItem : getItem;
@@ -1164,16 +1136,22 @@ namespace BeaverBuddies.Colonies
         private void StepAmount(OfferSide side, bool up, bool shift)
         {
             TradeOfferForm.TryReadAmount(side.Amount.value, out int amount);
-            int next = TradeOfferForm.Stepped(amount, TradeOfferForm.Step(ItemOf(side), shift), up);
+            int next = TradeOfferForm.Stepped(amount, TradeOfferForm.Step(ItemOf(side), shift), up, repeatToggle.value);
             side.Amount.value = next.ToString(CultureInfo.InvariantCulture);
         }
 
-        private void StepRounds(bool up, bool shift)
+        /// <summary>
+        /// A repeating offer's amounts are each round's, so they go no higher than a round carries: a box holding more is
+        /// brought down to that, never refused.
+        /// </summary>
+        private void FitRepeating()
         {
-            if (repeatToggle.value) return;
-            if (!TradeOfferForm.TryReadRounds(roundsBox.value, out int rounds)) rounds = 1;
-            int next = TradeOfferForm.Stepped(rounds, TradeOfferForm.RoundsStep(shift), up, 1, ExchangeTerms.MaxRounds);
-            roundsBox.value = next.ToString(CultureInfo.InvariantCulture);
+            if (repeatToggle == null || !repeatToggle.value) return;
+            foreach (OfferSide side in new[] { giveSide, getSide })
+            {
+                if (side?.Amount == null || !TradeOfferForm.TryReadAmount(side.Amount.value, out int amount) || amount <= ExchangeTerms.MaxAmount) continue;
+                side.Amount.SetValueWithoutNotify(ExchangeTerms.MaxAmount.ToString(CultureInfo.InvariantCulture));
+            }
         }
 
         private string StepTooltip(OfferSide side, string key) =>
@@ -1235,12 +1213,13 @@ namespace BeaverBuddies.Colonies
                 NativeElements.SetText(proposalNote, "");
                 ShowTerm(firstTerm, T("BeaverBuddies.Colony.Trade.YouGetCaption"), bx, "");
                 // Whether the colony can keep its side.
-                string have = ax.Total > 0
+                string have = ax.Whole > 0
                     ? string.Format(T("BeaverBuddies.Colony.Trade.YouHaveNote"), Count(_items.StockOf(crossing, OwnerOf(crossing), ax.GoodId)))
                     : "";
                 ShowTerm(secondTerm, T("BeaverBuddies.Colony.Trade.YouGiveCaption"), ax, have);
             }
-            NativeElements.SetText(proposalRounds, RoundsText(ax.Rounds, ax.Repeat, ax.Total, bx.Total));
+            // An offer says the whole trade; only a standing deal says it repeats.
+            NativeElements.SetText(proposalRounds, ax.Repeat ? T("BeaverBuddies.Colony.Trade.RoundsRepeatLine") : "");
             NativeElements.Show(acceptButton, !offeredHere && canAccept);
             NativeElements.Show(declineButton, !offeredHere);
             NativeElements.Show(withdrawButton, offeredHere);
@@ -1250,11 +1229,11 @@ namespace BeaverBuddies.Colonies
         private void ShowTerm(TermRow term, string caption, CrossingExchange side, string note)
         {
             NativeElements.SetText(term.Caption, caption);
-            bool something = side.Total > 0;
+            bool something = side.Whole > 0;
             Sprite icon = something ? _items.IconOf(side.GoodId) : null;
             if (term.Icon.sprite != icon) term.Icon.sprite = icon;
             NativeElements.Show(term.Icon, icon != null);
-            NativeElements.SetText(term.What, AmountOf(side.Total, side.GoodId));
+            NativeElements.SetText(term.What, AmountOf(side.Whole, side.GoodId));
             term.What.style.color = something ? new StyleColor(StyleKeyword.Null) : new StyleColor(NativeElements.Muted);
             NativeElements.SetText(term.Note, note);
             NativeElements.Show(term.Note, !string.IsNullOrEmpty(note));
@@ -1597,8 +1576,8 @@ namespace BeaverBuddies.Colonies
             if (!myHalf) return;
             bool repeating = repeatToggle.value;
             TradeOfferForm.Verdict verdict = TradeOfferForm.Judge(giveItem, giveSide.Amount.value, getItem, getSide.Amount.value,
-                roundsBox.value, repeating, out int give, out int get, out int rounds, GiveAllowed(), GetAllowed());
-            if (!TradeOfferForm.IsOffer(verdict) || !ExchangeTerms.AreValid(giveItem, give, getItem, get)) return;
+                repeating, out int give, out int get, out int rounds, GiveAllowed(), GetAllowed());
+            if (!TradeOfferForm.IsOffer(verdict) || !ExchangeTerms.AreValidTerms(giveItem, give, getItem, get, repeating)) return;
             // The reserve counts only where its box is shown (more than one round, something given).
             int keep = 0;
             if (give > 0 && (repeating || rounds > 1) && (!TradeOfferForm.TryReadKeep(keepBox.value, out keep) || !ExchangeTerms.IsValidKeep(keep))) return;

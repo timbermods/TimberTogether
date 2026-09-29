@@ -63,9 +63,9 @@ static class FeatureChecks
 
         yield return ("Exchange: an exchange's terms survive as one string, and a broken one is refused", () =>
         {
-            string text = ExchangeTerms.EncodeTerms("Log", 100, "Gear", 25, 4, false, 200);
+            string text = ExchangeTerms.EncodeTerms("Log", 400, "Gear", 100, 4, false, 200);
             Check(ExchangeTerms.TryDecodeTerms(text, out string give, out int giveAmount, out string get, out int getAmount, out int rounds, out bool repeat, out int keep));
-            Equal("Log", give); Equal(100, giveAmount); Equal("Gear", get); Equal(25, getAmount); Equal(4, rounds); Check(!repeat); Equal(200, keep);
+            Equal("Log", give); Equal(400, giveAmount); Equal("Gear", get); Equal(100, getAmount); Equal(4, rounds); Check(!repeat); Equal(200, keep);
             // A gift: the empty side has no good.
             Check(ExchangeTerms.TryDecodeTerms(ExchangeTerms.EncodeTerms("Log", 100, null, 0, 1, true, 0), out give, out giveAmount, out get, out getAmount, out rounds, out repeat, out keep));
             Check(get == null && getAmount == 0 && repeat);

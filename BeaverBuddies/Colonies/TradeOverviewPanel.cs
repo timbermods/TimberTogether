@@ -837,9 +837,8 @@ namespace BeaverBuddies.Colonies
                 detail = T("BeaverBuddies.Colony.Overview.Idle");
                 return;
             }
-            // The whole deal: every round's amounts added up, or one round's for an exchange that repeats until stopped.
-            int rounds = mine.Repeat ? 1 : Math.Max(1, mine.Rounds);
-            string give = exchanges.Amount(mine.Total * rounds, mine.GoodId), get = exchanges.Amount(theirs.Total * rounds, theirs.GoodId);
+            // The whole deal as offered, or one round's for an exchange that repeats until stopped.
+            string give = exchanges.Amount(mine.Whole, mine.GoodId), get = exchanges.Amount(theirs.Whole, theirs.GoodId);
             string dealKey = mine.Repeat ? "BeaverBuddies.Colony.Overview.DealRepeat" : "BeaverBuddies.Colony.Overview.Deal";
             string deal = string.Format(T(dealKey), give, get);
             if (mine.State == ExchangeState.Proposed)

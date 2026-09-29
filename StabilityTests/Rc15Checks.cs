@@ -133,7 +133,7 @@ static class Rc15Checks
         {
             Check(Csv("BeaverBuddies.Colony.Trade.Notice.Cancelled") == "The exchange between {0} and {1} was cancelled. Any goods already brought to the Trading Post go back to the colony that brought them.",
                 "the cancelled exchange's message changed: " + Csv("BeaverBuddies.Colony.Trade.Notice.Cancelled"));
-            Check(new[] { "Proposed", "ProposedRounds", "ProposedRepeat", "CancelAsked" }.All(key => Csv("BeaverBuddies.Colony.Trade.Notice." + key).EndsWith(".\nClick here to answer.")),
+            Check(new[] { "Proposed", "ProposedRepeat", "CancelAsked" }.All(key => Csv("BeaverBuddies.Colony.Trade.Notice." + key).EndsWith(".\nClick here to answer.")),
                 "the messages that stay no longer say, on a line of its own, that a click answers them");
             foreach (string key in new[] { "Notice.Cancelled", "AskCancelTooltip", "AgreeCancelTooltip", "EndExchangeTooltip", "PausedCancel" })
             {

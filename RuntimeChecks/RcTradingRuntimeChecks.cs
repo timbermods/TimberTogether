@@ -182,8 +182,8 @@ internal static class RcTradingRuntimeChecks
             Type rules = mod.GetType("BeaverBuddies.Factions.FactionRules", true)!;
             MethodInfo allows = Only(rules, "FactionAllows");
             Type form = mod.GetType("BeaverBuddies.Colonies.TradeOfferForm", true)!;
-            // The form's Judge without the split flag (1.4.0-rc22 added an overload that also says whether it split).
-            MethodInfo judge = form.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(m => m.Name == "Judge" && m.GetParameters().Length == 11);
+            // The form's Judge (1.4.0-rc31: the whole trade as typed, repeat, the amounts and rounds out, the factions' say).
+            MethodInfo judge = form.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(m => m.Name == "Judge" && m.GetParameters().Length == 10);
             string science = (string)terms.GetField("Science")!.GetValue(null)!, beavers = (string)terms.GetField("Beavers")!.GetValue(null)!;
             int max = (int)terms.GetField("MaxAmount")!.GetValue(null)!;
             Need(max == 100, "a half's room for a good is no longer 100");
@@ -203,7 +203,7 @@ internal static class RcTradingRuntimeChecks
                         if (allowed && !stores[receiver].Contains(type)) problems.Add($"{receiver} may receive {id} ({type}) but has nowhere to store it");
                         // The offer form offers exactly what may cross, 100 of it for one of something else.
                         Func<string, bool> giveAllowed = item => (bool)allows.Invoke(null, new object?[] { item, receiverStores, giver, receiver, science, beavers })!;
-                        object?[] args = { id, "100", "Log" == id ? "Plank" : "Log", "1", "1", false, 0, 0, 0, giveAllowed, null };
+                        object?[] args = { id, "100", "Log" == id ? "Plank" : "Log", "1", false, 0, 0, 0, giveAllowed, null };
                         string verdict = judge.Invoke(null, args)!.ToString()!;
                         if (verdict != (allowed ? "Exchange" : "GiveNotAllowed")) problems.Add($"the form says {verdict} for 100 {id} from {giver} to {receiver}");
                     }
