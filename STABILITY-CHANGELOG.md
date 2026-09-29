@@ -5,6 +5,29 @@ Every change this fork makes relative to the original BeaverBuddies `v1.1` branc
 1.1.2.4. For a plain-language summary, see the [README](README.md). Future releases add a new
 entry above the current one.
 
+## Unreleased
+
+**The panel is drawn in front of the alerts, which stay put, and achievements are your own colony's** (built without
+the game's assemblies; StabilityTests only). **Not played.**
+
+- **The connection panel is in front of the game's alerts, and the alerts are never moved.** From rc27 play: the
+  alerts moved beside the panel (rc26) sat over the map in the middle of the screen. That move is gone. Reordering the
+  game's corners (rc24, rc25) had not worked: they are laid out together. Now `CornerLift` draws the panel from a
+  layer of its own, the last child of the container that holds both its corner and the alerts' corner
+  (`Bottom-left`), so it is drawn after both. An empty slot the panel's size keeps its place in the corner, so the
+  corner is laid out as before; each frame the panel is placed over the slot. The layer ignores the pointer, and it
+  carries the style sheets and font of the containers the panel left. Hidden or moved to another corner, the panel
+  goes back into its slot's place. Its width still follows the panel above it, measured from the slot. The log says
+  once which container holds the layer, or where the panel sits if `Bottom-left` is not found.
+- **Achievements count only your own colony's things.** From rc27 play: the host got the beehive achievement for a
+  beehive the guest built. Every computer plays the whole map, so the game's achievements heard every colony.
+  `ColonyAchievements` patches the game's achievement code (Timberborn assemblies named "…Achievement…"): each method
+  that returns nothing and is told about a game thing (an argument that is, or holds in a field or property, a
+  component), or an `On…` handler of an achievement part on a building or beaver, is skipped when that thing is
+  another colony's. Nobody's things count for everyone. Display only (Steam achievements are this computer's own); if
+  nothing is found the log says so. RuntimeChecks lists the methods found (`Rc28RuntimeChecks`) for review.
+- StabilityTests: source checks for both (`PanelLayoutChecks`, `Rc27Checks`); `PanelLayout.AlertShift` is removed.
+
 ## 1.4.0-rc27
 
 **Another colony's trees marked for cutting are not drawn** (PR #69). Built against Timberborn 1.1.2.4: both

@@ -34,5 +34,18 @@ static class Rc27Checks
                 "the filter is not installed, or refuses co-op when it fails");
             Check(Source("BeaverBuddies", "Colonies", "ColonyConfigurator.cs").Contains("Bind<ColonyCuttingViewRefresher>().AsSingleton();"), "the redraw is not bound");
         });
+        yield return ("rc28: achievements skip another colony's things, never run in the simulation, and never throw", () =>
+        {
+            string achievements = Source("BeaverBuddies", "Colonies", "ColonyAchievements.cs");
+            Check(achievements.Contains("name.IndexOf(\"Achievement\", StringComparison.Ordinal) < 0) continue;"), "methods outside the game's achievement assemblies are patched");
+            Check(achievements.Contains("method.ReturnType != typeof(void)"), "a method whose answer is used could be skipped");
+            Check(achievements.Contains("if (!ColonyViewService.ActiveThisFrame(out _)) return true;"), "achievements are filtered alone or in a shared game");
+            Check(achievements.Contains("!ColonyViewService.IsOwn(thing)) return false;") && achievements.Contains("!ColonyViewService.IsOwn(self)) return false;"),
+                "another colony's thing still counts");
+            Check(achievements.Contains("!Lifecycle.Contains(method.Name)"), "a part's set-up or clean-up could be skipped");
+            string plugin = Source("BeaverBuddies", "Plugin.cs");
+            Check(plugin.Contains("Colonies.ColonyAchievements.Install(harmony);") && !plugin.Contains("Install(nameof(ColonyAchievements)"),
+                "achievements are not kept apart, or refuse co-op when they can't be");
+        });
     }
 }

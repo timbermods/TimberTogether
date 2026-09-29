@@ -215,6 +215,8 @@ namespace BeaverBuddies
             BeaverBuddies.Activity.RemoteSounds.Install(harmony);
             // Display only too: another colony's trees marked for cutting are not drawn.
             Colonies.ColonyCuttingView.Install(harmony);
+            // And each player's achievements are their own colony's.
+            Colonies.ColonyAchievements.Install(harmony);
 
             // apply each advanced monomod patch manually.
             Install(nameof(GameSaverSavePatcher), GameSaverSavePatcher.Install);

@@ -1,200 +1,158 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace BeaverBuddies.Panel
 {
     /// <summary>
-    /// Keeps the game's alerts off the panel while it is on screen, so they cannot draw over it and its chat, and puts
-    /// everything back when it is hidden or moved. Two ways: the panel's corner is drawn in front where that is safe,
-    /// and the alerts are moved to the right of the panel wherever their rows would meet it.
+    /// Draws the panel in front of the game's alerts while it is on screen, and puts it back when it is hidden or moved.
+    /// The alerts themselves are never moved.
     /// </summary>
     /// <remarks>
-    /// The game's interface is a set of corner containers ("Top-left", "Bottom-left", and so on) that are drawn in the
-    /// order they were defined; the alerts live in "Bottom-left", which comes after "Top-left", so they cover a tall
-    /// panel in the top-left corner. Nothing here can change what is clickable: the game defines every container as
-    /// ignoring the pointer, and only what is inside them receives it.
+    /// Changing the order of the game's corner containers did not work in play (1.4.0-rc24, rc25): they are laid out
+    /// together, so they can't change places. Instead the panel is drawn from a layer of its own, the last thing in the
+    /// part of the interface that holds both its corner and the alerts' corner ("Bottom-left"), so it is drawn after both.
+    /// An empty slot the panel's size keeps its place in its corner, so the corner is laid out exactly as before, and the
+    /// panel is placed over that slot each frame. The layer ignores the pointer; only the panel receives it. The layer
+    /// carries the style sheets and font the panel had from the containers it left, so it looks the same.
     /// </remarks>
     internal sealed class CornerLift
     {
-        static readonly HashSet<string> Corners = new HashSet<string>
-        {
-            "Top-left", "Top-right", "Top-bar", "Bottom-left", "Bottom-right", "Bottom-bar", "Absolute-items"
-        };
+        VisualElement slot, layer, floated;
+        // The panel's own margins while it floats (the slot takes them), to give back.
+        StyleLength marginTop, marginBottom, marginLeft, marginRight;
+        float nextSearch;
+        bool loggedMissing, logged, failed;
 
-        VisualElement lifted, wasBehind;
-        // The containers above the corner that were moved to the front too, each with what was behind it.
-        readonly List<(VisualElement Element, VisualElement Behind)> raised = new List<(VisualElement, VisualElement)>();
-        bool warned;
+        public bool IsLifted => slot != null;
 
-        // The game's alert list moved aside (display only: a translation, which changes no one's layout), and by how much.
-        VisualElement alerts, shifted;
-        float shift, nextSearch;
-        bool alertsLogged, shiftLogged, alertsFailed;
+        /// <summary>Where the panel stands in its corner while it is drawn in front (the slot), or null.</summary>
+        public VisualElement Anchor => slot;
 
-        public bool IsLifted => lifted != null || raised.Count > 0;
-
-        /// <summary>Moves the panel's corner in front of the other corners. Does nothing if it already is, or if it is not safe.</summary>
+        /// <summary>Draws the panel in front, or keeps it placed over its slot. Every frame while it is on screen.</summary>
         public void Lift(VisualElement panel)
         {
-            KeepAlertsClear(panel);
-            if (lifted != null || raised.Count > 0) { RaiseContainers(lifted?.parent ?? panel.parent?.parent); return; }
-            VisualElement corner = panel.parent, holder = corner?.parent;
-            if (corner == null || holder == null || !Corners.Contains(corner.name)) return;
-            // A corner that is laid out on its own can change places without moving anything else. If the game ever
-            // changes that, leave the order alone rather than shuffle the whole interface.
-            if (corner.resolvedStyle.position != Position.Absolute)
-            {
-                if (!warned) { warned = true; Plugin.Log($"Chat: '{corner.name}' is not positioned on its own, so it was not moved in front of the alerts."); }
-                return;
-            }
-            int mine = holder.IndexOf(corner);
-            VisualElement front = null;
-            for (int i = 0; i < holder.childCount; i++)
-                if (holder[i] != corner && Corners.Contains(holder[i].name)) front = holder[i];
-            // Already drawn after every other corner: only the containers above may still be behind something.
-            if (front != null && holder.IndexOf(front) >= mine && mine + 1 < holder.childCount)
-            {
-                wasBehind = holder[mine + 1];
-                corner.PlaceInFront(front);
-                lifted = corner;
-                if (!warned) { warned = true; Plugin.Log($"Chat: '{corner.name}' is drawn in front of '{front.name}' while the panel is on screen."); }
-            }
-            RaiseContainers(holder);
-        }
-
-        // The alerts may live in another container of the interface that is drawn after the whole holder of the
-        // corners: then the corner alone is not enough, so each container above it is also drawn last among its
-        // siblings (nothing is clickable that was not: the game's containers ignore the pointer).
-        void RaiseContainers(VisualElement holder)
-        {
-            if (holder == null) return;
-            for (VisualElement element = holder; element?.parent != null; element = element.parent)
-            {
-                VisualElement parent = element.parent;
-                int index = parent.IndexOf(element);
-                if (index < 0 || index == parent.childCount - 1) continue;
-                // Something was added after it since: draw it last again, keeping what was recorded to restore.
-                bool known = raised.Exists(r => r.Element == element);
-                if (!known) raised.Add((element, parent[index + 1]));
-                element.BringToFront();
-                if (!warned && !known) Plugin.Log($"Chat: '{element.name}' was moved to the front of '{parent.name}' so nothing is drawn over the panel.");
-            }
-            warned = true;
-        }
-
-        // The drawing order alone did not keep the alerts off the panel in play (1.4.0-rc24, rc25): the corners may not
-        // be laid out on their own, or the alerts may be drawn elsewhere. So wherever the alert rows would meet the panel,
-        // the alerts are moved to the right of it, measured each frame (a new alert makes the list taller).
-        void KeepAlertsClear(VisualElement panel)
-        {
-            if (alertsFailed) return;
+            if (failed) return;
             try
             {
-                VisualElement found = FindAlerts(panel);
-                if (found != shifted) Unshift();
-                if (found == null || panel.resolvedStyle.display == DisplayStyle.None) { Unshift(); return; }
-                Rect box = panel.worldBound;
-                // The rows as the game lays them out: what is measured includes the move as last drawn, which the
-                // resolved style gives (the one just asked for may not be drawn yet).
-                float left = float.MaxValue, top = float.MaxValue, right = float.MinValue, bottom = float.MinValue;
-                Measure(found, ref left, ref top, ref right, ref bottom);
-                float drawn = shifted == found ? found.resolvedStyle.translate.x : 0;
-                float needed = left == float.MaxValue ? 0
-                    : PanelLayout.AlertShift(box.xMin, box.yMin, box.xMax, box.yMax, left - drawn, top, right - drawn, bottom);
-                if (Mathf.Abs(needed - shift) < 1) return;
-                if (needed <= 0) { Unshift(); return; }
-                found.style.translate = new Translate(needed, 0, 0);
-                shifted = found;
-                shift = needed;
-                if (!shiftLogged)
-                {
-                    shiftLogged = true;
-                    Plugin.Log($"Chat: the alerts in '{found.name}' are moved {needed:0} to the right, beside the connection panel.");
-                }
+                if (slot == null && !Float(panel)) return;
+                Follow(panel);
             }
             catch (Exception error)
             {
-                // Display only: if the game's interface is not what is expected, leave the alerts where the game puts them.
-                alertsFailed = true;
-                Plugin.LogWarning("Chat: could not move the alerts beside the panel: " + error.Message);
-                try { Unshift(); } catch (Exception) { }
+                // Display only: if the game's interface is not what is expected, the panel stays where the game puts it.
+                failed = true;
+                Plugin.LogWarning("Chat: could not draw the panel in front of the alerts: " + error.Message);
+                try { Restore(); } catch (Exception) { }
             }
         }
 
-        // The game's alerts live in its bottom-left corner. Never the panel's own corner, nor anything holding the panel.
-        VisualElement FindAlerts(VisualElement panel)
+        bool Float(VisualElement panel)
         {
-            if (alerts != null && alerts.panel == panel.panel && !alerts.Contains(panel)) return alerts;
-            alerts = null;
-            VisualElement root = panel.panel?.visualTree;
-            // Looking through the whole interface is not done every frame.
-            if (root == null || Time.unscaledTime < nextSearch) return null;
+            VisualElement corner = panel.parent, root = panel.panel?.visualTree;
+            if (corner == null || root == null || Time.unscaledTime < nextSearch) return false;
             nextSearch = Time.unscaledTime + 2;
-            VisualElement found = root.Q<VisualElement>("Bottom-left")
-                ?? root.Query<VisualElement>().Where(e => Plain(e.name) == "bottomleft").First();
-            if (found != null && !found.Contains(panel)) alerts = found;
-            else if (!alertsLogged)
+            VisualElement alerts = root.Q<VisualElement>("Bottom-left");
+            if (alerts == null || alerts == corner || alerts.Contains(panel) || panel.Contains(alerts))
             {
-                alertsLogged = true;
-                string chain = "";
-                for (VisualElement e = panel.parent; e != null; e = e.parent) chain += (chain.Length > 0 ? " < " : "") + (e.name ?? "");
-                Plugin.Log($"Chat: the game's alert corner was {(found == null ? "not found" : "the panel's own")}; the panel sits in {chain}.");
+                if (!loggedMissing)
+                {
+                    loggedMissing = true;
+                    Plugin.Log($"Chat: the panel is not drawn in front ('Bottom-left' {(alerts == null ? "not found" : "holds the panel")}); it sits in {Chain(corner)}.");
+                }
+                return false;
             }
-            return alerts;
-        }
+            VisualElement host = CommonAncestor(corner, alerts);
+            if (host == null) return false;
 
-        static string Plain(string name)
-        {
-            if (string.IsNullOrEmpty(name)) return "";
-            var letters = new System.Text.StringBuilder(name.Length);
-            foreach (char c in name) if (char.IsLetter(c)) letters.Append(char.ToLowerInvariant(c));
-            return letters.ToString();
-        }
+            layer = new VisualElement { name = "BeaverBuddiesFrontLayer", pickingMode = PickingMode.Ignore };
+            var l = layer.style;
+            l.position = Position.Absolute;
+            l.left = 0; l.top = 0; l.right = 0; l.bottom = 0;
+            // What the panel had from the containers between the host and it: their style sheets, and the font.
+            for (VisualElement e = corner; e != null && e != host; e = e.parent)
+                for (int i = 0; i < e.styleSheets.count; i++) layer.styleSheets.Add(e.styleSheets[i]);
+            l.unityFontDefinition = corner.resolvedStyle.unityFontDefinition;
+            host.Add(layer);
 
-        // The screen area of what is drawn: the innermost elements on screen (a row's icon and text), skipping anything
-        // hidden, so a container stretched down the whole corner does not count as rows.
-        static void Measure(VisualElement element, ref float left, ref float top, ref float right, ref float bottom)
-        {
-            IResolvedStyle style = element.resolvedStyle;
-            if (style.display == DisplayStyle.None || style.visibility == Visibility.Hidden || style.opacity <= 0) return;
-            int children = element.hierarchy.childCount;
-            if (children == 0)
+            IResolvedStyle resolved = panel.resolvedStyle;
+            slot = new VisualElement { name = "BeaverBuddiesConnectionPanelSlot", pickingMode = PickingMode.Ignore };
+            var s = slot.style;
+            s.marginTop = resolved.marginTop; s.marginBottom = resolved.marginBottom;
+            s.marginLeft = resolved.marginLeft; s.marginRight = resolved.marginRight;
+            s.flexShrink = 0;
+            s.alignSelf = panel.style.alignSelf;
+            s.width = panel.layout.width; s.height = panel.layout.height;
+            corner.Insert(corner.IndexOf(panel), slot);
+
+            var p = panel.style;
+            marginTop = p.marginTop; marginBottom = p.marginBottom; marginLeft = p.marginLeft; marginRight = p.marginRight;
+            p.marginTop = 0; p.marginBottom = 0; p.marginLeft = 0; p.marginRight = 0;
+            p.position = Position.Absolute;
+            layer.Add(panel);
+            floated = panel;
+            if (!logged)
             {
-                Rect r = element.worldBound;
-                if (float.IsNaN(r.width) || float.IsNaN(r.height) || r.width < 1 || r.height < 1) return;
-                left = Mathf.Min(left, r.xMin); top = Mathf.Min(top, r.yMin);
-                right = Mathf.Max(right, r.xMax); bottom = Mathf.Max(bottom, r.yMax);
-                return;
+                logged = true;
+                Plugin.Log($"Chat: the panel is drawn in front, from a layer at the end of '{host.name}' (its corner '{corner.name}', the alerts' '{alerts.name}').");
             }
-            for (int i = 0; i < children; i++) Measure(element.hierarchy[i], ref left, ref top, ref right, ref bottom);
+            return true;
         }
 
-        void Unshift()
+        void Follow(VisualElement panel)
         {
-            VisualElement moved = shifted;
-            shifted = null;
-            shift = 0;
-            if (moved != null) moved.style.translate = StyleKeyword.Null;
+            // Moved by something else since: forget the slot and the layer, leave the panel where it is.
+            if (panel.parent != layer || slot.parent == null || layer.parent == null) { Drop(); return; }
+            VisualElement host = layer.parent;
+            // Something added to the host after the layer would be drawn over the panel.
+            if (host.IndexOf(layer) != host.childCount - 1) layer.BringToFront();
+            Rect size = panel.layout;
+            if (!float.IsNaN(size.width) && !float.IsNaN(size.height))
+            {
+                if (Mathf.Abs(slot.resolvedStyle.width - size.width) > .5f) slot.style.width = size.width;
+                if (Mathf.Abs(slot.resolvedStyle.height - size.height) > .5f) slot.style.height = size.height;
+            }
+            if (slot.style.alignSelf != panel.style.alignSelf) slot.style.alignSelf = panel.style.alignSelf;
+            Vector2 at = layer.WorldToLocal(slot.worldBound.position);
+            if (float.IsNaN(at.x) || float.IsNaN(at.y)) return;
+            if (Mathf.Abs(panel.resolvedStyle.left - at.x) > .5f) panel.style.left = at.x;
+            if (Mathf.Abs(panel.resolvedStyle.top - at.y) > .5f) panel.style.top = at.y;
         }
 
-        /// <summary>Puts the corner back exactly where it was in the drawing order. Safe to call at any time.</summary>
+        /// <summary>Puts the panel back in its corner, where its slot is, as it was. Safe to call at any time.</summary>
         public void Restore()
         {
-            Unshift();
-            VisualElement corner = lifted, next = wasBehind;
-            lifted = null; wasBehind = null;
-            // Outermost first was raised last; put them back in the opposite order.
-            for (int i = raised.Count - 1; i >= 0; i--)
+            VisualElement panel = floated;
+            if (panel != null && panel.parent == layer && slot?.parent != null)
             {
-                var (element, behind) = raised[i];
-                if (behind != null && behind.parent != null && behind.parent == element.parent) element.PlaceBehind(behind);
+                var p = panel.style;
+                p.position = StyleKeyword.Null;
+                p.left = StyleKeyword.Null; p.top = StyleKeyword.Null;
+                p.marginTop = marginTop; p.marginBottom = marginBottom; p.marginLeft = marginLeft; p.marginRight = marginRight;
+                slot.parent.Insert(slot.parent.IndexOf(slot), panel);
             }
-            raised.Clear();
-            if (corner == null) return;
-            // If either has been moved or removed since, there is nothing sensible to restore to.
-            if (next != null && next.parent != null && next.parent == corner.parent) corner.PlaceBehind(next);
+            Drop();
+        }
+
+        void Drop()
+        {
+            slot?.RemoveFromHierarchy();
+            layer?.RemoveFromHierarchy();
+            slot = null; layer = null; floated = null;
+        }
+
+        static VisualElement CommonAncestor(VisualElement a, VisualElement b)
+        {
+            for (VisualElement up = a; up != null; up = up.parent)
+                if (up.Contains(b)) return up;
+            return null;
+        }
+
+        static string Chain(VisualElement element)
+        {
+            string chain = "";
+            for (VisualElement e = element; e != null; e = e.parent) chain += (chain.Length > 0 ? " < " : "") + (e.name ?? "");
+            return chain;
         }
     }
 }
