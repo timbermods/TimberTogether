@@ -69,7 +69,8 @@ on one map, links them only through Trading Post barter, and still offers ordina
   - **Away players keep their colony:** by default a colony is never handed over while its player is away. A friend
     can look after it (Y), and automatic hand-over after a set number of days away is opt-in, for groups where
     someone may not come back.
-  - **Sharing power** (not played yet): the **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs,
+  - **Sharing power** (not played yet; only in the 1.4.0-rc32 pre-release, so not on the site until a release with it
+    is GitHub's Latest): the **Power Export Facility** (Power tab; 20 gears, 20 planks and 20 logs,
     10 of each a half; 200 science), two halves with a worker each, sends one colony's spare power to another (**Send power to …**, with
     **Charge my batteries first** and **Use my batteries for …**). Power never joins between colonies otherwise;
     Ctrl+P shows every colony's power and H opens the Power window. It trades nothing: payment is a Trading Post barter.
@@ -92,7 +93,8 @@ on one map, links them only through Trading Post barter, and still offers ordina
 5. **Every player has the same game version and the exact same download. Update together:** a different build
    cannot join (*Multiplayer build mismatch*).
 
-**Status:** beta, current version **1.4.0-rc32** (a release candidate, GitHub's Latest; its changes are not played yet). The site names the newest published release,
+**Status:** beta, current version **1.4.0-rc31** (a release candidate, GitHub's Latest; its changes are not played yet).
+**1.4.0-rc32** (sharing power) is a pre-release for testing: the site describes rc31 until rc32 or later is Latest. The site names the newest published release,
 and `docs/assets/release.js` fills the version badges from GitHub. 1.4.0 has not been released yet. It is built for
 Timberborn **1.1.2.4**, and only the Steam version on Windows has been tested. It passes a large automated test
 suite, and every feature has been played except mixed factions and sharing power (12+ hours in one game with no desync). Players should play
